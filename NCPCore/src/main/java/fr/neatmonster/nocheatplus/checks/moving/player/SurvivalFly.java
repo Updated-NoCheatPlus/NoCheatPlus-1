@@ -1717,7 +1717,7 @@ public class SurvivalFly extends Check {
             // TODO: LIMIT_JUMP 
             final double vAllowedAbsoluteDistance = data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier);
             final double totalVDistViolation =  to.getY() - data.getSetBackY() - vAllowedAbsoluteDistance;
-            if (totalVDistViolation > 2) {
+            if (totalVDistViolation > 0.0) {
                 // Skip actually stepping up.
                 if ((fromOnGround || thisMove.touchedGroundWorkaround || lastMove.touchedGround) 
                         && toOnGround && yDistance <= cc.sfStepHeight) {
