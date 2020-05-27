@@ -2551,8 +2551,9 @@ public class SurvivalFly extends Check {
     private double[] vDistLiquid(final PlayerMoveData thisMove, final PlayerLocation from, final PlayerLocation to, 
             final boolean toOnGround, final double yDistance, final PlayerMoveData lastMove, 
             final MovingData data, final Player player) {
+	    
         data.sfNoLowJump = true;
-		long now = System.currentTimeMillis();
+	long now = System.currentTimeMillis();
 
         // Expected envelopes.
         final double baseSpeed;
@@ -2662,10 +2663,11 @@ public class SurvivalFly extends Check {
                 if (yDistance > data.liftOffEnvelope.getMaxJumpGain(data.jumpAmplifier)+ 0.1) {
                     tags.add("climbstep");
                     vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(yDistance) - maxSpeed);
-				}
-                } else if (!isWaterlogged(from)) {
-                tags.add("climbspeed");
-                vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(yDistance) - maxSpeed);
+		 }
+            } 
+	    else if (!isWaterlogged(from)) {
+                  tags.add("climbspeed");
+                  vDistanceAboveLimit = Math.max(vDistanceAboveLimit, Math.abs(yDistance) - maxSpeed);
             }
 	    long now = System.currentTimeMillis();
             if ((Bridge1_13.isRiptiding(player) || data.timeRiptiding + 3000 > now) && vDistanceAboveLimit< 4.0) {
@@ -2684,7 +2686,7 @@ public class SurvivalFly extends Check {
         }
         // Do allow friction with velocity.
         if (vDistanceAboveLimit > 0.0 && thisMove.yDistance > 0.0 
-                && lastMove.yDistance - (Magic.GRAVITY_MAX + Magic.GRAVITY_MIN) / 2.0 > thisMove.yDistance) {
+            && lastMove.yDistance - (Magic.GRAVITY_MAX + Magic.GRAVITY_MIN) / 2.0 > thisMove.yDistance) {
             // TODO: Actual friction or limit by absolute y-distance?
             // TODO: Looks like it's only a problem when on ground?
             vDistanceAboveLimit = 0.0;
@@ -2714,12 +2716,14 @@ public class SurvivalFly extends Check {
     private double[] vDistWeb(final Player player, final PlayerMoveData thisMove, 
             final boolean toOnGround, final double hDistanceAboveLimit, final long now, 
             final MovingData data, final MovingConfig cc, final PlayerLocation from) {
+	    
         final double yDistance = thisMove.yDistance;
         double vAllowedDistance = 0.0;
         double vDistanceAboveLimit = 0.0;
         data.sfNoLowJump = true;
         data.jumpAmplifier = 0; // TODO: later maybe fetch.
-        // Very simple: force players to descend or stay.
+	    
+        // Players cannot ascend in webs
         if (yDistance >= 0.0) {
             if (toOnGround && yDistance <= 0.5) {
                 // Step up. Note: Does not take into account jump effect on purpose.
@@ -2730,43 +2734,48 @@ public class SurvivalFly extends Check {
             }
             else {
                 // TODO: Could prevent not moving down if not on ground (or on ladder or in liquid?).
+		// Allow moving upwards a bit if the player is on ground
                 vAllowedDistance = thisMove.from.onGround ? 0.1D : 0;
                 from.collectBlockFlags();
-                if ((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0) vAllowedDistance = 0.315;
+		// Players can "halfjump" in berry bushes
+                if ((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0) {
+		    vAllowedDistance = 0.315;
+		}
             }
-
+	    // Compatibility with multiprotocol plugins
             if ((from.getBlockFlags() & BlockProperties.F_ALLOW_LOWJUMP) != 0) {
                 vAllowedDistance = LiftOffEnvelope.NORMAL.getMaxJumpGain(data.jumpAmplifier) + 0.005;
             }
-
             vDistanceAboveLimit = yDistance - vAllowedDistance;
         }
+	// Descending in web/sweet berry bushes.
         else {
-
-        	// Descending in web/sweet berry bushes.
-        	// Is checking resetCond necessary here?
-        	if (thisMove.from.resetCond && thisMove.to.resetCond && (from.getBlockFlags() & BlockProperties.F_COBWEB2) == 0
-                    && (from.getBlockFlags() & BlockProperties.F_ALLOW_LOWJUMP) == 0) {
-
-        		// Players call decend faster if they're also moving horizontally 
+            // Is checking resetCond necessary here?
+            if (thisMove.from.resetCond && thisMove.to.resetCond && (from.getBlockFlags() & BlockProperties.F_COBWEB2) == 0
+               && (from.getBlockFlags() & BlockProperties.F_ALLOW_LOWJUMP) == 0) {
+        	// Players can descend faster if they're also moving horizontally 
                 if (thisMove.hDistance > 0.018) {
                     vAllowedDistance = -0.062;
                     vDistanceAboveLimit = yDistance < -0.06 ? Math.abs(yDistance - 0.06) : 0;
-                } else {
+                } 
+		else {
                     vAllowedDistance = -0.032;
                     vDistanceAboveLimit = yDistance < -0.035 ? Math.abs(yDistance - 0.032) : 0;
                 }
-        	} else if ((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0) {
-        		// Allow a faster decend speed when the player first enters berry (jumping on from the top)
-        		if (data.insideMediumCount == 0) {
-        			vAllowedDistance = -0.227;
-        			vDistanceAboveLimit = yDistance < -0.227 ? Math.abs(yDistance - 0.227) : 0;
-        		} else {
-        			vAllowedDistance = -0.06;
-            		vDistanceAboveLimit = yDistance < -0.06 ? Math.abs(yDistance - 0.06) : 0;
-        		}
+            }
+	    else if ((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0) {
+        	// Allow a faster descend speed when the player first enters berry (jumping on from the top)
+        	if (data.insideMediumCount == 0) {
+        	    vAllowedDistance = -0.227;
+        	    vDistanceAboveLimit = yDistance < -0.227 ? Math.abs(yDistance - 0.227) : 0;
+        	} 
+		else {
+        	    vAllowedDistance = -0.06;
+            	    vDistanceAboveLimit = yDistance < -0.06 ? Math.abs(yDistance - 0.06) : 0;
+        	}
             }
         }
+	    
         /* Should flag as normal rather than doing silent setbacks. Also causes issues with descend check, meaning the player is never flagged.
         if (cc.survivalFlyCobwebHack && vDistanceAboveLimit > 0.0 && hDistanceAboveLimit <= 0.0) {
             // TODO: Seemed fixed at first by CB/MC, but still does occur due to jumping. 
@@ -2774,10 +2783,14 @@ public class SurvivalFly extends Check {
                 return new double[]{Double.MIN_VALUE, Double.MIN_VALUE};
             }
         } */
-        // TODO: Prevent too fast moving down ?
-        if (vDistanceAboveLimit > 0.0) {
-            tags.add("vweb");
+	    
+        if ((from.getBlockFlags() & BlockProperties.F_COBWEB2 != 0) && vDistanceAboveLimit > 0.0){
+            tags.add(yDistance > 0.0 ? "vbush" : "vbushdesc");
         }
+        else if (vDistanceAboveLimit > 0.0) {
+            tags.add(yDistance > 0.0 ? "vweb" : "vwebdesc");
+        }
+	    
         return new double[]{vAllowedDistance, vDistanceAboveLimit};
     }
 
