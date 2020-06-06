@@ -2784,7 +2784,7 @@ public class SurvivalFly extends Check {
             }
         } */
 	    
-        if ((from.getBlockFlags() & BlockProperties.F_COBWEB2 != 0) && vDistanceAboveLimit > 0.0){
+        if (((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0) && vDistanceAboveLimit > 0.0){
             tags.add(yDistance > 0.0 ? "vbush" : "vbushdesc");
         }
         else if (vDistanceAboveLimit > 0.0) {
