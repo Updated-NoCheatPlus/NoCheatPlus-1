@@ -162,6 +162,7 @@ public class NoSlow extends BaseAdapter {
         if (e.hasItem()) {
             ItemStack item = e.getItem();
             Material m = item.getType();
+            if (Bridge1_9.hasElytra() && p.hasCooldown(m)) return;
             if (InventoryUtil.isConsumable(item)) {
                 // pre1.9 splash potion
                 if (item.getDurability() > 16384) return;

@@ -85,7 +85,7 @@ public class NetData extends ACheckData {
     // TODO: Might extend to synchronize with moving events.
     private final LinkedList<DataPacketFlying> flyingQueue = new LinkedList<DataPacketFlying>();
     /** Maximum amount of packets to store. */
-    private final int flyingQueueMaxSize = 10;
+    private final int flyingQueueMaxSize = 15;
     /**
      * The maximum of so far already returned sequence values, altered under
      * lock.

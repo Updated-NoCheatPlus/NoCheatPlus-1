@@ -1563,10 +1563,12 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final PlayerSetBackMethod method = cc.playerSetBackMethod;
         if (method.shouldSetTo()) {
             event.setTo(newTo); // LEGACY: pre-2017-03-24
+            if (pData.isDebugActive(checkType)) debug(player, "Set back type: SET_TO");
         }
         if (method.shouldCancel()) {
             event.setCancelled(true);
-        }
+            if (pData.isDebugActive(checkType)) debug(player, "Set back type: CANCEL (schedule:" + method.shouldSchedule() + " updatefrom:" + method.shouldUpdateFrom() + ")");
+        } else if (pData.isDebugActive(checkType)) debug(player, "No setback performed!");
         // NOTE: A teleport is scheduled on MONITOR priority, if set so.
         // TODO: enforcelocation?
 
@@ -2367,7 +2369,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     if (debug) {
                         debug(player, "NoFall/Damage: allow fall damage in lava (hotfix).");
                     }
-                } else if (moveInfo.to.isOnClimbable() && moveInfo.from.isOnClimbable()) {
+                } else if (moveInfo.from.isOnClimbable()) {
 
                     // Fix issues when gliding down vines with elytra.
                     // TODO: Maybe more conditions to check to see if the player was gliding?

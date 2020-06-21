@@ -47,9 +47,9 @@ public class Passable extends Check {
     // TODO: Test cases.
     // TODO: Should keep an eye on passable vs. on-ground, when checking with reduced margins.
     // rt_xzFactor = 1.0; // Problems: Doors, fences.
-    private static double rt_xzFactor = 0.9999999999996;
+    private static double rt_xzFactor = 0.99999999999;
     // rt_heightFactor = 1.0; // Since 10.2 (at some point) passable FP with 2-high ceiling.
-    private static double rt_heightFactor = 0.999999999999;
+    private static double rt_heightFactor = 0.99999999999;
 
     /**
      * Convenience for player moving, to keep a better overview.

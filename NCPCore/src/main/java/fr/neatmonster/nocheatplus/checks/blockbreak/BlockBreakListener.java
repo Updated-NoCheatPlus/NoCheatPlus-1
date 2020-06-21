@@ -222,7 +222,7 @@ public class BlockBreakListener extends CheckListener {
                         || bdata.isPassedCheck(CheckType.BLOCKINTERACT_VISIBLE))) {
                     skippedRedundantChecks ++;
                 }
-                else if (directionEnabled && direction.check(player, loc, eyeHeight, block, 
+                else if (directionEnabled && direction.check(player, loc, eyeHeight, block, null,
                         flyingHandle, data, cc, pData)) {
                     cancelled = true;
                 }

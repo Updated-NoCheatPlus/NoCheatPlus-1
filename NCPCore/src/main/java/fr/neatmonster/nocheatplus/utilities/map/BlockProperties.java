@@ -1054,7 +1054,7 @@ public class BlockProperties {
         BlockProps props;
 
         // Stairs.
-        final long stairFlags = F_STAIRS | F_HEIGHT100 | F_XZ100 | F_GROUND | F_GROUND_HEIGHT;
+        final long stairFlags = F_STAIRS | F_XZ100 | F_GROUND | F_GROUND_HEIGHT;
         for (final Material mat : new Material[] { 
                 Material.NETHER_BRICK_STAIRS, Material.COBBLESTONE_STAIRS, 
                 BridgeMaterial.STONE_BRICK_STAIRS, 

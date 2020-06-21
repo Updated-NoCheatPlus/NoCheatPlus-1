@@ -257,7 +257,7 @@ public class BlockInteractListener extends CheckListener {
 
             // Second the direction check
             if (!cancelled && direction.isEnabled(player, pData) 
-                    && direction.check(player, loc, eyeHeight, block, flyingHandle, 
+                    && direction.check(player, loc, eyeHeight, block, face, flyingHandle, 
                             data, cc, pData)) {
                 cancelled = true;
             }

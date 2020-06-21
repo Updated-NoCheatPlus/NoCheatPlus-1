@@ -300,7 +300,7 @@ public class BlockPlaceListener extends CheckListener {
                 else if (directionCheck) {
 		   if (blockAgainst.getType() == Material.LADDER || BlockProperties.isCarpet(blockAgainst.getType())) {
 			} 
-			else if (direction.check(player, loc, eyeHeight, block, flyingHandle, data, cc, pData)) {
+			else if (direction.check(player, loc, eyeHeight, block, null, flyingHandle, data, cc, pData)) {
 			cancelled = true;
 			}
                 }

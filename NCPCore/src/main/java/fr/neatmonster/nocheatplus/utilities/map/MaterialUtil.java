@@ -336,20 +336,21 @@ public class MaterialUtil {
                             "_bricks", "_ore", "prismarine", 
                             "andesite", "diorite", "granite",
                             "sandstone",
-                            "command_block"
+                            "command_block", "command"
                             ), AlmostBoolean.YES, "legacy"),
             "barrier", "structure_block",
-            "note_block", "tnt",
+            "note_block", "tnt", "jukebox", "jack_o_lantern",
             "piston", "sticky_piston", "piston_base", "piston_sticky_base",
-            "dispenser", "dropper", "furnace", "observer", 
-            "pumpkin", "melon_block", "hay_block", "bone_block",
-            "nether_wart_block",
+            "dispenser", "dropper", "furnace", "observer", "beacon",
+            "pumpkin", "melon_block", "hay_block", "bone_block", "dried_kelp_block",
+            "nether_wart_block", "netherrack",
             "snow_block", "ice", "magma_block",
             "diamond_block", "gold_block", "iron_block", "coal_block", 
             "emerald_block", "lapis_block", "redstone_block", 
             "purpur_block", "smooth_stone", "smooth_quartz", "quartz_block",
             "quartz_pillar", "bookshelf",
-            "sand", "stone", "gravel", "dirt", "grass_block", "grass",
+            "sand", "stone", "gravel", "dirt", "grass_block", "grass", "obsidian", "clay",
+            "cobblestone", "mossy_cobblestone",
             "sea_lantern", "redstone_lamp", "glowstone", "sponge", "wet_sponge"
             ));
 
@@ -498,7 +499,13 @@ public class MaterialUtil {
             TERRACOTTA_BLOCKS,
             VARIOUS_FULLY_SOLID,
             WOOD_BLOCKS,
-            WOOL_BLOCKS
+            WOOL_BLOCKS,
+            new HashSet<Material>(Arrays.asList(
+            		BridgeMaterial.BRICKS,
+            		BridgeMaterial.MYCELIUM,
+            		BridgeMaterial.CRAFTING_TABLE,
+            		BridgeMaterial.END_STONE
+                    ))
             ));
 
     /**

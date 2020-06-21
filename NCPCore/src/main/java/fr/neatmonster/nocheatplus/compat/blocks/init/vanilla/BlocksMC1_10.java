@@ -44,7 +44,7 @@ public class BlocksMC1_10 implements BlockPropertiesSetup {
         // 213 MAGMA
         BlockInit.setAs(BridgeMaterial.MAGMA_BLOCK, BridgeMaterial.MAGMA_BLOCK);
         // 214 NETHER_WART_BLOCK
-        BlockInit.setAs("NETHER_WART_BLOCK", BridgeMaterial.SKELETON_SKULL);
+        BlockInit.setPropsAs("NETHER_WART_BLOCK", BridgeMaterial.SKELETON_SKULL);
         // 215 RED_NETHER_BRICK
         BlockInit.setAs(BridgeMaterial.RED_NETHER_BRICKS, BridgeMaterial.NETHER_BRICKS);
         // 216 BONE_BLOCK
