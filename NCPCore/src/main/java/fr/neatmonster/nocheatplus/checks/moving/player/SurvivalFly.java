@@ -1003,7 +1003,7 @@ public class SurvivalFly extends Check {
         }
 	    
 	// SoulSand   
-	else if (thisMove.to.onSoulSand && thisMove.from.onSoulSand) {
+	else if (thisMove.from.onSoulSand) {
             hAllowedDistance = Magic.modSoulSand * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
             useBaseModifiers = true;
 	    tags.add("hsoulsand");
@@ -2380,20 +2380,6 @@ public class SurvivalFly extends Check {
                 }
             }
 
-            // More leniency for jumping with head obstructed
-            if (from.isHeadObstructed() && thisMove.to.onGround) {
-                if (data.bunnyhopTick == 5 && data.bunnyhopDelay == 7 && thisMove.from.onGround && hDistance <= 0.47) {
-                    hDistanceAboveLimit = 0.0;
-                    data.sfHorizontalBuffer = cc.hBufMax;
-                    tags.add("bunny_hbuf");
-                }
-
-                if (data.bunnyhopTick == 6 && data.bunnyhopDelay == 8 && hDistance <= 0.4) {
-                    hDistanceAboveLimit = 0.0;
-                    data.sfHorizontalBuffer = cc.hBufMax;
-                    tags.add("bunny_hbuf");
-                }
-            }
 
             // 2x horizontal speed increase detection.
             if (!allowHop && hDistance - lastMove.hDistance >= hDistanceBaseRef * 0.5 && hopTime == 1) {
@@ -2423,6 +2409,7 @@ public class SurvivalFly extends Check {
                     // TODO: headObstructed: check always and set a flag in data + consider regain buffer?
                     tags.add("headbangbunny");
                     allowHop = true;
+		    hDistanceAboveLimit = 0.0
                     // TODO: Magic.
                     if (data.combinedMediumHValue / (double) data.combinedMediumHCount < 1.5) {
                         // TODO: Reset to 1 and min(allowed, actual) rather.
@@ -2432,16 +2419,23 @@ public class SurvivalFly extends Check {
                     }
                 }
             }
-
         }
 
-        // Fix jumping on slime blocks
-        if ((from.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0
-                && (data.bunnyhopDelay <= 4 && data.bunnyhopTick == 0 || data.bunnyhopDelay == 6 && data.bunnyhopTick == 1)
-                && !thisMove.from.onGround && hDistance < 0.5) {
+        // Allow sprintjumping on slime blocks.
+        // TODO: Better modeling -> Narrow down further conditions to limit speeding(bhop) on slime blocks.
+	// TODO: Get rid of the buffer here.
+	final double hDistDiffEx = lastMove.hDistance - thisMove.hDistance;
+        if (((from.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0 || (to.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0)
+            && (data.bunnyhopDelay > 0 && data.bunnyhopTick == 0 || data.bunnyhopDelay > 0 && data.bunnyhopTick <= 5)
+               && !thisMove.from.onGround && hDistance < 0.5
+            || lastMove.hDistance > thisMove.hDistance && lastMove.hDistance < thisMove.hDistance * 1.025 // Magic threshold.
+                && lastMove.hDistance >= lastMove.hAllowedDistanceBase && lastMove.hDistance <= lastMove.hAllowedDistanceBase * 1.31 // Magic threshold.
+                && data.sfJumpPhase >= 1 && hDistDiffEx <= 0.009
+            ) {
             hDistanceAboveLimit = 0.0;
-            data.sfHorizontalBuffer = 0.5;
-            tags.add("bounce_bunny");
+            allowHop = true;
+            data.sfHorizontalBuffer = cc.hBufMax; 
+            tags.add("bouncebunny(" + data.sfHorizontalBuffer + ")");
         }
 
         // bunnyhop-> bunnyslope-> bunnyfriction-> ground-> microjump(still bunnyfriction)-> bunnyfriction
@@ -2460,7 +2454,7 @@ public class SurvivalFly extends Check {
                 if (hDistDiff < 0.01) {
                     // Allow the move
                     hDistanceAboveLimit = 0.0;
-                    tags.add("bunnyfriction");
+                    tags.add("bunnyfriction(2)");
                     // Remove lowjump in this hop, prevent false in next hop
                     if (data.sfLowJump) {
                         data.sfLowJump = false;
