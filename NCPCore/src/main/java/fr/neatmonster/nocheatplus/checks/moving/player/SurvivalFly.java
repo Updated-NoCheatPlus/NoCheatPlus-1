@@ -2422,21 +2422,23 @@ public class SurvivalFly extends Check {
         }
 
         // Allow sprintjumping on slime blocks.
-        // TODO: Better modeling -> Narrow down further conditions to limit speeding(bhop) on slime blocks.
+        // TODO: Better modeling -> Narrow down further conditions
 	// TODO: Get rid of the buffer here.
-	final double hDistDiffEx = lastMove.hDistance - thisMove.hDistance;
-        if (((from.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0 || (to.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0)
-            && (data.bunnyhopDelay > 0 && data.bunnyhopTick == 0 || data.bunnyhopDelay > 0 && data.bunnyhopTick <= 5)
-               && !thisMove.from.onGround && hDistance < 0.5
-            || lastMove.hDistance > thisMove.hDistance && lastMove.hDistance < thisMove.hDistance * 1.025 // Magic threshold.
-                && lastMove.hDistance >= lastMove.hAllowedDistanceBase && lastMove.hDistance <= lastMove.hAllowedDistanceBase * 1.31 // Magic threshold.
-                && data.sfJumpPhase >= 1 && hDistDiffEx <= 0.009
-            ) {
-            hDistanceAboveLimit = 0.0;
-            allowHop = true;
-            data.sfHorizontalBuffer = cc.hBufMax; 
-            tags.add("bouncebunny(" + data.sfHorizontalBuffer + ")");
-        }
+        final double hDistDiffEx = lastMove.hDistance - thisMove.hDistance;
+        to.collectBlockFlags(0.902);
+        from.collectBlockFlags(0.902);
+        if ((to.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0 || (from.getBlockFlags() & BlockProperties.F_BOUNCE25) != 0 && lastMove.toIsValid && sprinting){
+            // Sprint-jumping on slime blocks
+            if (hDistance < 0.5 && (data.bunnyhopDelay > 0 && data.bunnyhopTick == 0 || data.bunnyhopDelay > 0 && data.bunnyhopTick <= 5)
+                && lastMove.hDistance > thisMove.hDistance && lastMove.hDistance < thisMove.hDistance * 1.090D
+                && thisMove.hDistance >= lastMove.hAllowedDistanceBase && thisMove.hDistance <= lastMove.hAllowedDistanceBase * 1.60D
+                && hDistDiffEx <= 0.009D 
+                ){
+                hDistanceAboveLimit = 0.0;
+                allowHop = true;
+                data.sfHorizontalBuffer = cc.hBufMax;
+                tags.add("bouncebunny(" + data.sfHorizontalBuffer + ")");
+            }
 
         // bunnyhop-> bunnyslope-> bunnyfriction-> ground-> microjump(still bunnyfriction)-> bunnyfriction
         //or bunnyhop-> ground-> slidedown-> bunnyfriction
