@@ -42,7 +42,7 @@ public class BlocksMC1_8 implements BlockPropertiesSetup {
         // ---- Changed block break timings ----
 
         // Melon/pumpkin/like.
-        BlockProps props = new BlockProps(BlockProperties.woodAxe, 1f, BlockProperties.secToMs(1.45, 0.70, 0.325, 0.2, 0.13, 0.075), 3f);
+        BlockProps props = new BlockProps(BlockProperties.woodAxe, 1f, BlockProperties.secToMs(1.45, 0.70, 0.325, 0.2, 0.13, 0.075, 0.05), 3f);
         for (Material mat : new Material[] {
                 BridgeMaterial.MELON,
                 Material.PUMPKIN,
@@ -54,7 +54,7 @@ public class BlocksMC1_8 implements BlockPropertiesSetup {
         }
         
         // Ladder.
-        props = new BlockProps(BlockProperties.woodAxe, 0.4f, BlockProperties.secToMs(0.6, 0.3, 0.15, 0.1, 0.075, 0.05));
+        props = new BlockProps(BlockProperties.woodAxe, 0.4f, BlockProperties.secToMs(0.6, 0.3, 0.15, 0.1, 0.075, 0.05, 0.05));
         BlockProperties.setBlockProps(Material.LADDER, props);
 
         // ---- New blocks ----

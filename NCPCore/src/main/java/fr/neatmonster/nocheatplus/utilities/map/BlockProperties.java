@@ -101,7 +101,9 @@ public class BlockProperties {
 
         /** The pickaxe. */
         PICKAXE,
-        //		HOE,
+
+        /** The hoe. */
+        HOE,
     }
 
     /**
@@ -127,8 +129,11 @@ public class BlockProperties {
         /** The diamond. */
         DIAMOND(4, 8f),
 
+        /** The netherite */
+        NETHERITE(5, 9f),
+
         /** The gold. */
-        GOLD(5, 12f);
+        GOLD(6, 12f);
         /** Index for array. */
         public final int index;
 
@@ -270,8 +275,8 @@ public class BlockProperties {
         public BlockProps(ToolProps tool, float hardness, float efficiencyMod) {
             this.tool = tool;
             this.hardness = hardness;
-            breakingTimes = new long[6];
-            for (int i = 0; i < 6; i++) {
+            breakingTimes = new long[7];
+            for (int i = 0; i < 7; i++) {
                 final float multiplier;
                 if (tool.materialBase == null) {
                     multiplier = 1f;
@@ -297,7 +302,7 @@ public class BlockProperties {
          *            the hardness
          * @param breakingTimes
          *            The breaking times (NONE, WOOD, STONE, IRON, DIAMOND,
-         *            GOLD)
+         *            NETHERITE, GOLD)
          */
         public BlockProps(ToolProps tool, float hardness, long[] breakingTimes) {
             this(tool, hardness, breakingTimes, 1f);
@@ -313,7 +318,7 @@ public class BlockProperties {
          *            the hardness
          * @param breakingTimes
          *            The breaking times (NONE, WOOD, STONE, IRON, DIAMOND,
-         *            GOLD)
+         *            NETHERITE, GOLD)
          * @param efficiencyMod
          *            the efficiency mod
          */
@@ -338,8 +343,8 @@ public class BlockProperties {
             if (breakingTimes == null) {
                 throw new IllegalArgumentException("Breaking times must not be null.");
             }
-            if (breakingTimes.length != 6) {
-                throw new IllegalArgumentException("Breaking times length must match the number of available tool types (6).");
+            if (breakingTimes.length != 7) {
+                throw new IllegalArgumentException("Breaking times length must match the number of available tool types (7).");
             }
             if (tool == null)  {
                 throw new IllegalArgumentException("Tool must not be null.");
@@ -534,16 +539,16 @@ public class BlockProperties {
     public static long[] glassTimes = secToMs(0.45);
 
     /** The Constant gravelTimes. */
-    public static final long[] gravelTimes = secToMs(0.85, 0.4, 0.21, 0.1, 0.1, 0.075);
+    public static final long[] gravelTimes = secToMs(0.85, 0.4, 0.21, 0.1, 0.1, 0.075, 0.075);
 
     /** The rails times. */
-    public static long[] railsTimes = secToMs(1.05, 0.505, 0.25, 0.15, 0.1, 0.05);
+    public static long[] railsTimes = secToMs(1.05, 0.505, 0.25, 0.15, 0.1, 0.1, 0.05);
 
     /** The Constant woodTimes. */
-    public static final long[] woodTimes = secToMs(3, 1.5, 0.75, 0.5, 0.4, 0.25);
+    public static final long[] woodTimes = secToMs(3, 1.5, 0.75, 0.5, 0.4, 0.35, 0.25);
 
     /** The Constant indestructibleTimes. */
-    private static final long[] indestructibleTimes = new long[] {indestructible, indestructible, indestructible, indestructible, indestructible, indestructible}; 
+    private static final long[] indestructibleTimes = new long[] {indestructible, indestructible, indestructible, indestructible, indestructible, indestructible, indestructible}; 
 
     /** Instantly breakable. */ 
     public static final BlockProps instantType = new BlockProps(noTool, 0, instantTimes);
@@ -554,7 +559,7 @@ public class BlockProperties {
     /** The Constant gravelType. */
     public static final BlockProps gravelType = new BlockProps(woodSpade, 0.6f, gravelTimes);
     /** Stone type blocks. */
-    public static final BlockProps stoneType = new BlockProps(woodPickaxe, 1.45f, secToMs(7.5, 1.1, 0.55, 0.35, 0.25, 0.15));
+    public static final BlockProps stoneType = new BlockProps(woodPickaxe, 1.45f, secToMs(7.5, 1.1, 0.55, 0.35, 0.25, 0.2 , 0.15));
 
     /** The Constant woodType. */
     public static final BlockProps woodType = new BlockProps(woodAxe, 2, woodTimes);
@@ -566,22 +571,22 @@ public class BlockProperties {
     public static final BlockProps coalType = new BlockProps(woodPickaxe, 3);
 
     /** The Constant goldBlockType. */
-    public static final BlockProps goldBlockType = new BlockProps(woodPickaxe, 3, secToMs(15, 7.5, 3.75, 0.7, 0.55, 1.2));
+    public static final BlockProps goldBlockType = new BlockProps(woodPickaxe, 3, secToMs(15, 7.5, 3.75, 0.7, 0.55, 0.5, 1.2));
 
     /** The Constant ironBlockType. */
-    public static final BlockProps ironBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 1.875, 1.25, 0.95, 2.0));
+    public static final BlockProps ironBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 1.875, 1.25, 0.95, 0.8, 2.0));
 
     /** The Constant diamondBlockType. */
-    public static final BlockProps diamondBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 6.0, 1.25, 0.95, 2.0));
+    public static final BlockProps diamondBlockType = new BlockProps(woodPickaxe, 5, secToMs(25, 12.5, 6.0, 1.25, 0.95, 0.8, 2.0));
 
     /** The Constant hugeMushroomType. */
-    public static final BlockProps hugeMushroomType = new BlockProps(woodAxe, 0.2f, secToMs(0.3, 0.15, 0.1, 0.05, 0.05, 0.05));
+    public static final BlockProps hugeMushroomType = new BlockProps(woodAxe, 0.2f, secToMs(0.3, 0.15, 0.1, 0.05, 0.05, 0.05, 0.05));
 
     /** The Constant leafType. */
     public static final BlockProps leafType = new BlockProps(noTool, 0.2f, leafTimes);
 
     /** The Constant sandType. */
-    public static final BlockProps sandType = new BlockProps(woodSpade, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1));
+    public static final BlockProps sandType = new BlockProps(woodSpade, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1));
 
     /** The Constant leverType. */
     public static final BlockProps leverType = new BlockProps(noTool, 0.5f, secToMs(0.75));
@@ -590,10 +595,10 @@ public class BlockProperties {
     public static final BlockProps sandStoneType = new BlockProps(woodPickaxe, 0.8f);
 
     /** The Constant chestType. */
-    public static final BlockProps chestType = new BlockProps(woodAxe, 2.5f, secToMs(3.75, 1.9, 0.95, 0.65, 0.5, 0.35));
+    public static final BlockProps chestType = new BlockProps(woodAxe, 2.5f, secToMs(3.75, 1.9, 0.95, 0.65, 0.5, 0.4, 0.35));
 
     /** The Constant woodDoorType. */
-    public static final BlockProps woodDoorType = new BlockProps(woodAxe, 3.0f, secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.4));
+    public static final BlockProps woodDoorType = new BlockProps(woodAxe, 3.0f, secToMs(4.5, 2.25, 1.15, 0.75, 0.6, 0.5, 0.4));
 
     /** The Constant dispenserType. */
     public static final BlockProps dispenserType = new BlockProps(woodPickaxe, 3.5f);
@@ -969,26 +974,39 @@ public class BlockProperties {
         tools.put(BridgeMaterial.WOODEN_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.WOOD));
         tools.put(BridgeMaterial.WOODEN_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.WOOD));
         tools.put(BridgeMaterial.WOODEN_AXE, new ToolProps(ToolType.AXE, MaterialBase.WOOD));
+        tools.put(BridgeMaterial.WOODEN_HOE, new ToolProps(ToolType.HOE, MaterialBase.WOOD));
 
         tools.put(Material.STONE_SWORD, new ToolProps(ToolType.SWORD, MaterialBase.STONE));
         tools.put(BridgeMaterial.STONE_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.STONE));
         tools.put(Material.STONE_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.STONE));
         tools.put(Material.STONE_AXE, new ToolProps(ToolType.AXE, MaterialBase.STONE));
+        tools.put(Material.STONE_HOE, new ToolProps(ToolType.HOE, MaterialBase.STONE));
 
         tools.put(Material.IRON_SWORD, new ToolProps(ToolType.SWORD, MaterialBase.IRON));
         tools.put(BridgeMaterial.IRON_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.IRON));
         tools.put(Material.IRON_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.IRON));
         tools.put(Material.IRON_AXE, new ToolProps(ToolType.AXE, MaterialBase.IRON));
+        tools.put(Material.IRON_HOE, new ToolProps(ToolType.HOE, MaterialBase.IRON));
 
         tools.put(Material.DIAMOND_SWORD, new ToolProps(ToolType.SWORD, MaterialBase.DIAMOND));
         tools.put(BridgeMaterial.DIAMOND_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.DIAMOND));
         tools.put(Material.DIAMOND_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.DIAMOND));
         tools.put(Material.DIAMOND_AXE, new ToolProps(ToolType.AXE, MaterialBase.DIAMOND));
+        tools.put(Material.DIAMOND_HOE, new ToolProps(ToolType.HOE, MaterialBase.DIAMOND));
 
         tools.put(BridgeMaterial.GOLDEN_SWORD, new ToolProps(ToolType.SWORD, MaterialBase.GOLD));
         tools.put(BridgeMaterial.GOLDEN_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.GOLD));
         tools.put(BridgeMaterial.GOLDEN_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.GOLD));
         tools.put(BridgeMaterial.GOLDEN_AXE, new ToolProps(ToolType.AXE, MaterialBase.GOLD));
+        tools.put(BridgeMaterial.GOLDEN_HOE, new ToolProps(ToolType.HOE, MaterialBase.GOLD));
+
+        if (BridgeMaterial.NETHERITE_SWORD != null) {
+        tools.put(BridgeMaterial.NETHERITE_SWORD, new ToolProps(ToolType.SWORD, MaterialBase.NETHERITE));
+        tools.put(BridgeMaterial.NETHERITE_SHOVEL, new ToolProps(ToolType.SPADE, MaterialBase.NETHERITE));
+        tools.put(BridgeMaterial.NETHERITE_PICKAXE, new ToolProps(ToolType.PICKAXE, MaterialBase.NETHERITE));
+        tools.put(BridgeMaterial.NETHERITE_AXE, new ToolProps(ToolType.AXE, MaterialBase.NETHERITE));
+        tools.put(BridgeMaterial.NETHERITE_HOE, new ToolProps(ToolType.HOE, MaterialBase.NETHERITE));
+        }
 
         tools.put(Material.SHEARS, new ToolProps(ToolType.SHEARS, MaterialBase.NONE));
     }
@@ -1322,8 +1340,8 @@ public class BlockProperties {
             setBlock(mat, hugeMushroomType);
         }
 
-        setBlock(Material.SNOW, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(0.5, 0.1, 0.05, 0.05, 0.05, 0.05)));
-        setBlock(Material.SNOW_BLOCK, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(1, 0.15, 0.1, 0.05, 0.05, 0.05)));
+        setBlock(Material.SNOW, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(0.5, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05)));
+        setBlock(Material.SNOW_BLOCK, new BlockProps(getToolProps(BridgeMaterial.WOODEN_SHOVEL), 0.1f, secToMs(1, 0.15, 0.1, 0.05, 0.05, 0.05, 0.05)));
         for (Material mat : new Material[]{ 
                 BridgeMaterial.get("REDSTONE_LAMP_ON"), 
                 BridgeMaterial.get("REDSTONE_LAMP_OFF"),
@@ -1340,13 +1358,13 @@ public class BlockProperties {
         for (final Material mat : MaterialUtil.GLASS_PANES) {
             setBlock(mat, glassType);
         }
-        setBlock(Material.NETHERRACK, new BlockProps(woodPickaxe, 0.4f, secToMs(2, 0.3, 0.15, 0.1, 0.1, 0.05)));
+        setBlock(Material.NETHERRACK, new BlockProps(woodPickaxe, 0.4f, secToMs(2, 0.3, 0.15, 0.1, 0.1, 0.05, 0.05)));
         setBlock(Material.LADDER, new BlockProps(noTool, 0.4f, secToMs(0.6), 2.5f));
         setBlock(Material.CACTUS, new BlockProps(noTool, 0.4f, secToMs(0.6)));
         for (Material mat : MaterialUtil.WOODEN_PRESSURE_PLATES) {
-            setBlockProps(mat, new BlockProps(woodAxe, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1)));
+            setBlockProps(mat, new BlockProps(woodAxe, 0.5f, secToMs(0.75, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1)));
         }
-        setBlock(BridgeMaterial.STONE_PRESSURE_PLATE, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.4, 0.2, 0.15, 0.1, 0.07)));
+        setBlock(BridgeMaterial.STONE_PRESSURE_PLATE, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.4, 0.2, 0.15, 0.1, 0.07, 0.05)));
         setBlock(Material.SAND, sandType);
         setBlock(Material.SOUL_SAND, sandType);
         for (Material mat: new Material[]{Material.LEVER, BridgeMaterial.PISTON, 
@@ -1354,12 +1372,12 @@ public class BlockProperties {
                 BridgeMaterial.PISTON}) {
             setBlock(mat, leverType);
         }
-        setBlock(Material.STONE_BUTTON,new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.15, 0.1, 0.06, 0.05)));
+        setBlock(Material.STONE_BUTTON,new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.15, 0.1, 0.06, 0.05, 0.05)));
         //		setBlock(Material.ICE, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.4, 0.2, 0.15, 0.1, 0.1)));
-        setBlock(Material.ICE, new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.18, 0.12, 0.09, 0.06 )));
+        setBlock(Material.ICE, new BlockProps(woodPickaxe, 0.5f, secToMs(0.7, 0.35, 0.18, 0.12, 0.09, 0.06, 0.05)));
         setBlock(Material.DIRT, sandType);
         setBlock(BridgeMaterial.CAKE, leverType);
-        setBlock(Material.BREWING_STAND, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.35, 0.175, 0.12, 0.075, 0.05)));
+        setBlock(Material.BREWING_STAND, new BlockProps(woodPickaxe, 0.5f, secToMs(2.5, 0.35, 0.175, 0.12, 0.075, 0.05, 0.05)));
         setBlock(Material.SPONGE, new BlockProps(noTool, 0.6f, secToMs(0.85)));
         for (Material mat : new Material[]{
                 BridgeMaterial.MYCELIUM, BridgeMaterial.FARMLAND,
@@ -1385,13 +1403,13 @@ public class BlockProperties {
         }) {
             setBlock(mat, stoneType);
         }
-        setBlock(Material.NOTE_BLOCK, new BlockProps(woodAxe, 0.8f, secToMs(1.2, 0.6, 0.3, 0.2, 0.15, 0.1)));
-        final BlockProps pumpkinType = new BlockProps(woodAxe, 1, secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15));
+        setBlock(Material.NOTE_BLOCK, new BlockProps(woodAxe, 0.8f, secToMs(1.2, 0.6, 0.3, 0.2, 0.15, 0.1, 0.05)));
+        final BlockProps pumpkinType = new BlockProps(woodAxe, 1, secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15, 0.1));
         setBlock(BridgeMaterial.SIGN, pumpkinType);
         setBlock(Material.PUMPKIN, pumpkinType);
         setBlock(Material.JACK_O_LANTERN, pumpkinType);
         setBlock(BridgeMaterial.MELON, new BlockProps(noTool, 1, secToMs(1.45), 3));
-        setBlock(Material.BOOKSHELF, new BlockProps(woodAxe, 1.5f, secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.2)));
+        setBlock(Material.BOOKSHELF, new BlockProps(woodAxe, 1.5f, secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.2, 0.1)));
         for (Material mat : new Material[]{
                 Material.JUKEBOX, 
                 BridgeMaterial.get("wood_double_step"),
@@ -1445,14 +1463,14 @@ public class BlockProperties {
             setBlock(mat,  coalType);
         }
         setBlock(Material.DRAGON_EGG, new BlockProps(noTool, 3f, secToMs(4.5))); // Former: coalType.
-        final long[] ironTimes = secToMs(15, 15, 1.15, 0.75, 0.6, 15);
+        final long[] ironTimes = secToMs(15, 7.5, 1.15, 0.75, 0.6, 0.5, 1.25);
         final BlockProps ironType = new BlockProps(stonePickaxe, 3, ironTimes);
         for (Material mat : new Material[]{
                 Material.LAPIS_ORE, Material.LAPIS_BLOCK, Material.IRON_ORE,
         }) {
             setBlock(mat,  ironType);
         }
-        final long[] diamondTimes = secToMs(15, 15, 15, 0.75, 0.6, 15);
+        final long[] diamondTimes = secToMs(15, 7.5, 3.75, 0.75, 0.6, 0.5, 1.25);
         final BlockProps diamondType = new BlockProps(ironPickaxe, 3, diamondTimes);
         for (Material mat : new Material[]{
                 Material.REDSTONE_ORE, BridgeMaterial.get("glowing_redstone_ore"),
@@ -1468,7 +1486,7 @@ public class BlockProperties {
             setBlock(BridgeMaterial.get("burning_furnace"), dispenserType);
         }
         setBlock(Material.DISPENSER, dispenserType);
-        setBlock(BridgeMaterial.COBWEB, new BlockProps(woodSword, 4, secToMs(20, 0.4, 0.4, 0.4, 0.4, 0.4)));
+        setBlock(BridgeMaterial.COBWEB, new BlockProps(woodSword, 4, secToMs(20, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4)));
 
         for (Material mat : new Material[]{
                 BridgeMaterial.SPAWNER, BridgeMaterial.IRON_DOOR,
@@ -1480,10 +1498,10 @@ public class BlockProperties {
         setBlock(Material.IRON_BLOCK, ironBlockType);
         setBreakingTimeOverridesByEfficiency(new BlockBreakKey().blockType(Material.IRON_BLOCK)
                 .toolType(ToolType.PICKAXE).materialBase(MaterialBase.WOOD),
-                ironBlockType.breakingTimes[1], 6200L, 3500L, 2050L, 1350L, 900L);
+                ironBlockType.breakingTimes[1], 6200L, 3500L, 2050L, 1350L, 900L, 500L);
         setBlock(Material.DIAMOND_BLOCK, diamondBlockType);
         setBlock(Material.ENDER_CHEST, new BlockProps(woodPickaxe, 22.5f));
-        setBlock(Material.OBSIDIAN, new BlockProps(diamondPickaxe, 50, secToMs(250, 125, 62.5, 41.6, 9.4, 20.8)));
+        setBlock(Material.OBSIDIAN, new BlockProps(diamondPickaxe, 50, secToMs(250, 125, 62.5, 41.6, 9.4, 8.3, 20.8)));
 
         // More 1.4 (not insta).
         // TODO: Either move all to an extra setup class, or integrate above.
@@ -1492,7 +1510,7 @@ public class BlockProperties {
         setFlag(BridgeMaterial.COBBLESTONE_WALL, F_HEIGHT150);
         for (Material mat : MaterialUtil.WOODEN_BUTTONS) {
             //setBlock(mat, leverType);
-            setBlock(mat,new BlockProps(woodAxe, 0.5f, secToMs(0.7, 0.3, 0.15, 0.1, 0.06, 0.05)));
+            setBlock(mat,new BlockProps(woodAxe, 0.5f, secToMs(0.7, 0.3, 0.15, 0.1, 0.06, 0.05, 0.05)));
         }
         props = new BlockProps(noTool, 8.5f, secToMs(1.45));
         for (Material mat : MaterialUtil.HEADS_GROUND) {
@@ -1537,7 +1555,7 @@ public class BlockProperties {
 
         // Terracotta (hard_clay).
         props = new BlockProps(BlockProperties.woodPickaxe, 1.25f, 
-                BlockProperties.secToMs(6.25, 0.95, 0.5, 0.35, 0.25, 0.2));
+                BlockProperties.secToMs(6.25, 0.95, 0.5, 0.35, 0.25, 0.2, 0.15));
         for (final Material mat : MaterialUtil.TERRACOTTA_BLOCKS) {
             BlockProperties.setBlockProps(mat, props);
             BlockFlags.setFlagsAs(mat, Material.STONE);
@@ -1545,7 +1563,7 @@ public class BlockProperties {
 
         // Glazed Terracotta
         props = new BlockProps(BlockProperties.woodPickaxe, 1.4f, 
-                BlockProperties.secToMs(7.0, 1.05, 0.55, 0.35, 0.3, 0.2));
+                BlockProperties.secToMs(7.0, 1.05, 0.55, 0.35, 0.3, 0.2, 0.15));
         for (final Material mat : MaterialUtil.GLAZED_TERRACOTTA_BLOCKS) {
             BlockProperties.setBlockProps(mat, props);
             BlockFlags.setFlagsAs(mat, BridgeMaterial.TERRACOTTA);
@@ -1562,7 +1580,7 @@ public class BlockProperties {
         }
 
         // Banners.
-        props = new BlockProps(BlockProperties.woodAxe, 0.4f, BlockProperties.secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15));
+        props = new BlockProps(BlockProperties.woodAxe, 0.4f, BlockProperties.secToMs(1.5, 0.75, 0.4, 0.25, 0.2, 0.15, 0.1));
         for (Material mat : MaterialUtil.BANNERS) {
             BlockProperties.setBlockFlags(mat, 0L);
             setBlockProps(mat, props);
@@ -1577,14 +1595,13 @@ public class BlockProperties {
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
             // Wiki (16-11-25): 9, 4.5, 2.25, 1.5, 1.15, 0.75
             BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 6,
-                    BlockProperties.secToMs(10.0, 1.45, 0.7, 0.5, 0.35, 0.2)));
+                    BlockProperties.secToMs(10.0, 1.45, 0.7, 0.5, 0.35, 0.2, 0.15)));
             BlockProperties.setBlockFlags(mat, BlockProperties.F_SOLID | BlockProperties.F_GROUND);
         }
 
         // Concrete
         props = new BlockProps(BlockProperties.woodPickaxe, 1.8f,
-                // TODO: 2.7 with bare hands seems unlikely.
-                BlockProperties.secToMs(2.7, 1.35, 0.7, 0.45, 0.35, 0.25));
+                BlockProperties.secToMs(9.0, 1.35, 0.7, 0.45, 0.35, 0.25, 0.2));
         for (Material mat : MaterialUtil.CONCRETE_BLOCKS) {
             setBlockProps(mat, props);
             BlockFlags.setFlagsAs(mat, Material.COBBLESTONE);
@@ -1607,7 +1624,7 @@ public class BlockProperties {
 
         // Wool blocks.
         props = new BlockProps(tools.get(Material.SHEARS), 0.8f, 
-                secToMs(1.25, 1.25, 1.25, 1.25, 1.25, 1.25));
+                secToMs(1.25, 1.25, 1.25, 1.25, 1.25, 1.25, 1.25));
         for (Material mat : MaterialUtil.WOOL_BLOCKS) {
             BlockFlags.setFlagsAs(mat, Material.STONE);
             setBlockProps(mat, props);
@@ -1808,8 +1825,8 @@ public class BlockProperties {
      * @return the long[]
      */
     public static long[] secToMs(final double s1, final double s2, final double s3, 
-            final double s4, final double s5, final double s6) {
-        return new long[] { (long) (s1 * 1000d), (long) (s2 * 1000d), (long) (s3 * 1000d), (long) (s4 * 1000d), (long) (s5 * 1000d), (long) (s6 * 1000d) };
+            final double s4, final double s5, final double s6, final double s7) {
+        return new long[] { (long) (s1 * 1000d), (long) (s2 * 1000d), (long) (s3 * 1000d), (long) (s4 * 1000d), (long) (s5 * 1000d), (long) (s6 * 1000d), (long) (s7 * 1000d) };
     }
 
     /**
@@ -1821,7 +1838,7 @@ public class BlockProperties {
      */
     public static long[] secToMs(final double s1) {
         final long v = (long) (s1 * 1000d);
-        return new long[]{v, v, v, v, v, v};
+        return new long[]{v, v, v, v, v, v, v};
     }
 
     /**

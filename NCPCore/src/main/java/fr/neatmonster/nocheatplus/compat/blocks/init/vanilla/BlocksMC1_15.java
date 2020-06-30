@@ -22,8 +22,8 @@ public class BlocksMC1_15 implements BlockPropertiesSetup{
         BlockFlags.addFlags("HONEYCOMB_BLOCK", BlockFlags.FULLY_SOLID_BOUNDS);
         BlockFlags.addFlags("HONEY_BLOCK", BlockFlags.SOLID_GROUND | BlockProperties.F_STICKY);
         
-        BlockProperties.setBlockProps("BEEHIVE", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.6f, BlockProperties.secToMs(0.85, 0.425, 0.225, 0.13, 0.11, 0.7)));
-        BlockProperties.setBlockProps("BEE_NEST", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.3f, BlockProperties.secToMs(0.4, 0.225, 0.11, 0.05, 0.042, 0.0)));
+        BlockProperties.setBlockProps("BEEHIVE", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.6f, BlockProperties.secToMs(0.85, 0.425, 0.225, 0.13, 0.11, 0.07, 0.05)));
+        BlockProperties.setBlockProps("BEE_NEST", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.3f, BlockProperties.secToMs(0.4, 0.225, 0.11, 0.05, 0.042, 0.02, 0.01)));
         BlockProperties.setBlockProps("HONEYCOMB_BLOCK", new BlockProperties.BlockProps(BlockProperties.noTool, 0.6f));
         BlockProperties.setBlockProps("HONEY_BLOCK", BlockProperties.instantType);
         StaticLog.logInfo("Added block-info for Minecraft 1.15 blocks.");

@@ -1,5 +1,5 @@
 name: ${project.name}
-version: ${project.version}-b1153-CustomFork
+version: ${project.version}-Updated-${buildDescription}
 description: ${project.description}
 
 author: NeatMonster

@@ -104,7 +104,7 @@ public class BlocksMC1_14 implements BlockPropertiesSetup{
 		BlockInit.setAs("BLAST_FURNACE", Material.FURNACE);
 		BlockInit.setAs("SMOKER", Material.FURNACE);
 
-		BlockProperties.setBlockProps("COMPOSTER", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f, BlockProperties.secToMs(1.1, 0.5, 0.2, 0.15, 0.1, 0.05)));
+		BlockProperties.setBlockProps("COMPOSTER", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f, BlockProperties.secToMs(0.9, 0.4, 0.2, 0.15, 0.1, 0.05, 0.05)));
 		BlockFlags.addFlags("COMPOSTER", BlockFlags.SOLID_GROUND | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_MIN_HEIGHT8_1);
 
 		BlockInit.setPropsAs("LECTERN", Material.OAK_PLANKS);
@@ -116,10 +116,10 @@ public class BlocksMC1_14 implements BlockPropertiesSetup{
         BlockFlags.addFlags("SCAFFOLDING", 
         BlockProperties.F_IGN_PASSABLE | BlockProperties.F_CLIMBABLE | BlockProperties.F_GROUND | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_XZ100);
 
-		BlockProperties.setBlockProps("STONECUTTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 6.0f, BlockProperties.secToMs(17.0, 2.8, 1.8, 0.7, 0.8, 0.5)));
+		BlockProperties.setBlockProps("STONECUTTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 6.0f, BlockProperties.secToMs(17.0, 2.6, 1.3, 0.85, 0.65, 0.55, 0.4)));
 		BlockFlags.addFlags("STONECUTTER", BlockProperties.F_MIN_HEIGHT16_9 | BlockProperties.F_GROUND_HEIGHT | BlockFlags.SOLID_GROUND);
 
-		BlockProperties.setBlockProps("BAMBOO", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.7f, BlockProperties.secToMs(1.2, 0.5, 0.2, 0.15, 0.1, 0.05)));
+		BlockProperties.setBlockProps("BAMBOO", new BlockProperties.BlockProps(BlockProperties.woodAxe, 1f, BlockProperties.secToMs(1.45, 0.7, 0.35, 0.2, 0.15, 0.1, 0.05)));
 		BlockProperties.setBlockProps("BAMBOO_SAPLING", new BlockProperties.BlockProps(BlockProperties.noTool, 0.7f, BlockProperties.secToMs(1.25)));
 		BlockFlags.addFlags("BAMBOO", BlockProperties.F_GROUND | BlockProperties.F_GROUND_HEIGHT);
 		BlockFlags.addFlags("BAMBOO_SAPLING", BlockProperties.F_IGN_PASSABLE);
@@ -150,9 +150,9 @@ public class BlocksMC1_14 implements BlockPropertiesSetup{
 		BlockFlags.addFlags("CAMPFIRE", BlockFlags.SOLID_GROUND | BlockProperties.F_MIN_HEIGHT16_7 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_XZ100);
 
 		BlockFlags.addFlags("BELL", BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_GROUND);
-		BlockProperties.setBlockProps("BELL", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 7f, BlockProperties.secToMs(23.0, 3.8, 2.2, 1, 1.5, 0.8)));
+		BlockProperties.setBlockProps("BELL", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 5f, BlockProperties.secToMs(24.0, 3.7, 1.85, 1.2, 0.9, 0.8, 0.6)));
 
-		BlockProperties.setBlockProps("LANTERN", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 6.0f, BlockProperties.secToMs(17.0, 2.8, 1.8, 0.7, 0.8, 0.5)));
+		BlockProperties.setBlockProps("LANTERN", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 6.0f, BlockProperties.secToMs(17.0, 2.6, 1.3, 0.85, 0.7, 0.55, 0.4)));
 		BlockFlags.addFlags("LANTERN", BlockProperties.F_GROUND | BlockProperties.F_GROUND_HEIGHT);
 
 		BlockFlags.addFlags("SWEET_BERRY_BUSH", BlockProperties.F_COBWEB | BlockProperties.F_COBWEB2);

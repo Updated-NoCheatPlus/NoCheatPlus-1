@@ -40,6 +40,8 @@ public final class BridgeEnchant {
     
     private final static Enchantment FEATHER_FALLING = parseEnchantment("PROTECTION_FALL");
 
+    private final static Enchantment SOUL_SPEED = parseEnchantment("SOUL_SPEED");
+
     /**
      * Retrieve the maximum level for an enchantment, present in armor slots.
      * 
@@ -99,6 +101,10 @@ public final class BridgeEnchant {
         return FEATHER_FALLING != null;
     }
 
+    public static boolean hasSoulSpeed() {
+        return SOUL_SPEED != null;
+    }
+
     /**
      * Check if the player might return some damage due to the "thorns"
      * enchantment.
@@ -108,6 +114,17 @@ public final class BridgeEnchant {
      */
     public static boolean hasThorns(final Player player) {
         return hasArmor(player, THORNS);
+    }
+
+    /**
+     * Check if the player has "Soul Speed" enchant
+     * enchantment.
+     * 
+     * @param player
+     * @return
+     */
+    public static boolean hasSoulSpeed(final Player player) {
+        return hasArmor(player, SOUL_SPEED);
     }
 
     /**

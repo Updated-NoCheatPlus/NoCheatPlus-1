@@ -80,7 +80,7 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
             BlockFlags.addFlags(mat, BlockProperties.F_XZ100 | BlockFlags.SOLID_GROUND);
             BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 2,
-                    BlockProperties.secToMs(3.0, 1.45, 0.7, 0.45, 0.35, 0.2)));
+                    BlockProperties.secToMs(3.0, 1.45, 0.7, 0.45, 0.3, 0.25, 0.2)));
         }
         
         for (Material mat : MaterialUtil.INFESTED_BLOCKS) {
@@ -189,10 +189,14 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         BlockProperties.setBlockFlags(Material.HOPPER,
                 BlockProperties.F_GROUND | BlockProperties.F_SOLID | BlockProperties.F_XZ100 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_IGN_PASSABLE);
 
-        // Grass path.
+        // Grass path. (Just in case not having multiversion plugin installed)
         BlockFlags.removeFlags(Material.GRASS_PATH, BlockProperties.F_HEIGHT100);
-        BlockFlags.addFlags(Material.GRASS_PATH, 
-                BlockProperties.F_XZ100 | BlockProperties.F_HEIGHT16_15);
+        BlockFlags.addFlags(Material.GRASS_PATH,
+                BlockProperties.F_XZ100 | BlockProperties.F_MIN_HEIGHT16_15);
+        // Farm land. (Just in case not having multiversion plugin installed)
+        BlockFlags.removeFlags(BridgeMaterial.FARMLAND, BlockProperties.F_HEIGHT100);
+        BlockFlags.addFlags(BridgeMaterial.FARMLAND,
+                BlockProperties.F_XZ100 | BlockProperties.F_MIN_HEIGHT16_15);
 
         StaticLog.logInfo("Added block-info for Minecraft 1.13 blocks.");
     }

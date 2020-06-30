@@ -233,21 +233,18 @@ public class MovingFlying extends BaseAdapter {
             // TODO: Should let it here?
             // Work as ExtremeMove but for packet sent!
             if (packetData.hasPos) {
-            	final MovingData Mdata = pData.getGenericInstance(MovingData.class);
-            	final Location loc1 = player.getLocation();
-            	final Location loc2 = new Location(null, packetData.getX(), packetData.getY(), packetData.getZ());
-            	final double xzdist = TrigUtil.distance(loc1, loc2);
-            	final double amount = xzdist - Mdata.getHorizontalFreedom();
-            	final double ydist = Math.abs(loc1.getY() - loc2.getY());
-            	final boolean allowVerticalVelocity = true; // TODO: Configurable
-            	final boolean allowHorizontalVelocity = true; // TODO: Configurable
+                final MovingData Mdata = pData.getGenericInstance(MovingData.class);
+                final Location loc1 = player.getLocation();
+                final Location loc2 = new Location(null, packetData.getX(), packetData.getY(), packetData.getZ());
+                final double xzdist = TrigUtil.distance(loc1, loc2);
+                final double ydist = Math.abs(loc1.getY() - loc2.getY());
 
                 // Vertical move.
-                if (ydist > 100.0 && !(allowVerticalVelocity && Mdata.getOrUseVerticalVelocity(ydist) != null)) {
+                if (ydist > 100.0) {
                     ++data.diffpacketVLs;
                 }
                 // Horizontal move.
-                else if (amount > 100.0 && !(allowHorizontalVelocity && Mdata.useHorizontalVelocity(amount) >= amount)) {
+                else if (xzdist > 100.0) {
                     ++data.diffpacketVLs;
                 } else data.diffpacketVLs *= 0.98;
 
@@ -256,7 +253,7 @@ public class MovingFlying extends BaseAdapter {
                 }
                 if (data.diffpacketVLs > 15) {
                     // Player might be freezed by canceling, set back might turn it to normal
-                	
+
                     data.diffpacketVLs = 0.0;
                     int task = -1;
                     task = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, 
@@ -264,8 +261,8 @@ public class MovingFlying extends BaseAdapter {
                                 @Override
                                 public void run() {
                                     // Mask player teleport as a set back.
-                                	Mdata.prepareSetBack(loc1);
-                                	player.teleport(LocUtil.clone(loc1), 
+                                    Mdata.prepareSetBack(loc1);
+                                    player.teleport(LocUtil.clone(loc1), 
                                             BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
                                 }
                             });

@@ -31,6 +31,32 @@
 		</snapshotRepository>
 	</distributionManagement>
 
+	<!-- Build Description Profiles -->
+	<profiles>
+		<profile>
+			<id>timestamp</id>
+			<activation>
+				<property>
+					<name>!env.BUILD_NUMBER</name>
+				</property>
+			</activation>
+			<properties>
+				<buildDescription>${maven.build.timestamp}</buildDescription>
+			</properties>
+		</profile>
+		<profile>
+			<id>dynamic_build_number</id>
+			<activation>
+				<property>
+					<name>env.BUILD_NUMBER</name>
+				</property>
+			</activation>
+			<properties>
+				<buildDescription>b${env.BUILD_NUMBER}</buildDescription>
+			</properties>
+		</profile>
+	</profiles>
+
 	<!-- Building -->
 	<build>
 		<defaultGoal>clean package</defaultGoal>

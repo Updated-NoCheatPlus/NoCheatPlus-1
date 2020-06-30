@@ -38,15 +38,17 @@ public class InventoryMove extends Check {
     boolean cancel = false;
     
     // Tags 
-    if (player.isBlocking() && !(player.getOpenInventory().getTopInventory().getType() == InventoryType.MERCHANT)) {
-    	tags.add("isBlocking");
-    }
-    else if (player.isSneaking()) {
+    // TODO: Not remove, still left as observation level 
+    //if (player.isBlocking() && !(player.getOpenInventory().getTopInventory().getType() == InventoryType.MERCHANT)) {
+    //	tags.add("isBlocking");
+    //}
+    if (player.isSneaking()) {
     	tags.add("isSneaking");
     }
     else if (Bridge1_13.isSwimming(player)) {	
         if (!isOnGround) tags.add("isSwimming");	
     }
+    // Remove? Seem bugged like isBlocking but such a rarer case
     else if (player.isSprinting() && !tags.contains("isSwimming")) {
     	tags.add("isSprinting");
     }

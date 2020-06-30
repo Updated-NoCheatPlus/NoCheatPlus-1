@@ -164,6 +164,12 @@ public class BridgeMaterial {
 
     public static final Material DIAMOND_SHOVEL = getFirstNotNull("diamond_shovel", "diamond_spade");
 
+    public static final Material NETHERITE_AXE = getFirst("netherite_axe");
+    public static final Material NETHERITE_HOE = getFirst("netherite_hoe");
+    public static final Material NETHERITE_PICKAXE = getFirst("netherite_pickaxe");
+    public static final Material NETHERITE_SHOVEL = getFirst("netherite_shovel");
+    public static final Material NETHERITE_SWORD = getFirst("netherite_sword");
+
     public static final Material GOLDEN_AXE = getFirstNotNull("golden_axe", "gold_axe");
     public static final Material GOLDEN_HOE = getFirstNotNull("golden_hoe", "gold_hoe");
     public static final Material GOLDEN_PICKAXE = getFirstNotNull("golden_pickaxe", "gold_pickaxe");
