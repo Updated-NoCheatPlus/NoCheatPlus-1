@@ -4,7 +4,7 @@
 
     <groupId>fr.neatmonster</groupId>
     <artifactId>nocheatplus</artifactId>
-    <version>3.17-SNAPSHOT</version>
+    <version>4.0-SNAPSHOT</version>
 
     <name>NoCheatPlus</name>
     <description>Detect and fight the exploitation of various flaws/bugs in Minecraft.</description>
