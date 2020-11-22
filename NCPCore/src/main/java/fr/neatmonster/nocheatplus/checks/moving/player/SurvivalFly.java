@@ -315,6 +315,7 @@ public class SurvivalFly extends Check {
             data.sfOnIce = 24;
             data.bunnyhopTick = 4;
         }
+	    
         // 0: Jump
         if ((thisMove.from.onIce && !thisMove.to.onIce && !data.sfLowJump) 
            // 0: Jump with head obstructed
@@ -963,10 +964,10 @@ public class SurvivalFly extends Check {
         if (!data.liftOffEnvelope.name().startsWith("LIMIT") || sfDirty) data.watermovect = 0;
 
         // Webs
+        // TODO: ice & slime <- makes it even slower !
         if (thisMove.from.inWeb && (from.getBlockFlags() & BlockProperties.F_ALLOW_LOWJUMP) == 0) {
             data.sfOnIce = 0;
-            tags.add("hweb");
-            // TODO: if (from.isOnIce()) <- makes it even slower !
+            tags.add((from.getBlockFlags() & BlockProperties.F_COBWEB2) != 0 ? "hbush" : "hweb");
             // Does include sprinting by now (would need other accounting methods).
             hAllowedDistance = Magic.modWeb * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
             // Cobweb doesn't apply speed effect but BerryBush does
@@ -974,16 +975,10 @@ public class SurvivalFly extends Check {
             from.collectBlockFlags(); // Just ensure.
             // Berry bush
             if ((from.getBlockFlags() & BlockProperties.F_COBWEB2) !=0) {
-                tags.add("hbush");
-                if (thisMove.yDistance > 0) {
-                    hAllowedDistance = 1.1 * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
-                }
-                else {
-                    hAllowedDistance = 0.362 * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
-                }
+                hAllowedDistance = (thisMove.yDistance > 0.0 ? 1.1 : 0.362) * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
                 if (sprinting) hAllowedDistance += 0.0255;
             }
-            friction = 0.0; // Ensure friction can't be used to speed.
+            friction = 0.0;
             useBaseModifiers = true;
         }
 
@@ -995,7 +990,8 @@ public class SurvivalFly extends Check {
             if (insoulblock) {
                 hAllowedDistance = Magic.modSoulSand * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
                 if (hasenchant) hAllowedDistance *= 1.4;
-            } else hAllowedDistance = (sprinting ? Magic.modSprint : 1.0) * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
+            } 
+            else hAllowedDistance = (sprinting ? Magic.modSprint : 1.0) * thisMove.walkSpeed * cc.survivalFlyWalkingSpeed / 100D;
             if (hasenchant) data.keepfrictiontick = 60;
             useBaseModifiers = true;
         }
@@ -1405,24 +1401,20 @@ public class SurvivalFly extends Check {
                 // Hack for boats (coarse: allows minecarts too).
                 if (yDistance > cc.sfStepHeight && yDistance - cc.sfStepHeight < 0.00000003 && to.isOnGroundDueToStandingOnAnEntity()) {
                     vAllowedDistance = yDistance;
-
                 }
                 else  {
                     vAllowedDistance = Math.max(cc.sfStepHeight, maxJumpGain + jumpGainMargin);
-
                 }
             }
             else {
                 // Code duplication with the absolute limit below.
                 if (yDistance < 0.0 || yDistance > cc.sfStepHeight || !tags.contains("lostground_couldstep")) {
                     vAllowedDistance = maxJumpGain + jumpGainMargin;
-
                 }
                 else {
                     // lostground_couldstep
                     // TODO: Other conditions / envelopes?
                     vAllowedDistance = yDistance;
-
                 }
             }
             strictVdistRel = false;
@@ -1446,7 +1438,6 @@ public class SurvivalFly extends Check {
                     vAllowedDistance = maxJumpGain + jumpGainMargin;
                 }
                 strictVdistRel = false;
-                
             }
             else {
                 // Friction.
@@ -1454,14 +1445,12 @@ public class SurvivalFly extends Check {
                 // Slime fix ?
                 vAllowedDistance = lastMove.yDistance * data.lastFrictionVertical - Magic.GRAVITY_ODD; // Upper bound.
                 strictVdistRel = true;
-                
             }
         }
         else {
             // Teleport/join/respawn.
             vAllowedDistance = vAllowedDistanceNoData(thisMove, lastMove, maxJumpGain, jumpGainMargin, data, cc);
             strictVdistRel = false;
-            
         }
 
 
@@ -1694,6 +1683,9 @@ public class SurvivalFly extends Check {
                 }
                 else if ((totalVDistViolation < 0.8 && data.liftOffEnvelope == LiftOffEnvelope.LIMIT_LIQUID)) {
                     // Ignore water logged blocks 
+                }
+                else if (Bridge1_9.isGlidingWithElytra(player)){
+                    // Don't care about players gliding
                 }
                 // Attempt to use velocity.
                 else if (data.getOrUseVerticalVelocity(yDistance) == null) {
