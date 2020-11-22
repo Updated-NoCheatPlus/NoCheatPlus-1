@@ -75,10 +75,10 @@ public class Against extends Check {
                     && !pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_LIQUIDS, player)) {
                 violation = true;
             }
-        } else
+        } 
         // Replace block placed by block placed and interact with air or water 
-        if (block.equals(blockAgainst) && (bdata.getLastType() == null || (BlockProperties.isLiquid(bdata.getLastType()) && !BlockProperties.isNewLiq(bdata.getLastType())))
-        	&& !pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_SELF, player)) {
+        else if (block.equals(blockAgainst) && (bdata.getLastType() == null || (BlockProperties.isLiquid(bdata.getLastType()) && !BlockProperties.isNewLiq(bdata.getLastType())))
+        	&& !pData.hasPermission(Permissions.BLOCKPLACE_AGAINST_SELF, player) && placedMat != BridgeMaterial.LILY_PAD) {
         	violation = true;
         }        
         // Handle violation and return.
