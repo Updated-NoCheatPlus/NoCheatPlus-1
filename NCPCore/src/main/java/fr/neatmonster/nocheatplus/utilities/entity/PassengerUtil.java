@@ -358,6 +358,10 @@ public class PassengerUtil {
                 if (data.vehicleSetPassengerTaskId == -1) {
                     if (vehicle.getType() == EntityType.BOAT) {
                         // Not schedule set passenger for boat due to location async
+                        // Re-add to vehicle then reject. Not sure why if only teleport player, it won't work but have to do the below 
+                        if (!handleVehicle.getHandle().addPassenger(player, vehicle)) {
+
+                        } else vehicle.eject();
                     } else
                     if (scheduledelay) {
                         data.vehicleSetPassengerTaskId = Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new VehicleSetPassengerTask(handleVehicle, vehicle, player), 2L);
