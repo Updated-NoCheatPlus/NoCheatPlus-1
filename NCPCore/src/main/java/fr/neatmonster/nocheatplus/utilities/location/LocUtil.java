@@ -14,7 +14,9 @@
  */
 package fr.neatmonster.nocheatplus.utilities.location;
 
+import fr.neatmonster.nocheatplus.logging.StaticLog;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
@@ -24,6 +26,9 @@ import fr.neatmonster.nocheatplus.components.location.IGetPosition;
 import fr.neatmonster.nocheatplus.components.location.IGetPositionWithLook;
 import fr.neatmonster.nocheatplus.components.location.ISetPositionWithLook;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Auxiliary methods for Location handling, mainly intended for use with
  * set back locations.
@@ -32,6 +37,14 @@ import fr.neatmonster.nocheatplus.components.location.ISetPositionWithLook;
  *
  */
 public class LocUtil {
+
+    public static final List<Material> GlitchBlocks = Arrays.asList(
+            Material.AIR, Material.LAVA, Material.WATER, Material.GRASS,
+            Material.VINE, Material.SEAGRASS, Material.TALL_SEAGRASS,
+            Material.SNOW, Material.TALL_GRASS, Material.FIRE, Material.VOID_AIR,
+            Material.BEDROCK, Material.END_PORTAL_FRAME, Material.POPPY,
+            Material.LARGE_FERN, Material.SWEET_BERRY_BUSH, Material.DANDELION,
+            Material.CAVE_AIR, Material.FERN);
 
     public static int hashCode(final Location location) {
         final World world = location.getWorld();
@@ -211,6 +224,11 @@ public class LocUtil {
         setBack.setZ(loc.getZ());
         setBack.setYaw(loc.getYaw());
         setBack.setPitch(loc.getPitch());
+        Block block = setBack.getBlock();
+        if (!GlitchBlocks.contains(block.getType())) {
+            StaticLog.logInfo("Removing burrow block for player at "+block.getX()+" "+block.getY()+" "+block.getZ()+" TYPE: "+block.getType()+" WORLD: "+loc.getWorld().getName());
+            setBack.getBlock().setType(Material.AIR);
+        }
     }
 
     /**
