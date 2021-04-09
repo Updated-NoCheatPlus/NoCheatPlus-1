@@ -17,11 +17,14 @@ package fr.neatmonster.nocheatplus.checks.fight;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Giant;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Slime;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.Check;
@@ -48,14 +51,18 @@ public class Reach extends Check {
     public static final double CREATIVE_DISTANCE = 6D;
 
 
-    /** Additum for distance, based on entity. */
+    /** Additum for distance, based on entity's hitbox. */
     private static double getDistMod(final Entity damaged) {
-        // Handle the EnderDragon differently.
         if (damaged instanceof EnderDragon)
             return 6.5D;
-        else if (damaged instanceof Giant){
+        else if (damaged instanceof Giant)
             return 1.5D;
-        }
+        else if (damaged instanceof Ghast)
+            return 4.0D;
+        else if (damaged instanceof EnderCrystal)
+            return 2.0D;
+        else if (damaged instanceof Slime) //Accounts for large and small slimes.
+            return 2.08D;
         else return 0;
     }
 
