@@ -1249,7 +1249,7 @@ public class SurvivalFly extends Check {
         // TODO: Attribute modifiers can count in here, e.g. +0.5 (+ 50% doesn't seem to pose a problem, neither speed effect 2).
         else if (!sfDirty && thisMove.from.onGround && actuallySneaking 
                 && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_SNEAKING, player))
-                ) {
+                && cc.sfCheckNoSlow) {
             tags.add("sneaking");
             hAllowedDistance = Magic.modSneak * thisMove.walkSpeed * cc.survivalFlySneakingSpeed / 100D;
             useBaseModifiers = true;
@@ -1268,7 +1268,7 @@ public class SurvivalFly extends Check {
         else if (!sfDirty && (data.isusingitem || player.isBlocking()) 
                 && (thisMove.from.onGround || data.noslowhop > 0 || player.isBlocking())
                 && (!checkPermissions || !pData.hasPermission(Permissions.MOVING_SURVIVALFLY_BLOCKING, player)) 
-                && data.liftOffEnvelope == LiftOffEnvelope.NORMAL) {
+                && data.liftOffEnvelope == LiftOffEnvelope.NORMAL && cc.sfCheckNoSlow) {
             tags.add("usingitem");
             if (thisMove.from.onGround) {
                 // Jump/left ground

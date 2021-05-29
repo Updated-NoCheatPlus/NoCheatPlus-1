@@ -141,6 +141,8 @@ public class MovingConfig extends ACheckConfig {
     public final boolean    sfHoverFallDamage;
     public final double		sfHoverViolation;
 
+    public final boolean    sfCheckNoSlow;
+
     // Special tolerance values:
     /**
      * Number of moving packets until which a velocity entry must be activated,
@@ -268,15 +270,17 @@ public class MovingConfig extends ACheckConfig {
         sfSetBackPolicyFallDamage = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_FALLDAMAGE);
         sfSetBackPolicyVoid = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_VOIDTOVOID);
         final double sfStepHeight = config.getDouble(ConfPaths.MOVING_SURVIVALFLY_STEPHEIGHT, Double.MAX_VALUE);
+        sfCheckNoSlow = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_CHECKNOSLOW, true);
+
         if (sfStepHeight == Double.MAX_VALUE) {
             final String ref;
-            if (Bukkit.getVersion().toLowerCase().indexOf("spigot") != -1) {
+            if (Bukkit.getVersion().toLowerCase().contains("spigot")) {
                 // Assume 1.8 clients being supported.
                 ref = "1.7.10";
             } else {
                 ref = "1.8";
             }
-            this.sfStepHeight = ServerVersion.select(ref, 0.5, 0.6, 0.6, 0.5).doubleValue();
+            this.sfStepHeight = ServerVersion.select(ref, 0.5, 0.6, 0.6, 0.5);
         } else {
             this.sfStepHeight = sfStepHeight;
         }
