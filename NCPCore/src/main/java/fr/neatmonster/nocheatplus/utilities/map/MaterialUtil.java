@@ -189,6 +189,16 @@ public class MaterialUtil {
         BOATS = Collections.unmodifiableSet(temp);
     }
 
+    public static final Set<Material> CANDELS = Collections.unmodifiableSet(
+            BridgeMaterial.getBySuffix("candle", AlmostBoolean.YES, "legacy")
+            );
+
+    public static final Set<Material> COPPER_BLOCKS = Collections.unmodifiableSet(
+            BridgeMaterial.getByPrefixAndSuffix(
+                    Arrays.asList("copper_"),
+                    Arrays.asList("_copper"), AlmostBoolean.YES)
+            );
+
     public static final Set<Material> CARPETS = Collections.unmodifiableSet(addBlocks(
             BridgeMaterial.getBySuffix("_carpet", AlmostBoolean.YES, "legacy"), 
             "carpet"));
@@ -497,6 +507,7 @@ public class MaterialUtil {
     public static final Set<Material> FULLY_SOLID_BLOCKS = Collections.unmodifiableSet(join(
             CONCRETE_BLOCKS,
             CONCRETE_POWDER_BLOCKS,
+            COPPER_BLOCKS,
             CORAL_BLOCKS,
             GLASS_BLOCKS,
             GLAZED_TERRACOTTA_BLOCKS,
