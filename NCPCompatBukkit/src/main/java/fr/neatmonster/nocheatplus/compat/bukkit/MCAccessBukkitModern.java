@@ -99,11 +99,9 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     private static final BukkitShapeModel MODEL_HOPPER = new BukkitStatic(
             0, 0.25, 0, 1, 1, 1);
     private static final BukkitShapeModel MODEL_CHAIN = new BukkitChain();
-
     // Static blocks with full height sorted by inset.
     private static final BukkitShapeModel MODEL_INSET16_1_HEIGHT100 = new BukkitStatic(
             0.0625, 1.0);
-
 
     // Static blocks with full xz-bounds sorted by height.
     private static final BukkitShapeModel MODEL_XZ100_HEIGHT16_1 = new BukkitStatic(
@@ -130,7 +128,6 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
      * VINE, 
      * CAKE,
      */
-    // TODO: anvils, dead coral fans
     // TODO: Liquid (all leveled).
 
     public MCAccessBukkitModern() {
@@ -143,13 +140,13 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             this.reflectDamageSource = new ReflectDamageSource(this.reflectBase);
             this.reflectPlayer = new ReflectPlayer(this.reflectBase, null, this.reflectDamageSource);
         } catch(ClassNotFoundException ex) {
-            
+
         }
     }
 
     @Override
     public String getMCVersion() {
-        return "1.13-1.16|?";
+        return "1.13-1.17.x|?";
     }
 
     @Override
@@ -260,7 +257,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
 
         // 16/15 height, full xz bounds.
         for (Material mat : new Material[] {
-                Material.GRASS_PATH, BridgeMaterial.FARMLAND
+                BridgeMaterial.GRASS_PATH, BridgeMaterial.FARMLAND
         }) {
             addModel(mat, MODEL_XZ100_HEIGHT16_15);
         }
@@ -387,7 +384,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         // Lectern
         Material mt = BridgeMaterial.getBlock("lectern");
         if (mt != null) addModel(mt, MODEL_LECTERN);
-        
+
         // Bamboo        
         mt = BridgeMaterial.getBlock("bamboo");
         if (mt != null) addModel(mt, MODEL_BAMBOO);
@@ -467,5 +464,4 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         }
         return false;
     }
-
 }
