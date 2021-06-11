@@ -233,6 +233,10 @@ public class BridgeMaterial {
     /** Classic dirt-like grass block. */
     public static final Material GRASS_BLOCK = getFirstNotNull("grass_block", "grass");
 
+    public static final Material GRASS_PATH = getFirstNotNull("grass_path", "dirt_path");
+	
+    public static final Material GLASS_PANES = getFirstNotNull("glass_pane", "thin_glass");
+
     public static final Material HEAVY_WEIGHTED_PRESSURE_PLATE = getFirstNotNull(
             "heavy_weighted_pressure_plate", "iron_plate");
 
