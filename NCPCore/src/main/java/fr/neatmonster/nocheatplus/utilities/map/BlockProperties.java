@@ -1336,6 +1336,13 @@ public class BlockProperties {
         // Soulsand
         setFlag(Material.SOUL_SAND, F_SOULSAND | BlockFlags.FULL_BOUNDS);
 
+        //Deepslate
+        setBlock(Material.DEEPSLATE, new BlockProps(woodPickaxe, 3.5f, secToMs(17.5, 2.65, 1.35, 0.9, 0.7, 0.6, 0.45)));
+        setBlock(Material.DEEPSLATE_COAL_ORE, new BlockProps(woodPickaxe, 4.5f, secToMs(22.5, 11.25, 1.7, 1.15, 0.85, 0.75, 1.9)));
+
+        //Copper block
+        setBlock(Material.COPPER_BLOCK, new BlockProps(woodPickaxe, 3.0f, secToMs(15.0, 7.5, 1.15, 0.75, 0.6, 0.5, 1.25)));
+
         // Huge mushroom type (...)
         for (Material mat : new Material[]{ 
                 Material.VINE, Material.COCOA}) {
