@@ -189,6 +189,19 @@ public class MaterialUtil {
         BOATS = Collections.unmodifiableSet(temp);
     }
 
+    public static final Set<Material> COLORED_CAKES = Collections.unmodifiableSet(
+            BridgeMaterial.getBySuffix("_cake", AlmostBoolean.YES, "legacy"));
+
+    public static final Set<Material> CANDELS = Collections.unmodifiableSet(
+            BridgeMaterial.getBySuffix("candle", AlmostBoolean.YES, "legacy")
+            );
+
+    public static final Set<Material> COPPER_BLOCKS = Collections.unmodifiableSet(
+            BridgeMaterial.getByPrefixAndSuffix(
+                    Arrays.asList("copper_"),
+                    Arrays.asList("_copper"), AlmostBoolean.YES)
+            );
+
     public static final Set<Material> CANDELS = Collections.unmodifiableSet(
             BridgeMaterial.getBySuffix("candle", AlmostBoolean.YES, "legacy")
             );
@@ -243,8 +256,7 @@ public class MaterialUtil {
             "glass_pane", "thin_glass"));
 
     public static final Set<Material> GLAZED_TERRACOTTA_BLOCKS = Collections.unmodifiableSet(
-            BridgeMaterial.getBySuffix("glazed_terracotta", AlmostBoolean.YES, "legacy")
-            );
+            BridgeMaterial.getBySuffix("glazed_terracotta", AlmostBoolean.YES, "legacy"));
 
     /** Heads placed on the ground. Includes skulls. */
     public static final Set<Material> HEADS_GROUND = Collections.unmodifiableSet(addBlocks(
@@ -509,6 +521,7 @@ public class MaterialUtil {
             CONCRETE_POWDER_BLOCKS,
             COPPER_BLOCKS,
             CORAL_BLOCKS,
+            COPPER_BLOCKS,
             GLASS_BLOCKS,
             GLAZED_TERRACOTTA_BLOCKS,
             INFESTED_BLOCKS,
