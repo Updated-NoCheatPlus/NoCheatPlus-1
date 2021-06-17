@@ -112,8 +112,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup{
         // (flowering_)azalea leaves should be automated in MaterialUtil
         //BlockFlags.addFlags("MOSS_CARPET", BlockProperties.F_CARPET); //This might be automated bc _carpet
         BlockProperties.setBlockProps("AZALEA", BlockProperties.instantType);
-        BlockProperties.setBlockProps("FLOWERING_AZALEA", BlockProperties.instantType);
-		BlockProperties.setBlockProps("FLOWERING_AZALEA", BlockProperties.instantType); //not figuring out shape
+        BlockProperties.setBlockProps("FLOWERING_AZALEA", BlockProperties.instantType); //not figuring out shape
         BlockFlags.addFlags("BIG_DRIPLEAF", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
         BlockProperties.setBlockProps("BIG_DRIPLEAF", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f, BlockProperties.secToMs(0.15, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05)));
         BlockFlags.addFlags("SMALL_DRIPLEAF", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
@@ -131,11 +130,19 @@ public class BlocksMC1_17 implements BlockPropertiesSetup{
         BlockFlags.addFlags("POINTED_DRIPSTONE", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
         BlockProperties.setBlockProps("POINTED_DRIPSTONE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
 
-        //Amethyst - this is basically like snow, sizes should be in block prop flags but too lazy to check them now
-        BlockFlags.addFlags("SMALL_AMETHYST_BUD", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
-        BlockFlags.addFlags("MEDIUM_AMETHYST_BUD", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
-        BlockFlags.addFlags("LARGE_AMETHYST_BUD", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
-        BlockFlags.addFlags("AMETHYST_CLUSTER", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
+        //Amethyst buds - These could use models because they are 0.5 of a block x size so you can stand at the edge of a block and not be on a bud
+		BlockFlags.addFlags("SMALL_AMETHYST_BUD", BlockFlags.SOLID_GROUND | BlockProperties.F_MIN_HEIGHT8_1 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_IGN_PASSABLE); // 0.1875
+        BlockProperties.setBlockProps("SMALL_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+		BlockFlags.addFlags("MEDIUM_AMETHYST_BUD", BlockFlags.SOLID_GROUND | BlockProperties.F_MIN_HEIGHT4_1 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_IGN_PASSABLE); // 0.25
+        BlockProperties.setBlockProps("MEDIUM_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+		BlockFlags.addFlags("LARGE_AMETHYST_BUD", BlockFlags.SOLID_GROUND | BlockProperties.F_MIN_HEIGHT16_5 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_IGN_PASSABLE); // 0.3125
+        BlockProperties.setBlockProps("LARGE_AMETHYST_BUD", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+		BlockFlags.addFlags("AMETHYST_CLUSTER", BlockFlags.SOLID_GROUND | BlockProperties.F_MIN_HEIGHT16_7 | BlockProperties.F_GROUND_HEIGHT | BlockProperties.F_IGN_PASSABLE); // 0.4375
+        BlockProperties.setBlockProps("AMETHYST_CLUSTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
+        //Amethyst blocks
+        BlockFlags.addFlags("BUDDING_AMETHYST", BlockFlags.FULLY_SOLID_BOUNDS);
+        BlockProperties.setBlockProps("BUDDING_AMETHYST", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 3.75, 1.9, 1.25, 0.95, 0.85, 0.65)));
+        BlockFlags.addFlags("AMETHYST_BLOCK", BlockFlags.FULLY_SOLID_BOUNDS);
         BlockProperties.setBlockProps("AMETHYST_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(2.25, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
 
         //Candles - So sea pickles with mining times of carpet
@@ -144,8 +151,8 @@ public class BlocksMC1_17 implements BlockPropertiesSetup{
             BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.noTool, 0.1f, BlockProperties.secToMs(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)));
         }
 
-        //Colored cakes
-        for (Material mat : MaterialUtil.COLORED_CAKES) {
+        //Candle cakes
+        for (Material mat : MaterialUtil.CANDLE_CAKES) {
             BlockFlags.addFlags(mat, BlockProperties.F_IGN_PASSABLE | BlockProperties.F_GROUND_HEIGHT);
             BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.noTool, 0.5f, BlockProperties.secToMs(0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75)));
         }
@@ -157,12 +164,10 @@ public class BlocksMC1_17 implements BlockPropertiesSetup{
         BlockProperties.setBlockProps("TUFF", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, BlockProperties.secToMs(7.5, 1.15, 0.6, 0.4, 0.3, 0.25, 0.2)));
         BlockFlags.addFlags("POWDER_SNOW", BlockProperties.F_IGN_PASSABLE);
         BlockProperties.setBlockProps("POWDER_SNOW", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.25f, BlockProperties.secToMs(0.4)));
-        BlockFlags.addFlags("POWDER_SNOW_CAULDRON", BlockProperties.F_IGN_PASSABLE);
-        BlockProperties.setBlockProps("POWDER_SNOW_CAULDRON", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.25f, BlockProperties.secToMs(0.4)));
-        BlockFlags.addFlags("CANDLE_CAKE", BlockProperties.F_IGN_PASSABLE); //not figuring out shape
-        BlockProperties.setBlockProps("TINTED_GLASS", new BlockProperties.BlockProps(BlockProperties.noTool, 0.3f, BlockProperties.secToMs(0.45)));
+        BlockInit.setAs("POWDER_SNOW_CAULDRON", "CAULDRON");
+        BlockInit.setAs("TINTED_GLASS", "GLASS");
         BlockProperties.setBlockProps("MOSS_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodHoe, 0.1f, BlockProperties.secToMs(0.15, 0.1, 0.05, 0.05, 0.05, 0.05, 0.05)));
-		//Chains can now be vertical!
+        //Chains can now be vertical!
 
         StaticLog.logInfo("Added block-info for Minecraft 1.17 blocks.");
 	}
