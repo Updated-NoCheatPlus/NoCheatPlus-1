@@ -17,10 +17,7 @@ package fr.neatmonster.nocheatplus.checks.moving.vehicle;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -49,7 +46,6 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
@@ -203,29 +199,51 @@ public class VehicleEnvelope extends Check {
     * @param type
     * @param cc
     * @param thisMove
-    *
+    * @param data
     *
     */
-    private double getHDistCap(final EntityType type, final MovingConfig cc, final VehicleMoveData thisMove) {
+    private double getHDistCap(final EntityType type, final MovingConfig cc, final VehicleMoveData thisMove, final MovingData data) {
 
         final Double cap = cc.vehicleEnvelopeHorizontalSpeedCap.get(type);
+        final Double globalcap = cc.vehicleEnvelopeHorizontalSpeedCap.get(null);
 
         if (cap == null) {
             if(type == EntityType.BOAT){
-                if ((thisMove.from.onBlueIce || thisMove.to.onBlueIce)) return 4.1;
-                if ((thisMove.from.onIce || thisMove.to.onIce)) return 2.3;
+                return getHDistCapBoats(thisMove,data,1.0,globalcap);
             }
-            return cc.vehicleEnvelopeHorizontalSpeedCap.get(null);
+            return globalcap;
         }
         else {
             if(type == EntityType.BOAT) {
-                if (thisMove.from.onBlueIce || thisMove.to.onBlueIce) return cap * 4.1;
-                if (thisMove.from.onIce || thisMove.to.onIce) return cap * 2.3;
+                return getHDistCapBoats(thisMove,data,cap, globalcap);
             }
             return cap;
         }
     }
-
+    /**
+     * Return the horizontal distance cap for the boat
+     * @param thisMove
+     * @param data
+     * @param multiplier
+     *
+     */
+    private double getHDistCapBoats(final VehicleMoveData thisMove, final MovingData data, final double multiplier, final double globalcap) {
+        if(thisMove.from.onBlueIce && !thisMove.to.onBlueIce){ //workaround for when the boat leaves icy places
+            data.boatIceVelocityTicks = 20;
+        }
+        else if (thisMove.from.onIce && !thisMove.to.onIce){
+            data.boatIceVelocityTicks = 10;
+        }
+        if (thisMove.from.onBlueIce || thisMove.to.onBlueIce) return multiplier * 4.1;
+        if (thisMove.from.onIce || thisMove.to.onIce) return multiplier * 2.3;
+        if(data.boatIceVelocityTicks-- > 0){ // allow high speed for a moment
+            if (data.boatIceVelocityTicks > 10) return multiplier * 4.1;
+            return multiplier * 2.3;
+        }
+        if ((thisMove.from.onGround && !thisMove.from.inWater) || thisMove.to.onGround && !thisMove.to.inWater) return multiplier * 0.3;
+        if (thisMove.from.inWater || thisMove.to.inWater) return multiplier * 0.5;
+        return multiplier == 1.0 ? globalcap : multiplier;
+    }
 
   /**
     * Actual check
@@ -267,15 +285,15 @@ public class VehicleEnvelope extends Check {
         if (vehicle instanceof LivingEntity) {
             Double speed = PotionUtil.getPotionEffectAmplifier((LivingEntity)vehicle, PotionEffectType.SPEED);
             if (!Double.isInfinite(speed)) {
-                if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove) * (1 + 0.2 * (speed + 1)))) {
+                if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove, data) * (1 + 0.2 * (speed + 1)))) {
                     return true;
                 }
             } 
-            else if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove) + (checkDetails.canJump ? 0.18 : 0.0))) {
+            else if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove,data) + (checkDetails.canJump ? 0.18 : 0.0))) {
                 return true;
             }
         } 
-        else if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove))) { // Override type for now.
+        else if (maxDistHorizontal(thisMove, getHDistCap(checkDetails.simplifiedType, cc, thisMove,data))) { // Override type for now.
             return true;
         }
 

@@ -124,6 +124,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Represents how long a vehicle has been tossed up by a bubble column */
     // TODO: Deprecate and use the blockChangeTracker, rather.
     public long timeVehicletoss = 0;
+    /** Used as a workaround for boats leaving ice while still having velocity from ice */
+    public int boatIceVelocityTicks = 0;
     /** Moving half on 15/16 height block and half on water. Set in Survivalfly.check. */
     public boolean isHalfGroundHalfWater = false;
     /** If is Bedrock Player. This is set if CompatNoCheatPlus is present. */
