@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -305,7 +306,7 @@ public class BlockChangeTracker {
     private final Map<UUID, WorldNode> worldMap = new LinkedHashMap<UUID, BlockChangeTracker.WorldNode>();
 
     /** Use to avoid duplicate entries with pistons. Always empty after processing. */
-    private final Set<Block> processBlocks = new LinkedHashSet<Block>();
+    private final Set<Block> processBlocks = ConcurrentHashMap.newKeySet(30);
 
     /** Ensure to set from extern. */
     private IGenericInstanceHandle<BlockCache> blockCacheHandle = null;

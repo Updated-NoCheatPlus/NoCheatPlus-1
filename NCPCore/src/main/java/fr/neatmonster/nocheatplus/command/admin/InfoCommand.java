@@ -14,11 +14,13 @@
  */
 package fr.neatmonster.nocheatplus.command.admin;
 
+import com.google.common.collect.Lists;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -108,8 +110,15 @@ public class InfoCommand extends BaseCommand {
 	 */
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-		// Fill in players.
-		return null;
+        // Complete Players
+        if (args.length == 2) {
+            List<String> players = Lists.newArrayList();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                players.add(player.getName());
+            }
+            return players;
+        }
+        return null;
 	}
 	
 }

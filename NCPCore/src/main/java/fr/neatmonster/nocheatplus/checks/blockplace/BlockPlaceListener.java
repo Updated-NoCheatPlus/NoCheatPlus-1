@@ -126,6 +126,7 @@ public class BlockPlaceListener extends CheckListener {
 
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc = new Location(null, 0, 0, 0);
+    private final Location useLoc2 = new Location(null, 0, 0, 0);
 
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
 
@@ -505,7 +506,7 @@ public class BlockPlaceListener extends CheckListener {
         boolean cancel = false;
         if (speed.isEnabled(player, pData)) {
             final long now = System.currentTimeMillis();
-            final Location loc = player.getLocation(useLoc);
+            final Location loc = player.getLocation(useLoc2);
             if (Combined.checkYawRate(player, loc.getYaw(), now, loc.getWorld().getName(), pData)) {
                 // Yawrate (checked extra).
                 cancel = true;
@@ -526,18 +527,18 @@ public class BlockPlaceListener extends CheckListener {
 
         // Ender pearl glitch (ab-) use.
         if (!cancel && type == EntityType.ENDER_PEARL && pData.getGenericInstance(CombinedConfig.class).enderPearlCheck) {
-            if (!BlockProperties.isPassable(projectile.getLocation(useLoc))) {
+            if (!BlockProperties.isPassable(projectile.getLocation(useLoc2))) {
                 // Launch into a block.
                 cancel = true;
             }
             else {
-                if (!BlockProperties.isPassable(player.getEyeLocation(), projectile.getLocation(useLoc))) {
+                if (!BlockProperties.isPassable(player.getEyeLocation(), projectile.getLocation(useLoc2))) {
                     // (Spare a useLoc2, for this is seldom rather.)
                     // Something between player 
                     cancel = true;
                 }
                 else {
-                    final Material mat = player.getLocation(useLoc).getBlock().getType();
+                    final Material mat = player.getLocation(useLoc2).getBlock().getType();
                     final long flags = BlockFlags.F_CLIMBABLE | BlockFlags.F_LIQUID | BlockFlags.F_IGN_PASSABLE;
                     if (!BlockProperties.isAir(mat) && (BlockFlags.getBlockFlags(mat) & flags) == 0 && !mcAccess.getHandle().hasGravity(mat)) {
                         // Still fails on piston traps etc.
@@ -557,7 +558,7 @@ public class BlockPlaceListener extends CheckListener {
             event.setCancelled(true);
         }
         // Cleanup.
-        useLoc.setWorld(null);
+        useLoc2.setWorld(null);
     }
 
     // TODO: remove this

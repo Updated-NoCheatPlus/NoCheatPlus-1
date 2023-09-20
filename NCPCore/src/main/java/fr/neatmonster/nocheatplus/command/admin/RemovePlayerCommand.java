@@ -14,14 +14,16 @@
  */
 package fr.neatmonster.nocheatplus.command.admin;
 
+import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.ChatColor;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationHistory;
@@ -112,9 +114,16 @@ public class RemovePlayerCommand extends BaseCommand {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args)
-    {
-        // At least complete CheckType
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        // Complete Players
+        if (args.length == 2) {
+            List<String> players = Lists.newArrayList();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                players.add(player.getName());
+            }
+            return players;
+        }
+        // Complete CheckType
         if (args.length == 3) return CommandUtil.getCheckTypeTabMatches(args[2]);
         return null;
     }

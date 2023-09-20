@@ -14,6 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.command.actions;
 
+import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -71,8 +72,15 @@ public class KickCommand extends BaseCommand {
      */
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command,
-            String alias, String[] args) {
+                                      String alias, String[] args) {
+        // Complete Players
+        if (args.length == 2) {
+            List<String> players = Lists.newArrayList();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                players.add(player.getName());
+            }
+            return players;
+        }
         return null;
     }
-
 }

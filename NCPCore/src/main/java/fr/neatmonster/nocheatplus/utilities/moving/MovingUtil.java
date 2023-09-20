@@ -62,6 +62,7 @@ public class MovingUtil {
      * Always set world to null after use, careful with nested methods. Main thread only.
      */
     private static final Location useLoc = new Location(null, 0, 0, 0);
+    private static final Location useLoc2 = new Location(null, 0, 0, 0);
     //    /** Fast scan flags for 'mostly air'. */
     //    private static final long FLAGS_SCAN_FOR_GROUND_OR_RESETCOND = 
     //            BlockFlags.F_SOLID | BlockFlags.F_GROUND
@@ -358,7 +359,7 @@ public class MovingUtil {
             if (entity.getType() != EntityType.PLAYER) {
                 continue;
             }
-            final Location refLoc = entity.getLocation(useLoc);
+            final Location refLoc = entity.getLocation(useLoc2);
             // Exempt world spawn.
             // TODO: Exempt other warps -> HASH based exemption (expire by time, keep high count)?
             if (TrigUtil.isSamePos(loc, refLoc) && (entity instanceof Player)) {
@@ -387,7 +388,7 @@ public class MovingUtil {
                 }
             }
         }
-        useLoc.setWorld(null); // Cleanup.
+        useLoc2.setWorld(null); // Cleanup.
         if (untrackedData == null) {
             return null;
         }
