@@ -34,7 +34,7 @@ public class Magic {
     /** EntityLiving, travel */
     public static final float HORIZONTAL_INERTIA = 0.91f;
     /** EntityLiving, jumpFromGround */
-    public static final float BUNNYHOP_ACCEL_BOOST = 0.2f;
+    public static final float BUNNYHOP_BOOST = 0.2f;
     /** EntityLiving, noJumpDelay field */
     public static final int BUNNYHOP_MAX_DELAY = 10;
     /** EntityLiving, handleOnClimbable */
@@ -87,6 +87,8 @@ public class Magic {
     public static final double DEFAULT_GRAVITY = 0.08;
     /** EntityLiving, travel */
     public static final double FRICTION_MEDIUM_AIR = 0.98;
+    /** EntityHuman, attack */
+    public static final double ATTACK_SLOWDOWN = 0.6;
     
     
     
@@ -95,10 +97,10 @@ public class Magic {
     ///////////////////////////////////////////////
     public static final float CB_DEFAULT_WALKSPEED = 0.2f;
     /** Minimum squared distance for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
-    public static final double CraftBukkit_minMoveDistSq = 1f / 256;
+    public static final double CraftBukkit_minMoveSqDist = 1f / 256;
     /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
     public static final float CraftBukkit_minLookChange = 10f;
-    /** The minimum squared distance for clients to send flying packet to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
+    /** The minimum squared root distance for clients to send flying packet to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
     public static final double Minecraft_minMoveSqrtDistance = 0.03;
     
 
@@ -109,6 +111,7 @@ public class Magic {
     ///////////////////////////////////////////
     // *----------Misc.----------*
     public static final double PAPER_DIST = 0.01;
+    public static final double PREDICTION_TOLERANCE = 0.0001;
     /**
      * Extreme move check threshold (Actual like 3.9 upwards with velocity,
      * velocity downwards may be like -1.835 max., but falling will be near 3
@@ -166,7 +169,7 @@ public class Magic {
     // *----------Vertical speeds/modifiers----------*
     public static final double climbSpeedAscend        = 0.119;
     public static final double climbSpeedDescend       = 0.151;
-    public static final double snowClimbSpeedAscend    = 0.1765999;
+    public static final double snowClimbSpeedAscend    = 0.1764;
     public static final double snowClimbSpeedDescend   = 0.118;
     public static final double bushSpeedDescend        = 0.09;
     public static final double bubbleStreamDescend     = 0.49; // from wiki.
@@ -183,8 +186,8 @@ public class Magic {
     public static final double GLIDE_DESCEND_GAIN_MAX_POS = GRAVITY_ODD / 1.95;
     
     // *----------On ground judgement----------*
-    public static final double Y_ON_GROUND_MIN = 0.0000001;
-    public static final double Y_ON_GROUND_MAX = 0.025;
+    public static final double Y_ON_GROUND_MIN = 0.000001;
+    public static final double Y_ON_GROUND_MAX = 0.01;
     public static final double Y_ON_GROUND_DEFAULT = 0.00001;
     /** LEGACY NCP YONGROUND VALUES */
     // public static final double Y_ON_GROUND_MIN = 0.00001;
@@ -309,7 +312,7 @@ public class Magic {
      * 
      * @return 
      */
-    public static boolean XORonGround(final PlayerMoveData move) {
+    public static boolean liftingOffOrLandingOnGround(final PlayerMoveData move) {
         return move.from.onGround ^ move.to.onGround;
     }
 
@@ -392,6 +395,7 @@ public class Magic {
     public static boolean excludeStaticSpeed(final PlayerMoveData thisMove) {
         return !thisMove.from.inWeb && !thisMove.to.inWeb
                 && !thisMove.from.onClimbable && !thisMove.to.onClimbable
-                && !thisMove.from.inBerryBush && !thisMove.to.inBerryBush;
+                && !thisMove.from.inBerryBush && !thisMove.to.inBerryBush
+                && !thisMove.from.inPowderSnow && !thisMove.to.inPowderSnow;
     }
 }

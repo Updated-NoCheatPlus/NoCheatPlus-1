@@ -175,6 +175,9 @@ public class PlayerData implements IPlayerData {
     private boolean requestPlayerSetBack = false;
     private int versionID = -1;
     private ClientVersion clientVersion = ClientVersion.UNKNOWN;
+    private boolean sneaking = false;
+    private boolean sprinting = false;
+    private boolean usingItem = false;
 
     private boolean frequentPlayerTaskShouldBeScheduled = false;
     /** Actually queried ones. */
@@ -199,8 +202,7 @@ public class PlayerData implements IPlayerData {
      *            Should be accurate case - TBD: ensure it's used that way,
      *            and/or update with login/join.
      */
-    public PlayerData(final UUID playerId, final String playerName, 
-            final PermissionRegistry permissionRegistry) {
+    public PlayerData(final UUID playerId, final String playerName, final PermissionRegistry permissionRegistry) {
         this.playerId = playerId;
         this.playerName = playerName;
         this.playerNameLowerCase = playerName.toLowerCase();
@@ -312,24 +314,23 @@ public class PlayerData implements IPlayerData {
         }
         long nanos = System.nanoTime();
         taskLoad.update(tick);
-        final boolean isHeavyLoad = taskLoad.score(1f) > heavyLoad 
-                || TickTask.getLag(msMonitored, true) > 1.1f;
-                updatePermissionsLazy.mergePrimaryThread();
-                final Iterator<RegisteredPermission> it = updatePermissionsLazy.iteratorPrimaryThread();
-                // TODO: Load balancing with other tasks ?
-                while (it.hasNext()) {
-                    hasPermission(it.next(), player);
-                    it.remove();
-                    if (isHeavyLoad) {
-                        break;
-                    }
-                }
-                boolean hasWrk = it.hasNext();
-                nanos = System.nanoTime() - nanos;
-                if (nanos > 0L) {
-                    taskLoad.add(tick, nanos);
-                }
-                return !hasWrk;
+        final boolean isHeavyLoad = taskLoad.score(1f) > heavyLoad || TickTask.getLag(msMonitored, true) > 1.1f;
+        updatePermissionsLazy.mergePrimaryThread();
+        final Iterator<RegisteredPermission> it = updatePermissionsLazy.iteratorPrimaryThread();
+        // TODO: Load balancing with other tasks ?
+        while (it.hasNext()) {
+            hasPermission(it.next(), player);
+            it.remove();
+            if (isHeavyLoad) {
+                break;
+            }
+        }
+        boolean hasWrk = it.hasNext();
+        nanos = System.nanoTime() - nanos;
+        if (nanos > 0L) {
+            taskLoad.add(tick, nanos);
+        }
+        return !hasWrk;
     }
 
     private void registerFrequentPlayerTask() {
@@ -461,7 +462,10 @@ public class PlayerData implements IPlayerData {
         // (Somewhat reversed order of invalidation.)
         invalidateOffline();
         bedrockPlayer = false;
+        sneaking = false;
+        sprinting = false;
         versionID = -1;
+        usingItem = false;
         clientVersion = ClientVersion.UNKNOWN;
     }
 
@@ -472,9 +476,8 @@ public class PlayerData implements IPlayerData {
      * @param timeNow
      * @param types 
      */
-    void onPlayerJoin(final Player player, final World world, 
-            final long timeNow, final WorldDataManager worldDataManager, 
-            final Collection<Class<? extends IDataOnJoin>> types) {
+    void onPlayerJoin(final Player player, final World world, final long timeNow, final WorldDataManager worldDataManager, 
+                      final Collection<Class<? extends IDataOnJoin>> types) {
         // Only update world if the data hasn't just been created.
         updateCurrentWorld(world, worldDataManager);
         invalidateOffline();
@@ -488,8 +491,7 @@ public class PlayerData implements IPlayerData {
         lastJoinTime = timeNow;
     }
 
-    private void updateCurrentWorld(final World world, 
-            final WorldDataManager worldDataManager) {
+    private void updateCurrentWorld(final World world, final WorldDataManager worldDataManager) {
         updateCurrentWorld(worldDataManager.getWorldData(world));
     }
 
@@ -533,10 +535,8 @@ public class PlayerData implements IPlayerData {
      * @param newWorld
      * @param types 
      */
-    void onPlayerChangedWorld(final Player player, 
-            final World oldWorld, final World newWorld,
-            final WorldDataManager worldDataManager, 
-            final Collection<Class<? extends IDataOnWorldChange>> types) {
+    void onPlayerChangedWorld(final Player player, final World oldWorld, final World newWorld,
+                              final WorldDataManager worldDataManager, final Collection<Class<? extends IDataOnWorldChange>> types) {
         updateCurrentWorld(newWorld, worldDataManager);
         // TODO: Double-invalidation (previous policy and target world policy)
         final Iterator<Entry<Integer, PermissionNode>> it = permissions.iterator();
@@ -711,9 +711,7 @@ public class PlayerData implements IPlayerData {
 
     @Override
     public IWorldData getCurrentWorldDataSafe() {
-        return currentWorldData == null 
-                ? NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().getDefaultWorldData() 
-                        : currentWorldData;
+        return currentWorldData == null ? NCPAPIProvider.getNoCheatPlusAPI().getWorldDataManager().getDefaultWorldData() : currentWorldData;
     }
 
     @Override
@@ -723,11 +721,9 @@ public class PlayerData implements IPlayerData {
     }
 
     @Override
-    public boolean isCheckActive(final CheckType checkType, final Player player,
-            final IWorldData worldData) {
+    public boolean isCheckActive(final CheckType checkType, final Player player, final IWorldData worldData) {
         // TODO: Move the implementation of CheckUtils here (efficiency with exemption).
-        return worldData.isCheckActive(checkType) 
-                && !hasBypass(checkType, player, worldData);
+        return worldData.isCheckActive(checkType) && !hasBypass(checkType, player, worldData);
     }
 
     @Override
@@ -743,8 +739,7 @@ public class PlayerData implements IPlayerData {
      * @param isPrimaryThread
      * @return
      */
-    public boolean hasBypass(final CheckType checkType, final Player player, 
-            final IWorldData worldData) {
+    public boolean hasBypass(final CheckType checkType, final Player player, final IWorldData worldData) {
         // TODO: Expose or not.
         // Exemption check.
         // TODO: More efficient implementation, ExemptionSettings per world in worldData.
@@ -771,15 +766,12 @@ public class PlayerData implements IPlayerData {
 
     @Override
     public void resetDebug(final CheckType checkType) {
-        this.checkTypeTree.getNode(checkType).resetDebug(
-                currentWorldData == null ? getCurrentWorldDataSafe() : currentWorldData);
+        this.checkTypeTree.getNode(checkType).resetDebug(currentWorldData == null ? getCurrentWorldDataSafe() : currentWorldData);
     }
 
     @Override
-    public void overrideDebug(final CheckType checkType, final AlmostBoolean active, 
-            final OverrideType overrideType, final boolean overrideChildren) {
-        this.checkTypeTree.getNode(checkType).overrideDebug(
-                checkType, active, overrideType, overrideChildren);
+    public void overrideDebug(final CheckType checkType, final AlmostBoolean active, final OverrideType overrideType, final boolean overrideChildren) {
+        this.checkTypeTree.getNode(checkType).overrideDebug(checkType, active, overrideType, overrideChildren);
     }
 
     /**
@@ -844,25 +836,45 @@ public class PlayerData implements IPlayerData {
     public void setNotifyOff(final boolean notifyOff) {
         setTag(TAG_NOTIFY_OFF, notifyOff);
     }
+
+    @Override
+    public void setSneaking(final boolean sneaking) {
+        this.sneaking = sneaking;
+    }
+
+    @Override
+    public void setSprinting(final boolean sprinting) {
+        this.sprinting = sprinting;
+    }
+
+    @Override
+    public void setUsingItem(final boolean usingItem) {
+        this.usingItem = usingItem;
+    }
     
-    /**
-     * Set the state player connect through geysermc
-     * 
-     * @param bedrockPlayer
-     */
     @Override
     public void setBedrockPlayer(final boolean bedrockPlayer) {
         this.bedrockPlayer = bedrockPlayer;
     }
     
-    /**
-     * Check if player join via geysermc
-     * 
-     * @return
-     */
     @Override
     public boolean isBedrockPlayer() {
         return bedrockPlayer;
+    }
+
+    @Override
+    public boolean isUsingItem() {
+        return usingItem;
+    }
+
+    @Override
+    public boolean isSprinting() {
+        return sprinting;
+    }
+
+    @Override
+    public boolean isSneaking() {
+        return sneaking;
     }
 
     @Override
@@ -971,10 +983,7 @@ public class PlayerData implements IPlayerData {
     }
 
     @Override
-    public void removeSubCheckData(
-            final Collection<Class<? extends IDataOnRemoveSubCheckData>> types,
-            final Collection<CheckType> checkTypes
-            ) {
+    public void removeSubCheckData(final Collection<Class<? extends IDataOnRemoveSubCheckData>> types,final Collection<CheckType> checkTypes) {
         final Collection<Class<?>> removeTypes = new LinkedList<Class<?>>();
         for (final Class<? extends IDataOnRemoveSubCheckData> type : types) {
             final IDataOnRemoveSubCheckData impl = (IDataOnRemoveSubCheckData) dataCache.get(type);
@@ -1003,8 +1012,7 @@ public class PlayerData implements IPlayerData {
         }
     }
 
-    public void onWorldUnload(final World world, 
-            final Collection<Class<? extends IDataOnWorldUnload>> types) {
+    public void onWorldUnload(final World world, final Collection<Class<? extends IDataOnWorldUnload>> types) {
         for (final Class<? extends IDataOnWorldUnload> type : types) {
             final IDataOnWorldUnload instance = dataCache.get(type);
             if (instance != null && instance.dataOnWorldUnload(world, this)) {

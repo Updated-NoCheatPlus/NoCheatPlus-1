@@ -228,8 +228,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int sfVLMoveCount = 0;
     /** Count in air events for this jumping phase, resets when landing on ground, with set-backs and similar. */
     public int sfJumpPhase = 0;
-    /** Count how many times in a row yDistance has been zero, only for in-air moves, updated on not cancelled moves (aimed at in-air workarounds) */
-    public int sfZeroVdistRepeat = 0;
     /** "Dirty" flag, for receiving velocity and similar while in air. */
     private boolean sfDirty = false;
     /** Basic envelope constraints/presets for lifting off ground. */
@@ -246,6 +244,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public final WorkaroundSet ws;
     /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent. */
     public boolean wasInBed = false;
+    /** Tick counter for horizontal speed uncertainty (cannot predict reliably) */
+    public int uncertaintyTick = 0;
 
     // *----------Data of the vehicles checks----------*
     /** Default value for the VehicleMP buffer. */
@@ -303,23 +303,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // A new set of workaround conters.
         ws = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(WRPT.class).getWorkaroundSet(WRPT.WS_MOVING);
     }
-    
-
-    /**
-     * Tick counters to be adjusted after having checked horizontal speed in Sf.
-     */
-    public void setHorDataExPost() {
-
-        // Count down for the soul speed enchant motion
-        if (keepfrictiontick > 0) {
-            keepfrictiontick-- ;
-        }
-
-        // A special(model) move from CreativeFly has been turned to a normal move again, count up for the incoming motion
-        if (keepfrictiontick < 0) {
-            keepfrictiontick++ ;
-        }
-    }
 
 
     /**
@@ -351,7 +334,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfJumpPhase = 0;
         jumpAmplifier = 0;
         setBack = null;
-        sfZeroVdistRepeat = 0;
         clearNoFallData();
         removeAllPlayerSpeedModifiers();
         sfHoverTicks = sfHoverLoginTicks = -1;
@@ -418,7 +400,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         playerMoves.invalidate();
         vehicleMoves.invalidate();
         sfJumpPhase = 0;
-        sfZeroVdistRepeat = 0;
         verticalBounce = null;
         // Remember where we send the player to.
         setTeleported(loc);
@@ -504,7 +485,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      */
     private void resetPlayerPositions() {
         playerMoves.invalidate();
-        sfZeroVdistRepeat = 0;
         sfDirty = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
         insideMediumCount = 0;

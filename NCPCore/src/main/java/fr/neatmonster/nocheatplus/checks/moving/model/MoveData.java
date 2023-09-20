@@ -101,6 +101,12 @@ public class MoveData {
      * The player touched ground by the means of a lost-ground workaround exclusively
      */
     public boolean touchedGroundWorkaround;
+
+    /**
+     * Just like touchedGroundWorkaround. <br>
+     * Needed because there are some lostground cases which we need to ignore with horizontal prediction but not with vertical.
+     */
+    public boolean missedGroundCollision;
     
     
     // Meta stuff
@@ -157,6 +163,7 @@ public class MoveData {
         headObstructed = false;
         touchedGround = false;
         touchedGroundWorkaround = false;
+        missedGroundCollision = false;
         // Done.
         valid = true;
     }

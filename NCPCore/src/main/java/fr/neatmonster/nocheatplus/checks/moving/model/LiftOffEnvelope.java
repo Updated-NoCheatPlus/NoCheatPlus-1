@@ -23,37 +23,30 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
  */
 public enum LiftOffEnvelope {
     /** Normal in-air lift off, without any restrictions/specialties. */
-    NORMAL(0.42, 1.26, 1.15, 6, true),
-    /** (Non-vanilla) Weak or no limit moving off liquid from liquid near ground. */
-    LIMIT_NEAR_GROUND(0.42, 1.26, 1.15, 6, false), // TODO: 0.385 / not jump on top of 1 high wall from water.
-    /** (Non-vanilla) Simple calm water surface, stronger limit */
-    LIMIT_LIQUID(0.1, 0.27, 0.1, 3, false),
-    //    /** Flowing water / strong(-est) limit. */
-    //    LIMIT_LIQUID_STRONG(...), // TODO
+    NORMAL(0.42, 1.26, 6, true),
+    /** (Non-vanilla) Simple calm water surface, strong limit */
+    LIMIT_LIQUID(0.1, 0.27, 3, false),
     // NOTE: Stuck-speed all have a jump height that is equal to lift-off speed.
     /** Web jump envelope (stuck-speed) */
-    LIMIT_WEBS(0.021, 0.021, 0.015, 0, true),
+    LIMIT_WEBS(0.021, 0.021, 0, true),
     /** Berry bush jump envelope (stuck-speed). */
-    LIMIT_SWEET_BERRY(0.315, 0.315, 0.201, 0, true), 
+    LIMIT_SWEET_BERRY(0.315, 0.315, 0, true), 
     /** Powder snow jump envelope (stuck-speed). */
-    LIMIT_POWDER_SNOW(0.63, 0.63, 0.52, 0, true),
+    LIMIT_POWDER_SNOW(0.63, 0.63, 0, true),
     /** Honey block jump envelope. */
-    LIMIT_HONEY_BLOCK(0.21, 0.4, 0.15, 4, true), 
+    LIMIT_HONEY_BLOCK(0.21, 0.4, 4, true), 
     /** This medium is not covered by the enum */
-    UNKNOWN(0.0, 0.0, 0.0, 0, false)
+    UNKNOWN(0.0, 0.0, 0, false)
     ;
 
     private double jumpGain;
     private double maxJumpHeight;
-    // TODO: To be removed.
-    private double minJumpHeight;
     private int maxJumpPhase;
     private boolean jumpEffectApplies;
 
-    private LiftOffEnvelope(double jumpGain, double maxJumpHeight, double minJumpHeight, int maxJumpPhase, boolean jumpEffectApplies) {
+    private LiftOffEnvelope(double jumpGain, double maxJumpHeight, int maxJumpPhase, boolean jumpEffectApplies) {
         this.jumpGain = jumpGain;
         this.maxJumpHeight = maxJumpHeight;
-        this.minJumpHeight = minJumpHeight;
         this.maxJumpPhase = maxJumpPhase;
         this.jumpEffectApplies = jumpEffectApplies;
     }
@@ -85,23 +78,6 @@ public enum LiftOffEnvelope {
         }
         return jumpGain;
     }
-
-
-    /**
-     * Minimal jump height in blocks.
-     * (The minJumpHeight value is just an estimation, you won't find a reference in the game's code for it)
-     * 
-     * @param jumpAmplifier
-     * @return The minimum height of the jump
-     * @Deprecated Will soon be removed with the vDistRel rework (which will outclass all jump-height checks: vidstsb and lowjump). 
-     */
-    @Deprecated
-    public double getMinJumpHeight(double jumpAmplifier) {
-        if (jumpEffectApplies && jumpAmplifier != 0.0) {
-            return Math.max(0.0, minJumpHeight + 0.5 * jumpAmplifier);
-        }
-        return minJumpHeight;
-    }
     
     /**
      * Maximum jump height in blocks.
@@ -112,7 +88,7 @@ public enum LiftOffEnvelope {
      */
     public double getMaxJumpHeight(double jumpAmplifier) {
         if (jumpEffectApplies && jumpAmplifier > 0.0) {
-            // Note: The jumpAmplifier value is one higher than the MC level.
+            // NOTE: The jumpAmplifier value is one higher than the MC level.
             if (jumpAmplifier < 10.0) {
                 // Classic.
                 // TODO: Can be confined more.

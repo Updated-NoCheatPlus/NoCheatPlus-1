@@ -14,15 +14,18 @@
  */
 package fr.neatmonster.nocheatplus.utilities.collision;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
@@ -259,8 +262,9 @@ public class CollisionUtil {
      *            Precision in grad.
      * @return the double
      */
-    public static double combinedDirectionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double blockPrecision, final double anglePrecision, final boolean isPlayer)
-    {
+    public static double combinedDirectionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX, 
+                                                final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double blockPrecision, 
+                                                final double anglePrecision, final boolean isPlayer) {
         double dirLength = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         if (dirLength == 0.0) dirLength = 1.0; // ...
 
@@ -326,8 +330,8 @@ public class CollisionUtil {
      * @return
      */
     public static boolean isInsideAABBIncludeEdges(final double x, final double y, final double z,
-            final double minX, final double minY, final double minZ,
-            final double maxX, final double maxY, final double maxZ) {
+                                                   final double minX, final double minY, final double minZ,
+                                                   final double maxX, final double maxY, final double maxZ) {
         return !(x < minX || x > maxX || z < minZ || z > maxZ || y < minY || y > maxY);
     }
 
@@ -342,8 +346,7 @@ public class CollisionUtil {
      * @return The multiple of dir to hit the min-max coordinates, or
      *         Double.POSITIVE_INFINITY if not possible to hit.
      */
-    public static double getMinTimeIncludeEdges(final double pos, final double dir, 
-            final double minPos, final double maxPos) {
+    public static double getMinTimeIncludeEdges(final double pos, final double dir, final double minPos, final double maxPos) {
         if (pos >= minPos && pos <= maxPos) {
             return 0.0;
         }
@@ -375,8 +378,7 @@ public class CollisionUtil {
      *         Double.POSITIVE_INFINITY may be returned, if coordinates are
      *         colliding always.
      */
-    public static double getMaxTimeIncludeEdges(final double pos, final double dir, 
-            final double minPos, final double maxPos, final double minTime) {
+    public static double getMaxTimeIncludeEdges(final double pos, final double dir, final double minPos, final double maxPos, final double minTime) {
         if (Double.isInfinite(minTime)) {
             return Double.NaN;
         }
@@ -411,8 +413,8 @@ public class CollisionUtil {
      * @return
      */
     public static double getMaxAxisDistAABB(final double x, final double y, final double z,
-            final double minX, final double minY, final double minZ,
-            final double maxX, final double maxY, final double maxZ) {
+                                            final double minX, final double minY, final double minZ,
+                                            final double maxX, final double maxY, final double maxZ) {
         return Math.max(axisDistance(x,  minX, maxX), Math.max(axisDistance(y, minY, maxY), axisDistance(z, minZ, maxZ)));
     }
 
@@ -435,8 +437,8 @@ public class CollisionUtil {
      * @return
      */
     public static double getManhattanDistAABB(final double x, final double y, final double z,
-            final double minX, final double minY, final double minZ,
-            final double maxX, final double maxY, final double maxZ) {
+                                              final double minX, final double minY, final double minZ,
+                                              final double maxX, final double maxY, final double maxZ) {
         return axisDistance(x,  minX, maxX)+ axisDistance(y, minY, maxY) + axisDistance(z, minZ, maxZ);
     }
 
@@ -458,9 +460,8 @@ public class CollisionUtil {
      * @param maxZ
      * @return
      */
-    public static double getSquaredDistAABB(final double x, final double y, final double z,
-            final double minX, final double minY, final double minZ,
-            final double maxX, final double maxY, final double maxZ) {
+    public static double getSquaredDistAABB(final double x, final double y, final double z, final double minX, final double minY, final double minZ,
+                                            final double maxX, final double maxY, final double maxZ) {
         final double dX = axisDistance(x,  minX, maxX);
         final double dY = axisDistance(y, minY, maxY);
         final double dZ = axisDistance(z, minZ, maxZ);
@@ -479,19 +480,49 @@ public class CollisionUtil {
     public static double axisDistance(final double pos, final double minPos, final double maxPos) {
         return pos < minPos ? Math.abs(pos - minPos) : (pos > maxPos ? Math.abs(pos - maxPos) : 0.0);
     }
-	
+
     /**
-     * Test if the player is colliding with entities.
+     * Test if the player is colliding with entities. <br>
+     * 
      * @param player
-     * @param onlyLiving if dead entities should be left out
-     * @return true if the player is colliding with entities.
+     * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
+     * @return True, if the player is colliding with entities.
      */
-	public static boolean isCollidingWithEntities(final Player p, final boolean onlyLiving) {
-        if (onlyLiving) {
-            List<Entity> entities = p.getNearbyEntities(0.15, 0.2, 0.15); // TODO: Custom margins? Actually, better if we use client-code margins.
-            entities.removeIf(e -> !(e instanceof LivingEntity));
+    public static boolean isCollidingWithEntities(final Player p, double xMargin, double yMargin, double zMargin, final boolean shouldFilter) {
+        if (shouldFilter) {
+            List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin); 
+            // Minecarts, boats, armor stands, dead entities cannot push the player
+            entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity));
             return !entities.isEmpty();
         }
-        return !p.getNearbyEntities(0.15, 0.15, 0.15).isEmpty();
+        return !p.getNearbyEntities(xMargin, yMargin, zMargin).isEmpty();
+    }
+	
+    /**
+     * Test if the player is colliding with entities. <br>
+     * Does not use any margin.
+     * 
+     * @param player
+     * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
+     * @return True, if the player is colliding with entities.
+     */
+	public static boolean isCollidingWithEntities(final Player p, final boolean shouldFilter) {
+        return isCollidingWithEntities(p, 0.0, 0.0, 0.0, shouldFilter);
+    }
+    
+	/**
+	 * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
+	 * (Not Minecarts, Boats, dead entities (...)).
+	 * 
+	 * @param p
+	 * @param xMargin
+	 * @param yMargin
+	 * @param zMargin
+	 * @return The List containing entities that can push the player.
+	 */
+    public static List<Entity> getCollidingEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
+        List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
+        entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity));
+        return entities;
     }
 }

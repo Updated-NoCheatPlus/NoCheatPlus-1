@@ -39,10 +39,15 @@ public class PlayerMoveData extends MoveData {
 	public boolean hasGravity;
     
     /**
-     * The distance covered by a move from the setback point to the to.getY() point
+     * The distance covered by a move from the setback point to the to.getY() point.
      */
     public double setBackYDistance;
-
+    
+    /**
+     * Indicates that this movement has/should have been slowed down due to the player hitting an entity (sprinting will be reset also).<br>
+     * Mostly intended to be used for h-speed prediction.
+     */
+    public boolean hasAttackSlowDown;
 
     // Bounds set by checks.
     /**
@@ -98,7 +103,7 @@ public class PlayerMoveData extends MoveData {
      * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
      * (Sequence is: normal -> redundant -> normal (...))
      */
-    public boolean duplicatePosition;
+    public boolean duplicateEvent;
 
     /**
      * Just the used vertical velocity. Could be overridden multiple times
@@ -113,6 +118,7 @@ public class PlayerMoveData extends MoveData {
         hasLevitation = false;
         hasSlowfall = false;
         hasGravity = true; // Assume one to have gravity rather than the opposite... :)
+        hasAttackSlowDown = false;
         // Properties involving the environment.
         bunnyHop = false;
         canStep = false;
@@ -126,7 +132,7 @@ public class PlayerMoveData extends MoveData {
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;
-        duplicatePosition = false;
+        duplicateEvent = false;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();
     }

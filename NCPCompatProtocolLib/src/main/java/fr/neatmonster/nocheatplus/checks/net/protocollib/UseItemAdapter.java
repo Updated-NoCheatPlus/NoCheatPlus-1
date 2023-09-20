@@ -109,6 +109,7 @@ public class UseItemAdapter extends BaseAdapter {
     };
 
     private static int timeBetweenRL = 70;
+    
     private static PacketType[] initPacketTypes() {
         final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(PacketType.Play.Client.BLOCK_DIG, PacketType.Play.Client.BLOCK_PLACE));
         return types.toArray(new PacketType[types.size()]);
@@ -148,22 +149,22 @@ public class UseItemAdapter extends BaseAdapter {
     private static void onItemConsume(final PlayerItemConsumeEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        data.isUsingItem = false;        
+        // Consume(d) (!!), so the player isn't using the item anymore
+        pData.setUsingItem(false);       
     }
 
     private static void onInventoryOpen(final InventoryOpenEvent e) {
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        data.isUsingItem = false;        
+        // Can't use item with an inventory open.
+        pData.setUsingItem(false);         
     }
 
     private static void onDeath(final PlayerDeathEvent e) {
         final IPlayerData pData = DataManager.getPlayerData((Player) e.getEntity());
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        data.isUsingItem = false;        
+        // Can't use item if dead
+        pData.setUsingItem(false);    
     }
 
     private static void onItemInteract(final PlayerInteractEvent e) {
@@ -173,69 +174,77 @@ public class UseItemAdapter extends BaseAdapter {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        // Reset
         data.offHandUse = false;
         if (!data.mightUseItem) {
+            // Player did not send the block-placement packet, so they are for sure not using anything, return.
             return;
         }
         data.mightUseItem = false;
 
         if (e.useItemInHand().equals(Event.Result.DENY)) {
+            // A plugin denied the item-use.
             return;
         }
 
         if (p.getGameMode() == GameMode.CREATIVE) {
-            data.isUsingItem = false;
+            // TODO: If merging SurvivalFly with CreativeFly, this needs to be removed.
+            pData.setUsingItem(false);
             return;
         }
-
+        
+        // Proceed to check...
         if (e.hasItem()) {
             final ItemStack item = e.getItem();
             final Material m = item.getType();
             if (Bridge1_9.hasElytra() && p.hasCooldown(m)) {
+                // Item is in cooldown so it cannot be used.
                 return;
             }
-
+            
+            // Edible / consumable items...
             if (InventoryUtil.isConsumable(item)) {
-                // pre1.9 splash potion
-                if (!Bridge1_9.hasElytra() && item.getDurability() > 16384) return;
+                if (!Bridge1_9.hasElytra() && item.getDurability() > 16384) {
+                    // pre1.9 splash potion edge case.
+                    return;
+                }
                 if (m == Material.POTION || m == Material.MILK_BUCKET || m.toString().endsWith("_APPLE") || m.name().startsWith("HONEY_BOTTLE")) {
-                    data.isUsingItem = true;
+                    pData.setUsingItem(true);
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
                 }
                 if (item.getType().isEdible() && p.getFoodLevel() < 20) {
-                    data.isUsingItem = true;
+                    pData.setUsingItem(true); 
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
                 }
             }
-
-            if (m == Material.BOW && hasArrow(p.getInventory(), false)) {
-                data.isUsingItem = true;
+            // Bows...
+            if (m == Material.BOW && InventoryUtil.hasArrow(p.getInventory(), false)) {
+                pData.setUsingItem(true);
                 data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
-
+            // Shields... Bukkit takes care here, no need to set the flag.
             if (Bridge1_9.hasElytra() && m == Material.SHIELD) {
                 //data.isUsingItem = true;
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
-
             if (Bridge1_13.hasIsRiptiding() && m == Material.TRIDENT) {
                 //data.isUsingItem = true;
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
-
+            // Crosswbows...
             if (m.toString().equals("CROSSBOW")) {
-                if (!((CrossbowMeta) item.getItemMeta()).hasChargedProjectiles() && hasArrow(p.getInventory(), true)) {
-                    data.isUsingItem = true;
+                if (!((CrossbowMeta) item.getItemMeta()).hasChargedProjectiles() && InventoryUtil.hasArrow(p.getInventory(), true)) {
+                    pData.setUsingItem(true);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 }
             }
-        } else data.isUsingItem = false;        
+        } 
+        // No item in hands, no deal.
+        else pData.setUsingItem(false);       
     }
 
     private static void onChangeSlot(final PlayerItemHeldEvent e) {
@@ -246,16 +255,9 @@ public class UseItemAdapter extends BaseAdapter {
         //    p.getInventory().setHeldItemSlot(data.olditemslot);
         //    data.changeslot = false;
         //}
-        if (e.getPreviousSlot() != e.getNewSlot()) data.isUsingItem = false;
-    }
-
-    private static boolean hasArrow(final PlayerInventory i, final boolean fw) {
-        if (Bridge1_9.hasElytra()) {
-            final Material m = i.getItemInOffHand().getType();
-            return (fw && m == Material.FIREWORK_ROCKET) || m.toString().endsWith("ARROW") ||
-                   i.contains(Material.ARROW) || i.contains(Material.TIPPED_ARROW) || i.contains(Material.SPECTRAL_ARROW);
-        }
-        return i.contains(Material.ARROW);
+        // Switching a slot, so the item use status is reset. 
+        // TODO: Check for abuses.
+        if (e.getPreviousSlot() != e.getNewSlot()) pData.setUsingItem(false);
     }
 
     private void handleBlockPlacePacket(PacketEvent event) {
@@ -272,6 +274,7 @@ public class UseItemAdapter extends BaseAdapter {
                 return;
             }
         }
+        // Player sends a block-placement item when right clicking, so they might be actually using an item. Set the flag.
         if (!event.isCancelled()) data.mightUseItem = true;
     }
 
@@ -282,12 +285,12 @@ public class UseItemAdapter extends BaseAdapter {
         PlayerDigType digtype = event.getPacket().getPlayerDigTypes().read(0);
         // DROP_ALL_ITEMS when dead?
         if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
-            data.isUsingItem = false;
+            pData.setUsingItem(false);
         }
         
         //Advanced check
         if (digtype == PlayerDigType.RELEASE_USE_ITEM) {
-            data.isUsingItem = false;
+            pData.setUsingItem(false);
             long now = System.currentTimeMillis();
             if (data.releaseItemTime != 0) {
                 if (now < data.releaseItemTime) {

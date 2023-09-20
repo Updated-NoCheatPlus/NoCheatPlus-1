@@ -363,4 +363,48 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * @param ID
      */
     public void setClientVersionID(final int ID);
+
+    /**
+     * Set the sneaking state of the client.<br>
+     * There are cases where the information sent to the server can be incosistent, so we need to estimate
+     * ourselves if the player could be sneaking.
+     * 
+     * @param sneaking
+     */
+    public void setSneaking(final boolean sneaking);
+
+    /**
+     * Gets the sneaking state of the client, as set by us.
+     * @return True, if sneaking.
+     */
+    public boolean isSneaking();
+
+    /**
+     * Set the sprinting state of the client.<br>
+     * There are cases where the information sent to the server can be incosistent, so we need to estimate
+     * ourselves if the player could be sprinting.
+     * 
+     * @param sprinting
+     */
+    public void setSprinting(final boolean sprinting);
+    
+    /**
+     * This ensures that sprinting is actually possible (i.e.: not with low food level)
+     * @return True, if sprinting
+     */
+    public boolean isSprinting();
+
+    /**
+     * Set the using item state of the client.<br>
+     * Needed because Minecraft nor Bukkit provides us with a method (except for player#isBlocking())
+     * 
+     * @param usingItem
+     */
+    public void setUsingItem(final boolean usingItem);
+    
+    /**
+     * Gets the using item state of the client, as set by us.
+     * @return True, if using an item
+     */
+    public boolean isUsingItem();
 }

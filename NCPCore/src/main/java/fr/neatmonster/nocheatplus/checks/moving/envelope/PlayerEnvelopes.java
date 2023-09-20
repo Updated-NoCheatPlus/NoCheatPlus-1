@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
@@ -109,7 +110,7 @@ public class PlayerEnvelopes {
     }
 
     /**
-     * Test if the player is (well) within in-air falling envelope.
+     * A non-vanilla formula for if the player is (well) within in-air falling envelope.
      * 
      * @param yDistance
      * @param lastYDist
@@ -123,7 +124,6 @@ public class PlayerEnvelopes {
             return false;
         }
         final double frictDist = lastYDist * lastFrictionVertical - Magic.GRAVITY_MIN;
-        // Extra amount: distinguish pos/neg?
         return yDistance <= frictDist + extraGravity && yDistance > frictDist - Magic.GRAVITY_SPAN - extraGravity;
     }
 
@@ -137,96 +137,107 @@ public class PlayerEnvelopes {
      * @param sneaking
      * @param fromOnGround
      * @param toOnGround
+     * @param shouldCheckForLostGround (See isJump())
      * @return If true, a 10-ticks long countdown is activated (this phase is referred to as "bunnyfly")
      *         during which, this method will return false if called, in order to prevent abuse of the speed boost.<br>
      *         Cases where the player is allowed/able to bunnyhop sooner than usual are defined in SurvivalFly (hDistRel)
-     * 
      */
-    public static boolean isBunnyhop(final MovingData data, final boolean isOnGroundOpportune, boolean sprinting, boolean sneaking,
-                                     final boolean fromOnGround, final boolean toOnGround) {
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        
+    public static boolean isBunnyhop(final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
+        final MovingData data = pData.getGenericInstance(MovingData.class);
         if (data.bunnyhopDelay > 0) {
-            // (Checked first)
-            // This bunnyfly phase hasn't ended yet. Too soon to apply the boost.
+            // Jump delay hasn't ended yet...
             return false;
         }
-        if (!sprinting) {
-            // This mechanic is applied only if the player is sprinting
+        return isJump(player, fromOnGround, toOnGround) && pData.isSprinting();
+    }
+
+    /**
+     * NoCheatPlus' definition of a jump.<br>
+     * (Minecraft does not offer a direct way to know if players could have jumped)
+     * This is mostly intended for vertical motion, not for horizontal. Use PlayerEnvelopes#isBunnyhop() for that.
+     * 
+     * @param data
+     * @param hasLevitation
+     * @param jumpGain The jump speed.
+     * @param fromOnGround Uses the BCT.
+     * @param toOnGround Uses the BCT.
+     * @return True if is a jump. 
+     */
+    public static boolean isJump(final Player player, boolean fromOnGround, boolean toOnGround) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
+        // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
+        // Of course, since we have our own onGround handling, we need to take care of all caveat that it entails... (Lost ground, delayed jump etc...)
+        if (thisMove.hasLevitation) {
             return false;
         }
-        //  if (sneaking) {
-        //      // Minecraft does not allow players to sprint and sneak at the same time.
-        //      return false;
-        //  }
-        if (fromOnGround && toOnGround && thisMove.yDistance > 0.0) {
-            // Lastly, don't allow players to boost themselves on stepping up blocks.
-            return false;
-        }
-    
-        return 
-                // 0: Motion speed condition. Demand the player to hit the jumping envelope.
-                (
-                    thisMove.yDistance > data.liftOffEnvelope.getJumpGain(data.jumpAmplifier, data.lastStuckInBlockVertical) - Magic.GRAVITY_SPAN
-                    // Do note that this headObstructed check uses the step-correction leniency method, while the check used to determine
-                    // if the bunnfly phase should be ended sooner (due to the head bump, see SurvivalFly#hdistChecks) does not.
-                    || thisMove.headObstructed && thisMove.yDistance >= (0.1 * data.lastStuckInBlockVertical) // 0.1 seems to be the maximum jumping gain if head is obstructed within a 2-blocks high area.
+        return  
+                // 0: Jump phase condition... Demand a very low air time.
+                data.sfJumpPhase <= 1
+                // 0: Ground conditions... Demand player to be in a "leaving ground" state.
+                && ( 
+                    // 1: Ordinary lift-off.
+                    fromOnGround && !toOnGround
+                    // 1: With jump being delayed a tick after (only check if head is not obstructed).
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !thisMove.headObstructed
+                    && (
+                            // 2: The usual case: here we know that the player actually came from ground with the last move
+                            // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
+                            lastMove.from.onGround
+                            // 2: With "lostground_stepdown-to": the last collision (above) is lost, so the player is seen as being in air for much longer.
+                            // TODO: check for abuses.
+                            // https://gyazo.com/a5c22069af8ba6a718308bf5b125659a
+                            || lastMove.touchedGroundWorkaround 
+                    ) 
                 )
-                // 0: Ground conditions
+                // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
                 && (
-                    // 1: Ordinary/obvious lift-off. Without any special mechanic, like BCT
-                    data.sfJumpPhase == 0 && thisMove.from.onGround
-                    // 1: Allow hop on lost-ground or if a past on-ground state can be found due to block change activity.
-                    || data.sfJumpPhase <= 1 && (thisMove.touchedGroundWorkaround || isOnGroundOpportune) && !lastMove.bunnyHop
+                    // 1: If head is obstructed, jumping cannot be predicted without MC's collision function. So, just cap motion which will be at or lower than ordinary jump gain, but never higher, and never lower than 0.1 (which is the maximum motion with no jump boost and jumping in a 2-blocks high area).
+                    // Also, here, jumping with head obstructed uses the much more lenient step correction method (See comment in AirWorkarounds).
+                    lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0 
+                    && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain) 
+                    // 1: The ordinary case. The player's speed matches the jump speed gain.
+                    || MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_TOLERANCE)
                 )
             ;
     }
 
     /**
-     * Test if this movement is a jump.
-     * Minecraft does not offer a direct way to know if players could have jumped
-     * 
-     * @param data
-     * @param hasLevitation
-     * @param jumpGain The jump speed
-     * @return
-     */
-    public static boolean isJump(final MovingData data, boolean hasLevitation, double jumpGain, boolean headObstructed) {
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        if (hasLevitation) {
-            return false;
-        }
-        boolean obstructedJump = headObstructed && MathUtil.almostEqual(thisMove.yDistance, 0.1 * data.lastStuckInBlockVertical, 0.0001)
-                               && (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 1);
-        boolean jump = (thisMove.from.onGround && !thisMove.to.onGround || thisMove.touchedGroundWorkaround && data.sfJumpPhase <= 2) 
-                       && thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, 0.0001);
-        if (jump || obstructedJump) {
-            thisMove.canJump = true;
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Test if this was a step movement
-     * Minecraft does not offer a direct way to know if players could have stepped up a block
+     * NoCheatPlus' definition of "step".<br>
+     * (Minecraft does not offer a direct way to know if players could have stepped up a block).
+     * Does not take into consideration lost-ground cases.
      * 
      * @param data
      * @param stepHeight The step height (0.5, prior to 1.8, 0.6 from 1.8 and onwards)
-     * @param couldStep
-     * @return
+     * @param fromOnGround Uses the BCT.
+     * @param toOnGround Uses the BCT.
+     * @return True if is a step up.
      */
-    public static boolean isStep(final MovingData data, double stepHeight, boolean couldStep) {
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+    public static boolean isStep(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
+        final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        boolean step = thisMove.from.onGround && thisMove.to.onGround && thisMove.yDistance > 0.0
-                       && MathUtil.almostEqual(thisMove.yDistance, stepHeight, 0.0001);
-        if (step || couldStep) {
-            thisMove.canStep = true;
-            return true;
-        }
-        return false;
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        // NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
+        return  
+
+                fromOnGround && toOnGround
+                && (
+                    // 1: Handle "excessive ground" cases. AKA: cases where the client leaves ground, but for NCP, the distance from ground is so small that it cannot distingush, resulting as if the player never left.
+                    // (Thus, in this case, the game correctly applies friction)
+                    thisMove.yDistance < 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
+                    // 1: Otherwise, if motion is positive, we must check against the exact stepping motion; if we don't want abuses that is.
+                    || thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_TOLERANCE)
+                )
+                // 0: ...Or having an extremely little air time from a ground status to a ground status (lastMove: from air/ground OR to air/ground thisMove: toOnGround.
+                || lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, Math.abs(thisMove.yDistance) * 1.3)
+                && lastMove.yDistance <= 0.0 && thisMove.yDistance > 0.0
+                && lastMove.touchedGround && lastMove.toIsValid && toOnGround
+                && MathUtil.inRange(0.001, thisMove.yDistance, cc.sfStepHeight)
+            ;
     }
 
     /**
@@ -239,9 +250,11 @@ public class PlayerEnvelopes {
      * @param data
      * @return
      */
-    public static boolean skipPaper(final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
+    public static boolean couldBeSetBackLoop(final MovingData data) {
         // TODO: Confine to from at block level (offset 0)?
         final double setBackYDistance;
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         if (data.hasSetBack()) {
             setBackYDistance = thisMove.to.getY() - data.getSetBackY();
         }
@@ -274,9 +287,11 @@ public class PlayerEnvelopes {
         // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
         // A better way to do this would to get the maxY through another method, just can't seem to find it :/
         // Collect block flags at the current location as they may not already be there, and cause NullPointer errors.
+        if (pData.isSneaking()) {
+            return false;
+        }
         to.collectBlockFlags();
-        double blockY = ((to.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0) 
-                        && ((to.getY() + 0.4375) % 1 == 0) ? to.getY() : to.getBlockY();
+        double blockY = ((to.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0) && ((to.getY() + 0.4375) % 1 == 0) ? to.getY() : to.getBlockY();
         return 
                 // 0: Normal envelope (forestall NoFall).
                 (
@@ -284,7 +299,8 @@ public class PlayerEnvelopes {
                     to.getY() - blockY <= Math.max(cc.yOnGround, cc.noFallyOnGround)
                     // 1: With carpet.
                     || BlockProperties.isCarpet(to.getTypeId()) && to.getY() - to.getBlockY() <= 0.9
-                ) && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
+                ) 
+                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
                 // 0: Within wobble-distance.
                 || to.getY() - blockY < 0.286 && to.getY() - from.getY() > -0.9
                 && to.getY() - from.getY() < -Magic.GRAVITY_MIN

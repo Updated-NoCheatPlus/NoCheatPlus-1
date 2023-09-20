@@ -265,7 +265,7 @@ public class SchedulerHelper {
      * @param cause the TeleportCause enum.
      */
     @SuppressWarnings("unchecked")
-	public static boolean teleportEntity(Entity entity, Location loc, TeleportCause cause) {
+    public static boolean teleportEntity(Entity entity, Location loc, TeleportCause cause) {
         if (!isFoliaServer) {
             return entity.teleport(loc, cause);
         }

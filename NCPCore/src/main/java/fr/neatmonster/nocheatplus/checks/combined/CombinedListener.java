@@ -14,10 +14,15 @@
  */
 package fr.neatmonster.nocheatplus.checks.combined;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -28,10 +33,20 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -42,6 +57,9 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.players.PlayerFactoryArgument;
 import fr.neatmonster.nocheatplus.stats.Counters;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.moving.AuxMoving;
+import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
 
 /**
@@ -61,6 +79,12 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     private final Counters counters = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class);
 
     private final int idFakeInvulnerable = counters.registerKey("fakeinvulnerable");
+
+    /** Location for temporary use with getLocation(useLoc). Always call setWorld(null) after use. Use LocUtil.clone before passing to other API. */
+    final Location useLoc = new Location(null, 0, 0, 0); 
+
+    /** Auxiliary functionality. */
+    private final AuxMoving aux = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(AuxMoving.class);
 
     @SuppressWarnings("unchecked")
     public CombinedListener(){
@@ -98,7 +122,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         final CombinedConfig cc = pData.getGenericInstance(CombinedConfig.class);
         final boolean debug = pData.isDebugActive(checkType);
-
         if (cc.invulnerableCheck 
             && (cc.invulnerableTriggerAlways || cc.invulnerableTriggerFallDistance && player.getFallDistance() > 0)) {
             // TODO: maybe make a heuristic for small fall distances with ground under feet (prevents future abuse with jumping) ?
@@ -122,8 +145,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        final boolean debug = pData.isDebugActive(checkType);
-        if (debug) debug(player, "Clear improbable data on respawn.");
+        pData.setSprinting(false);
+        pData.setSneaking(false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -132,8 +155,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        final boolean debug = pData.isDebugActive(checkType);
-        if (debug) debug(player, "Clear improbable data on death.");
+        pData.setSprinting(false);
+        pData.setSneaking(false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -143,8 +166,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // If gamemode changes, then we can safely drop Improbable's data.
         data.resetImprobableData();
-        final boolean debug = pData.isDebugActive(checkType);
-        if (debug) debug(player, "Clear improbable data on game mode change.");
     }
 
     @Override
@@ -152,15 +173,101 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        final boolean debug = pData.isDebugActive(checkType);
-        if (debug) debug(player, "Clear improbable data on leave.");
+        // Sprinting/Sneaking is reset in PlayerData
     }
     
-    /**
-     * We listen to entity damage events for the Invulnerable feature.
-     * @param event
-     *           the event
-     */
+    /** NOTE: Cancelling does nothing. It won't stop players from sneaking */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onToggleSneak(final PlayerToggleSneakEvent event) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (!event.isSneaking()) {
+            // Player was sneaking and they now toggled it off.
+            pData.setSneaking(false);
+            return;
+        }
+        if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGlidingWithElytra(event.getPlayer())) {
+            // Bukkit is not entirely consistent with what "sneaking" means":
+            // ----> For Bukkit, sneaking (read as: moving slower than normal) = tapping the shift key; the event is fired with action packets (RELEASE/PRESS_SHIFT_KEY).
+            // For Minecraft, this is not necessarily true.
+            // ----> The game distinguishes between actual sneaking and just tapping the shift key (in short sneaking VS shifting). 
+            //       There are 2 methods to determine this.
+            //      - isMovingSlowly -> Which is the method that the game actually employs to slow inputs down (Code in LocalPlayer.java, aiStep() function, see then isMovingSlowly in the same class).
+            //      - isShiftKeyDown -> This is just a flag to tell that the player pressed the key. But does not strictly mean that they are also sneaking, which is determined instead by the method above, which uses player poses.
+            // In this case, the player can tap shift (and for bukkit, this equals sneaking) but they won't get slowed down, because isMovingSlowly would return false.
+            // TODO: This probably affects gliding and riptiding as well. Haven't tested it yet, but shifting does nothing when glidind anyway.
+            pData.setSneaking(false);
+            return;
+        }
+        pData.setSneaking(true);
+    }
+
+    /** NOTE: Cancelling does nothing. It won't stop players from sprinting. So, don't ignore cancelled events. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onToggleSprint(final PlayerToggleSprintEvent event) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (!event.isSprinting()) {
+            // Player was sprinting and they now toggled it off.
+            pData.setSprinting(false);
+            return;
+        }
+        // Player toggled sprinting on: ensure that it is legit (Bukkit does not check).
+        // TODO: This stuff might need to be latency compensated.
+        if (event.getPlayer().getFoodLevel() <= 5) {
+            pData.setSprinting(false);
+            return;
+        }
+        if (event.getPlayer().hasPotionEffect(PotionEffectType.BLINDNESS)) {
+            // Blindness does not break sprinting if the player receives it while already sprinting.
+            // The next toggle sprint event however will set it to false.
+            pData.setSprinting(false);
+            return;
+        }
+        // TODO: Account for sprint reset on facing a wall?
+        // NOTE: For the moment, omnidirectional sprinting is integreated as a subcheck in Sf.
+        pData.setSprinting(true);
+    }
+    
+    /** Cancelled events can still affect movement speed, since the mechanic we're checking is client-sided, so don't skip this listener */
+    @EventHandler(priority = EventPriority.LOWEST) 
+    public void onAttackingEntities(final EntityDamageByEntityEvent event) {
+        final Entity attacker = event.getDamager();
+        final Entity damaged = event.getEntity();
+        if (!(attacker instanceof Player)) {
+            return;
+        }
+        if (!(damaged instanceof LivingEntity) || damaged == null || damaged.isDead() || !damaged.isValid()) {
+            return;
+        }
+        // (uh... Maybe cut down boilerplate just a smidge...)
+        final Player player = (Player) attacker;
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        final ItemStack stack = Bridge1_9.getItemInMainHand(player);
+        final PlayerMoveInfo moveInfo = aux.usePlayerMoveInfo();
+        final Location loc =  player.getLocation(useLoc);
+        // This (odd) vanilla mechanic can be found in Player/EntityHuman.java.attack()
+        // If the player is sprint-attacking or is attacking with a knockback-equipped weapon, speed is slowed down and the sprinting status will reset.
+        moveInfo.set(player, loc, null, cc.yOnGround);
+        if (!MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, null, data, cc, pData)) {
+            // Clean-up
+            useLoc.setWorld(null);
+            aux.returnPlayerMoveInfo(moveInfo);
+            return;
+        }
+        if (pData.isSprinting() || !BlockProperties.isAir(stack) && stack.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0) {
+            final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+            thisMove.hasAttackSlowDown = true;
+            if (pData.isDebugActive(CheckType.MOVING)) {
+                debug(player, "Set attack slow down flag in this move.");
+            }
+        }
+        // Clean-up
+        useLoc.setWorld(null);
+        aux.returnPlayerMoveInfo(moveInfo);
+    }
+    
+    /** We listen to entity damage events for the Invulnerable feature.*/
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDamage(final EntityDamageEvent event) {
         final Entity entity = event.getEntity();
@@ -190,9 +297,10 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         event.setCancelled(true);
         counters.addPrimaryThread(idFakeInvulnerable, 1);
     }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerFish(final PlayerFishEvent event) {
+    
+    /** We listen for player fishing for the VERY critical and super important munch hausen check */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFishing(final PlayerFishEvent event) {
         // Check also in case of cancelled events.
         final Player player = event.getPlayer();
         if (munchHausen.isEnabled(player) && munchHausen.checkFish(player, event.getCaught(), event.getState())) {

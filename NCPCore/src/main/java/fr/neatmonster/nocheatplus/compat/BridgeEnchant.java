@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 
 public final class BridgeEnchant {
 
@@ -332,6 +333,16 @@ public final class BridgeEnchant {
         // Cap at three.
         return Math.min(3, getLeggingsLevelArmor(player, SWIFT_SNEAK));
     }
+    
+    /**
+     * 
+     * @param player
+     * @return The speed increment granted by the swift sneak enchant level (clamped)
+     *         (Formula is from LocalPlayer aiStep)
+     */      
+    public static float getSwiftSneakIncrement(final Player player) {
+      return MathUtil.clamp((float)getSwiftSneakLevel(player) * 0.15f, 0.0f, 1.0f);
+   }
 
     /**
      * Retrieve the maximum level for an enchantment, present in main and off hand slot.
@@ -347,14 +358,14 @@ public final class BridgeEnchant {
         }
         int level = 0;
         // Find the maximum level for the given enchantment.
-        final ItemStack mainhand = player.getInventory().getItemInMainHand();
-        final ItemStack offhand = player.getInventory().getItemInOffHand();
-        if (mainhand.getType().toString().equals("TRIDENT")) {
+        final ItemStack mainHand = player.getInventory().getItemInMainHand();
+        final ItemStack offHand = player.getInventory().getItemInOffHand();
+        if (mainHand.getType().toString().equals("TRIDENT")) {
             // Found in main hand already, return.
-            return Math.max(mainhand.getEnchantmentLevel(enchantment), level);
+            return Math.max(mainHand.getEnchantmentLevel(enchantment), level);
         }
-        if (offhand.getType().toString().equals("TRIDENT")) {
-            level = Math.max(offhand.getEnchantmentLevel(enchantment), level);
+        if (offHand.getType().toString().equals("TRIDENT")) {
+            level = Math.max(offHand.getEnchantmentLevel(enchantment), level);
         }
         return level;
     }

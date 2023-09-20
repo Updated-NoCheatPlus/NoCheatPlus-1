@@ -339,7 +339,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Set the container opening time.
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
             // Sneaking and right clicking with a block in hand will cause the player to place the block down, not to open the container.
-            && !(cData.isUsingItem || player.isSneaking() && event.isBlockInHand())) {
+            && !(pData.isUsingItem() || player.isSneaking() && event.isBlockInHand())) {
             if (BlockProperties.isContainer(event.getClickedBlock().getType())) {
                 data.containerInteractTime = System.currentTimeMillis();
                 if (pData.isDebugActive(CheckType.INVENTORY)) {

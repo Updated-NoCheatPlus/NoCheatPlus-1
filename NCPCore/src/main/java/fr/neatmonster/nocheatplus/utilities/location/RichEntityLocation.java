@@ -165,6 +165,105 @@ public class RichEntityLocation extends RichBoundsLocation {
     public IHandle<MCAccess> getMCAccessHandle() {
         return mcAccess;
     }
+    
+    /**
+     * Check if the entity is on a honey block including: cross-version checking and Mojang's 1.20 block-collision fix.
+     * @return Whether the entity is on a honey block.
+     */
+    public boolean isOnHoneyBlock() {
+        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
+        if (onHoneyBlock != null) {
+            return onHoneyBlock;
+        }
+        boolean res = super.isOnHoneyBlock();
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (res) {
+            // Is the player actually in the block?
+            if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
+                // Legacy clients don't have such block.
+                // This will allow "jumping" on it but won't solve legacy players "floating" mid air due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
+                // We'd need per-player blocks for such.
+                res = onHoneyBlock = false;
+            }
+        }
+        // if (!res) {
+            // Is the player really off the block?
+            //if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+                // Collision is done correctly in 1.20 [See: checkSupportingBlock() function in Entity.java]: the player is considered as "on" the block not just with the center box.
+                // From my understanding, the game checks if the block is the only one supporting the AABB of the player.
+                // if so, the game applies the properties of said block, if there are other ground-like blocks around, the game will apply the properties of the block covered the most by the AABB
+            //    res = onHoneyBlock = false;
+            //}
+        // }
+        return res;
+    }
+    
+    /**
+     * Check if the entity is in soul sand including Mojang's 1.20 block-collision fix.
+     * @return Whether the entity is in a soul sand block.
+     */
+    public boolean isInSoulSand() {
+        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
+        if (inSoulSand != null) {
+            return inSoulSand;
+        }
+        boolean res = super.isInSoulSand();
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        // if (!res && p != null) {
+        //     if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+        //         // Collision is done correctly in 1.20: the player is considered as "on" the block not just with the center box.
+        //         res = inSoulSand = isOnGround() && (collectedFlags & BlockFlags.F_SOULSAND) != 0;
+        //     }
+        // }
+        return res;
+    }
+
+    /**
+     * Check if the entity is in a berry bush, including cross-version checking.
+     * @return Whether the entity is in a berry bush.
+     */
+    public boolean isInBerryBush() {
+        if (inBerryBush != null) {
+            return inBerryBush;
+        }
+        boolean res = super.isInBerryBush();
+        final Player p = (Player) entity;
+        if (res && p != null) {
+            // Is the player actually in the block?
+            final IPlayerData pData = DataManager.getPlayerData(p);
+            if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+                // (Mapped to grass with viaver)
+                res = inBerryBush = false;
+            }
+        }
+        return res;
+    }
+    
+    /**
+     * Check if the entity is in powder snow, including NMS fall-distance checking.
+     * @return Whether the entity is in powder snow.
+     */
+    public boolean isInPowderSnow() {
+        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
+        if (inPowderSnow != null) {
+            return inPowderSnow;
+        }
+        boolean res = super.isInPowderSnow();
+        final Player p = (Player) entity;
+        /*if (res && p != null) {
+            // Actually inside?
+            final IPlayerData pData = DataManager.getPlayerData(p);
+            // Player is in powder snow (for NCP) but the game has this really nice mechanic where the block shape is smaller if the player is falling from far above.
+            if (entity != null && isLiving() && entity.getFallDistance() > 2.5f && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)) {
+                // FALLING_COLLISION_SHAPE: 0.8999999761581421D in PowderSnowBlock.java
+                // (That would be the block's height but we cannot dynamically change block shapes, so this is yet another workaround [simply contract the bounding box minY by the difference between max and actual block height])
+                res = inPowderSnow = BlockProperties.collides(blockCache, minX+0.001, minY + (1.0D - 0.8999999761581421D)+0.001, minZ+0.001, maxX-0.001, maxY-0.001, maxZ-0.001, BlockFlags.F_POWDERSNOW);
+            }
+        }*/
+        return res;
+    }
 
     /**
      * From HoneyBlock.java 
@@ -180,11 +279,15 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (p == null) {
             return false;
         }
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
+            // This mechanic was introduced in 1.15 alongside honey blocks
+            return false;
+        }
         if (isOnGround()) {
             // Not sliding, clearly.
             return false;
         }
-        // With the current implementation, this condition never is never run due to from.getBlockY(), it should be the location of the block not player's
+        // With the current implementation, this condition is never run due to from.getBlockY(), it should be the location of the block not player's
         //if (from.getY() > from.getBlockY() + 0.9375D - 1.0E-7D) {
         //    // Too far from the block.
         //    return false;
@@ -193,15 +296,17 @@ public class RichEntityLocation extends RichBoundsLocation {
             // Minimum speed.
             return false;
         }
-        // Done in honeyBlockSidewayCollision
         // With the current implementation, this condition will always return false, see above
         //double xDistanceToBlock = Math.abs((double)from.getBlockX() + 0.5D - from.getX());
         //double zDistanceToBlock = Math.abs((double)from.getBlockZ() + 0.5D - from.getZ());
         //double var7 = 0.4375D + (width / 2.0F);
         //return xDistanceToBlock + 1.0E-7D > var7 || zDistanceToBlock + 1.0E-7D > var7;
-        // Not really NMS :) But this essentially replicates NMS collision, so.
         collectBlockFlags(); // Do call here, else NPE for some places.
-        return (blockFlags & BlockFlags.F_STICKY) != 0 && BlockProperties.collides(blockCache, minX - 0.01, minY, minZ - 0.01, maxZ + 0.01, maxY, maxZ + 0.01, BlockFlags.F_STICKY);
+        if ((blockFlags & BlockFlags.F_STICKY) == 0) {
+            return false;
+        }
+        // Finally, test for collision
+        return isNextToBlock(0.01, BlockFlags.F_STICKY);
     }
 
     /**
@@ -219,9 +324,24 @@ public class RichEntityLocation extends RichBoundsLocation {
     public boolean standsOnEntity(final double yOnGround, final double xzMargin, final double yMargin) {
         return blockCache.standsOnEntity(entity, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, maxX + xzMargin, minY + yMargin, maxZ + xzMargin);
     }
+    
+    // /**
+    //  * Check if the entity is on ground according to lost ground workarounds.
+    //  * Assuming this gets called after the regular isOnGround (or isOnGroundOpportune) returns false.
+    //  * @return true, if a lost ground workaround can apply.
+    //  */
+    // public boolean isOnGroundApproximate() {
+    //     final Player p = (Player) entity;
+    //     final IPlayerData pData = DataManager.getPlayerData(p);
+    //     final MovingData data = pData.getGenericInstance(MovingData.class);
+    //     final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+    //     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+    //     return LostGround.lostGround(player, thisMove.from, thisMove.to, thisMove.hDistance, thisMove.yDistance, false, lastMove, data, cc, null, null);
+    // 
+    // }
 
     /**
-     * Checks if the entity is on ground, including entities such as Boat.
+     * Checks if the entity is on ground incluing special cases/properties such as powder snow and entities.
      * 
      * @return true, if the player is on ground
      */
@@ -232,24 +352,26 @@ public class RichEntityLocation extends RichBoundsLocation {
         boolean res = super.isOnGround();
         Player p = (Player) entity;
         if (res) {
-            collectBlockFlags();
-            final Material typeId = getTypeIdBelow();
-            final long belowFlags = BlockFlags.getBlockFlags(typeId);
             // Is the player really on ground?
-            if ((blockFlags & BlockFlags.F_POWDERSNOW) != 0 && p != null && !BridgeMisc.hasLeatherBootsOn(p)
-                // Check only if above powder snow, if inside, it will be handled as a normal ground block (without the GROUND_HEIGHT flag, players cannot stand between maximum and minimum height anyway)
-            	&& !isInPowderSnow()) { 
-                // If the player is on powder snow and doesn't have boots, they are not allowed to stay on it.
-                res = onGround = false;
+            if (p != null) {
+                if (BlockProperties.isPowderSnow(getTypeId(blockX, Location.locToBlock(y - 0.01), blockZ))
+                    && !BridgeMisc.hasLeatherBootsOn(p)) { 
+                    res = onGround = false;
+                    // Powder snow below without boots: no candidate for ground.
+                    // Standing in between max and min isn't possible with or without boots.
+                    // Standing on a block different than powder snow will fallback to the usual onGround logic (will return true).
+                }
             }
-        }
+        }   
         if (!res) {
             // Is the player actually off ground? 
-            // Player is not on ground: check if they are standing on an entity.
             final double d1 = 0.25;
             if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, maxX + d1, minY, maxZ + d1)) {
+                // On ground due to an entity
+                // TODO: Again, this check needs to be refined to be as close as possible to vanilla. With prediction, we cannot use a leniency magic value.
                 res = onGround = standsOnEntity = true;
             }
+            // TODO: Perhaps move all lostground stuff in here?
         }
         return res;
     }
@@ -264,13 +386,14 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * How Minecraft calculates liquid flow speed (pushing the player).
+     * How Minecraft calculates liquid pushing speed.
      * Can be found in: Entity.java, updateFluidHeightAndDoFluidPushing()
+     * Does check if the entity is inside liquid.
      * 
-     * @param xDistance
+     * @param xDistance 
      * @param zDistance
-     * @param liquidTypeFlag The flags F_LAVA or F_WATER.
-     * @return A vector representing the force of the liquid's flow.
+     * @param liquidTypeFlag The flags F_LAVA or F_WATER to use.
+     * @return A vector representing the pushing force (read as: speed) of the liquid.
      */
     public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
         if (!isInLiquid()) {
@@ -297,31 +420,30 @@ public class RichEntityLocation extends RichBoundsLocation {
         int k1 = 0;
         // NMS collision method. We need to check for a second collision because of how Minecraft handles fluid pushing
         // (And we need the exact speed for predictions)
-        for (int iX = iMinX; iX < iMaxX; iX++) {
-            for (int iY = iMinY; iY < iMaxY; iY++) {
-                for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
+        for (int x = iMinX; x < iMaxX; x++) {
+            for (int y = iMinY; y < iMaxY; y++) {
+                for (int z = iMinZ; z < iMaxZ; z++) {
                     // LEGACY 1.13-
                     if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidTypeFlag);
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
                         if (liquidHeight != 0.0) {
-                            double d0 = (float) (iY + 1) - liquidHeight;
+                            double d0 = (float) (y + 1) - liquidHeight;
                             if (!p.isFlying() && iMaxY >= d0) {
                                 // Collided
-                                Vector flowVector = getFlowVector(iX, iY, iZ, liquidTypeFlag);
+                                Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                                 pushingVector.add(flowVector);
                             }
                         }
                     }
                     // MODERN 1.13+
                     else {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, liquidTypeFlag);
-                        double liquidHeightToWorld = iY + liquidHeight;
-                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0
-                           && !p.isFlying()) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
+                        double liquidHeightToWorld = y + liquidHeight;
+                        if (liquidHeightToWorld >= minY && liquidHeight != 0.0 && !p.isFlying()) {
                             // Collided.
-                            d2 = Math.max(liquidHeightToWorld - (minY + 0.001), d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                            d2 = Math.max(liquidHeightToWorld - minY, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                             // Determine pushing speed by using the current flow of the liquid.
-                            Vector flowVector = getFlowVector(iX, iY, iZ, liquidTypeFlag);
+                            Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                             if (d2 < 0.4) {
                                 flowVector = flowVector.multiply(d2);
                             }
@@ -362,7 +484,6 @@ public class RichEntityLocation extends RichBoundsLocation {
                 }
             }
         }
-        // p.sendMessage("pushingVector: " + pushingVector.toString());
         return pushingVector;
     }
     
@@ -381,51 +502,52 @@ public class RichEntityLocation extends RichBoundsLocation {
     
     /**
      * FlowingFluid.java, getFlow()
+     * Does check if the entity is inside liquid.
      * 
      * @param access
      * @param x
      * @param y
      * @param z
-     * @return the vector
+     * @return the vector, representing the liquid's flowing force.
      */
-    public Vector getFlowVector(int x, int y, int z, final long liquidTypeFlag) {
-    	final Player p = (Player) entity;
+    public Vector getFlowForceVector(int x, int y, int z, final long liquidTypeFlag) {
+        final Player p = (Player) entity;
         if (p == null) {
             return new Vector();
         }
-        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
         if (!isInLiquid()) {
             return new Vector();
         }
         double xModifier = 0.0D;
         double zModifier = 0.0D;
+        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
             if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
-                float f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
-                float f1 = 0.0F;
-                if (f == 0.0F) {
+                float modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
+                float flowForce = 0.0F;
+                if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
                     final long flagsAtThisBlock = BlockFlags.getBlockFlags(node.getType());
-                    // VANILLA: block needs a hitbox to block motion
+                    // VANILLA: block needs a HITbox to block motion (thus, some materials which are passable but do have a hitbox may be considered by the game as capable of blocking motion)
                     //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
-                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
+                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions, due to the reasonabove)
                     if ((flagsAtThisBlock & (BlockFlags.F_GROUND | BlockFlags.F_SOLID)) == 0) { 
                         if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
-                            f = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
-                            if (f > 0.0F) {
-                                f1 = liquidLevel - (f - 0.8888889F);
+                            modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
+                            if (modLiquidHeight > 0.0F) {
+                                flowForce = liquidLevel - (modLiquidHeight - 0.8888889F);
                             }
                         }
                     }
                 } 
-                else if (f > 0.0F) {
-                    f1 = liquidLevel - f;
+                else if (modLiquidHeight > 0.0F) {
+                    flowForce = liquidLevel - modLiquidHeight;
                 }
-                if (f1 != 0.0F) {
-                    xModifier += (float) hDirection.getModX() * f1;
-                    zModifier += (float) hDirection.getModZ() * f1;
+                if (flowForce != 0.0F) {
+                    xModifier += (float) hDirection.getModX() * flowForce;
+                    zModifier += (float) hDirection.getModZ() * flowForce;
                 }
             }
         }
@@ -446,9 +568,9 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Check if a player may climb upwards (isOnClimbable returned true, player
-     * does not move from/to ground).<br>
-     * Prerequisites are: vertical motion is positive and the player isn't touching the ground.
+     * Check if a player may climb upwards.<br>
+     * Assuming this gets called after isOnClimbable returned true (with the player not moving from/to ground).<br>
+     * Does not check for motion.
      *
      * @param jumpHeight
      *            Height the player is allowed to have jumped.
@@ -458,7 +580,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData != null && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
-            // Since 1.14, all climbable are climbable upwards with no solid block attached to it..
+            // Since 1.14, all climbable blocks are climbable upwards, always.
             return true;
         }
         // Force legacy clients to behave with legacy mechanics.
@@ -517,26 +639,25 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         // Step correction: see https://github.com/NoCheatPlus/NoCheatPlus/commit/f22bf88824372de2207e6dca5e1c264f3d251897
         if (stepCorrection) {
-            double ref = maxY + marginAboveEyeHeight;
-            ref = ref - (double) Location.locToBlock(ref) + 0.35;
+            double obstrDistance = maxY + marginAboveEyeHeight;
+            obstrDistance = obstrDistance - (double) Location.locToBlock(obstrDistance) + 0.35;
             for (double bound = 1.0; bound > 0.0; bound -= 0.25) {
-                if (ref >= bound) {
+                if (obstrDistance >= bound) {
                     // Use this level for correction.
-                    marginAboveEyeHeight += bound + 0.35 - ref;
+                    marginAboveEyeHeight += bound + 0.35 - obstrDistance;
                     break;
                 }
             }
         }
-        // isSlidingDown exclusion: needed because the player's AABB would be INSIDE the block (thus, the maxY's AABB would result as hitting the honey block above)
-        /* 
-         * Powder snow: hack around NCP not having per-player blocks / dynamic removal or addition of flags.
-         * This would always return true due to the block having the GROUND flag, but for the purpose of THIS check, powder snow cannot obstruct a player's head/jump (jumping with powder snow above will simply let the player go through it).
-         */
-        return BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID)
-               // (Is there a more elegant way to do this?)
-        	   && !BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
-        	   // Only if not sliding against a wall of honey blocks with head clear above.
-        	   && !isSlidingDown();
+        return  BlockProperties.collides(blockCache, minX, maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID)
+                // (Is there a more elegant way to do this?)
+                /* 
+                 * Powder snow: hack around NCP not having per-player blocks / dynamic removal or addition of flags.
+                 * This would always return true due to the block having the GROUND flag, but for the purpose of THIS check, powder snow cannot obstruct a player's head/jump (jumping with powder snow above will simply let the player go through it).
+                 */
+                && !BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
+                // Here the player's AABB would be INSIDE the block sideways(thus, the maxY's AABB would result as hitting the honey block above)
+                && !isNextToBlock(0.01, BlockFlags.F_STICKY);
     }
 
     /**
@@ -654,8 +775,8 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @param yOnGround
      */
     protected void doSetExactHeight(final Location location, final Entity entity, final boolean isLiving, 
-            final double fullWidth, final double eyeHeight, final double height, final double fullHeight, 
-            final double yOnGround) {
+                                    final double fullWidth, final double eyeHeight, final double height, 
+                                    final double fullHeight, final double yOnGround) {
         this.entity = entity;
         this.isLiving = isLiving;
         final MCAccess mcAccess = this.mcAccess.getHandle();

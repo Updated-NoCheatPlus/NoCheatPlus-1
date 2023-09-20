@@ -248,23 +248,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         if (debug) {
             debug(player, "Attacks " + (damagedPlayer == null ? ("entity " + damaged.getType()) : ("player" + damagedPlayer.getName())) + " damage=" + (finalDamage == originalDamage ? finalDamage : (originalDamage + "/" + finalDamage)));
         }
-        
-        // This (odd) vanilla mechanic can be found in Player.java.attack()
-        // If the player is sprint-attacking or is attacking with a knockback-equipped weapon, speed is slowed down and the sprinting status will reset.
-        final ItemStack stack = Bridge1_9.getItemInMainHand(player);
-        final PlayerMoveInfo moveInfo = auxMoving.usePlayerMoveInfo();
-        moveInfo.set(player, loc, null, mCc.yOnGround);
-        if (MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, null, mData, mCc, pData) 
-        	&& (player.isSprinting() || !BlockProperties.isAir(stack) && stack.getEnchantmentLevel(Enchantment.KNOCKBACK) > 0 
-                || Bridge1_13.isSwimming(player))) {
-            // (Uhm... Keep it here or move to the MovingListener?
-            final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
-            thisMove.xAllowedDistance *= 0.6f;
-            thisMove.zAllowedDistance *= 0.6f;
-            if (debug) {
-                debug(player, "Apply attack slowdown to the estimated speed.");
-            }
-        }
 
         // Can't fight dead.
         if (cc.cancelDead) {
@@ -402,7 +385,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         // Cleanup.
         useLoc1.setWorld(null);
         useLoc2.setWorld(null);
-        auxMoving.returnPlayerMoveInfo(moveInfo);
         return cancelled;
     }
 
@@ -508,7 +490,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onEntityDamage(final EntityDamageEvent event) {
-
         final Entity damaged = event.getEntity();
         final Player damagedPlayer = damaged instanceof Player ? (Player) damaged : null;
         final FightData damagedData;

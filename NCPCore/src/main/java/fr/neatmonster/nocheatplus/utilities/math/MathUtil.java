@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import org.bukkit.util.Vector;
 
 /**
- * Auxiliary static methods for dealing with math.
+ * Auxiliary static methods for dealing with mathematical operations.
  */
 public class MathUtil {
    
@@ -124,13 +124,20 @@ public class MathUtil {
     }
     
     /**
-     * Maximum of the absolute value of two numbers.
-     * @param a
-     * @param b
+     * Maximum of the absolute value of two numbers. NMS style.
+     * 
+     * @param d0
+     * @param d1
      * @return Maximum absolute value between the two inputs.
      */
-    public static double absMax(double a, double b) {
-       return Math.max(Math.abs(a), Math.abs(b));
+    public static double absMax(double d0, double d1) {
+        if (d0 < 0.0D) {
+            d0 = -d0;
+        }
+        if (d1 < 0.0D) {
+            d1 = -d1;
+        }
+        return Math.max(d0, d1);
     }
     
     /**
@@ -152,7 +159,6 @@ public class MathUtil {
      * @param b
      * @return The first non-zero value.
      * @throws IllegalArgumentException if input is 0
-     * 
      */
     public static double absNonZero(double input) {
        if (input > 0.0 || input < 0.0) {
@@ -216,8 +222,8 @@ public class MathUtil {
      * @return floored double 
      */
     public static int floor(double value) {
-      int toInt = (int)value;
-      return value < (double)toInt ? toInt - 1 : toInt;
+       int toInt = (int)value;
+       return value < (double)toInt ? toInt - 1 : toInt;
     }
 
     /**
@@ -227,8 +233,8 @@ public class MathUtil {
      * @return floored double
      */
     public static int ceil(double value) {
-      int toInt = (int)value;
-      return value > (double)toInt ? toInt + 1 : toInt;
+        int toInt = (int)value;
+       return value > (double)toInt ? toInt + 1 : toInt;
     }
 
     /**
@@ -262,54 +268,27 @@ public class MathUtil {
     }
 
     /**
-     * Given an array of double, find the value that is closest to the target value
+     * Given an array of doubles, get the index of the array slot containing the closest value to the target value.
      * 
      * @param arr
-     * @param targetValue
-     * @return the value in the array that has the smallest distance to the target value.
-     * @throws IllegalArgumentException if the array is empty or null
-     * 
+     * @param target
+     * @return the index.
      */
-     public static double getClosestValue(double[] arr, double targetValue) {
+    public static int closestIndex(double[] arr, double target) {
         if (arr == null || arr.length == 0) {
-            throw new IllegalArgumentException("Array cannot be empty.");
+            throw new IllegalArgumentException("Array cannot be empty or null.");
         }
-        double closestValue = arr[0];
-        double minDistance = Math.abs(arr[0] - targetValue);
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] == targetValue) {
-                return arr[i];
-            }
-            double distance = Math.abs(arr[i] - targetValue);
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestValue = arr[i];
+        double lastMinOffset = Double.POSITIVE_INFINITY;
+        int closestIdx = -1;
+        for (int i = 0; i < arr.length; i++) {
+            double thisOffSet = Math.abs(arr[i] - target);
+            if (thisOffSet < lastMinOffset) {
+                // Update closestIdx whenever a smaller offset is encountered (meaning, a closer value to target was found).
+                lastMinOffset = thisOffSet;
+                closestIdx = i;
             }
         }
-        return closestValue;
-    }
-
-    /**
-     * Return the cartesian product of two array of doubles
-     * https://en.wikipedia.org/wiki/Cartesian_product
-     * 
-     * @param data1
-     * @param data2
-     * @return the product
-     */
-    public static double[][] cartesianProduct(double[] data1, double[] data2) {
-        List<double[]> tmpList = new ArrayList<>();
-        for (double value1 : data1) {
-            for (double value2 : data2) {
-                tmpList.add(new double[]{value1, value2});
-            }
-        }
-        double[][] product = new double[tmpList.size()][2];
-        int k = 0;
-        for (double[] i : tmpList) {
-            product[k++] = i;
-        }
-        return product;
+        return closestIdx;
     }
 
     /**

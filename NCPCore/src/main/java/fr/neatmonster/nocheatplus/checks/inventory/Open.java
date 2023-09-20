@@ -174,7 +174,7 @@ public class Open extends Check implements IDisableListener {
             // Can't sprint while in an inventory
             player.isSprinting() && !Bridge1_13.isSwimming(player) && !thisMove.from.inLiquid
             // Can't use items as well.
-            || cData.isUsingItem
+            || pData.isUsingItem()
             // Can't possibly look around with an open inventory.
             || (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())
             // Can't swim also.

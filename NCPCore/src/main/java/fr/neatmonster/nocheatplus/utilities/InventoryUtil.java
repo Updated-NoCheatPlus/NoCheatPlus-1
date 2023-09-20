@@ -23,6 +23,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import fr.neatmonster.nocheatplus.checks.inventory.InventoryData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -173,8 +174,8 @@ public class InventoryUtil {
     */
     public static boolean hasAnyInventoryOpen(final Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return hasInventoryOpen(player) || iData.inventoryOpenTime != 0; 
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);
+        return hasInventoryOpen(player) || data.inventoryOpenTime != 0; 
     }
     
    /**
@@ -192,8 +193,8 @@ public class InventoryUtil {
         }
         final long now = System.currentTimeMillis();
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData iData = pData.getGenericInstance(InventoryData.class);
-        return hasAnyInventoryOpen(player) && (now - iData.inventoryOpenTime <= timeAge);     
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);
+        return hasAnyInventoryOpen(player) && (now - data.inventoryOpenTime <= timeAge);     
     }
     
    /** 
@@ -209,9 +210,9 @@ public class InventoryUtil {
             throw new IllegalArgumentException("timeAge cannot be negative.");
         }
         final IPlayerData pData = DataManager.getPlayerData(player);
-        final InventoryData iData = pData.getGenericInstance(InventoryData.class);
+        final InventoryData data = pData.getGenericInstance(InventoryData.class);
         // The player first interacts with the container, then clicks in its inventory, so interaction should always be smaller than click time
-        return iData.lastClickTime - iData.containerInteractTime < timeAge;
+        return data.lastClickTime - data.containerInteractTime < timeAge;
     }
 
     /**
@@ -299,6 +300,22 @@ public class InventoryUtil {
         }
         final Material mat = stack.getType();
         return stack.getDurability() >= mat.getMaxDurability();
+    }
+
+    /**
+     * Test if the player has an arrow in its inventory
+     * 
+     * @param i
+     * @param fw
+     * @return True, if there's an arrow in the inv.
+     */
+    public static boolean hasArrow(final PlayerInventory i, final boolean fw) {
+        if (Bridge1_9.hasElytra()) {
+            final Material m = i.getItemInOffHand().getType();
+            return (fw && m == Material.FIREWORK_ROCKET) || m.toString().endsWith("ARROW") ||
+                   i.contains(Material.ARROW) || i.contains(Material.TIPPED_ARROW) || i.contains(Material.SPECTRAL_ARROW);
+        }
+        return i.contains(Material.ARROW);
     }
 
 }

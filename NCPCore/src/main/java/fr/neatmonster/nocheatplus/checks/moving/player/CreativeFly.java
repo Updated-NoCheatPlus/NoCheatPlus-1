@@ -123,14 +123,7 @@ public class CreativeFly extends Check {
         if (model.getGround()) {
             MovingUtil.prepareFullCheck(from, to, thisMove, Math.max(cc.yOnGround, cc.noFallyOnGround));
             if (!thisMove.from.onGroundOrResetCond) {
-                if (from.isSamePos(to)) {
-                    if (lastMove.toIsValid && lastMove.hDistance > 0.0 && lastMove.yDistance < -0.3 // Copy and paste from sf.
-                        && LostGround.lostGroundStill(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, tags)) {
-                        lostGround = true;
-                    }
-                }
-                else if (LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, 
-                                               data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags)) {
+                if (LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags)) {
                     lostGround = true;
                 }
             }
