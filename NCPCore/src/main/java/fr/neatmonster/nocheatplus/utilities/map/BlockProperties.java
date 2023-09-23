@@ -45,6 +45,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
@@ -711,6 +712,30 @@ public class BlockProperties {
         pLoc.cleanup();
         return res;
     }
+
+    /**
+     * Simple checking method, heavy. No isIllegal check.
+     *
+     * @param player
+     *            the player
+     * @param location
+     *            the location
+     * @param yOnGround
+     *            the y on ground
+     * @return true, if is in liquid
+     */
+    public static boolean isInWater(final Player player, final Location location, final double yOnGround) {
+        // Bit fat workaround, maybe put the object through from check listener ?
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        final boolean res = pLoc.isInWater();
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return res;
+    }
+
 
     /**
      * Simple checking method, heavy. No isIllegal check.
@@ -2660,6 +2685,28 @@ public class BlockProperties {
      */
     public static Material getMaterial(final String id) {
         return Material.valueOf(id);
+    }
+
+    /**
+     * Test if the player is at a location exposed to sky light
+     * 
+     * @param player
+     * @param location
+     * @param yOnGround
+     * @return
+     */
+    public static final boolean canSeeSky(final Player player, final Location location, final double yOnGround) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        pLoc.set(location, player, yOnGround);
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final PlayerMoveData thisMove = pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
+        // Heavy on performance... Will need some more iterations
+        final boolean res = pLoc.getWorld().getBlockAt(Location.locToBlock(thisMove.to.getX()), Location.locToBlock(thisMove.to.getY()), Location.locToBlock(thisMove.to.getZ())).getLightFromSky() == 15;
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return res;
     }
 
     /**

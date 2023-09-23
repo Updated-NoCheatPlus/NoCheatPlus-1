@@ -114,7 +114,7 @@ public class CollisionUtil {
      */
     public static double directionCheck(final Location sourceFoot, final double eyeHeight, final Vector dir, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision)
     {
-        return directionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision);					
+        return directionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision);                    
     }
 
     /**
@@ -149,8 +149,8 @@ public class CollisionUtil {
     public static double directionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision)
     {
 
-        //		// TODO: Here we have 0.x vs. 2.x, sometimes !
-        //		NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "COMBINED: " + combinedDirectionCheck(sourceX, sourceY, sourceZ, dirX, dirY, dirZ, targetX, targetY, targetZ, targetWidth, targetHeight, precision, 60));
+        //      // TODO: Here we have 0.x vs. 2.x, sometimes !
+        //      NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "COMBINED: " + combinedDirectionCheck(sourceX, sourceY, sourceZ, dirX, dirY, dirZ, targetX, targetY, targetZ, targetWidth, targetHeight, precision, 60));
 
         // TODO: rework / standardize.
 
@@ -205,7 +205,7 @@ public class CollisionUtil {
      */
     public static double combinedDirectionCheck(final Location sourceFoot, final double eyeHeight, final Vector dir, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision, final double anglePrecision, boolean isPlayer)
     {
-        return combinedDirectionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision, anglePrecision, isPlayer);					
+        return combinedDirectionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision, anglePrecision, isPlayer);                  
     }
 
     /**
@@ -276,7 +276,7 @@ public class CollisionUtil {
         final double minDist = isPlayer ? Math.max(targetHeight, targetWidth) / 2.0 : Math.max(targetHeight, targetWidth);
 
         if (targetDist > minDist && TrigUtil.angle(sourceX, sourceY, sourceZ, dirX, dirY, dirZ, targetX, targetY, targetZ) * TrigUtil.fRadToGrad > anglePrecision){
-        	return targetDist - minDist;
+            return targetDist - minDist;
         }
 
         final double xPrediction = targetDist * dirX / dirLength;
@@ -497,7 +497,7 @@ public class CollisionUtil {
         }
         return !p.getNearbyEntities(xMargin, yMargin, zMargin).isEmpty();
     }
-	
+    
     /**
      * Test if the player is colliding with entities. <br>
      * Does not use any margin.
@@ -506,20 +506,20 @@ public class CollisionUtil {
      * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
      * @return True, if the player is colliding with entities.
      */
-	public static boolean isCollidingWithEntities(final Player p, final boolean shouldFilter) {
+    public static boolean isCollidingWithEntities(final Player p, final boolean shouldFilter) {
         return isCollidingWithEntities(p, 0.0, 0.0, 0.0, shouldFilter);
     }
     
-	/**
-	 * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
-	 * (Not Minecarts, Boats, dead entities (...)).
-	 * 
-	 * @param p
-	 * @param xMargin
-	 * @param yMargin
-	 * @param zMargin
-	 * @return The List containing entities that can push the player.
-	 */
+    /**
+     * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
+     * (Not Minecarts, Boats, dead entities (...)).
+     * 
+     * @param p
+     * @param xMargin
+     * @param yMargin
+     * @param zMargin
+     * @return The List containing entities that can push the player.
+     */
     public static List<Entity> getCollidingEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
         List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
         entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity));

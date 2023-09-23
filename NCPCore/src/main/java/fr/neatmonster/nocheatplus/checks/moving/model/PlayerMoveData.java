@@ -38,6 +38,28 @@ public class PlayerMoveData extends MoveData {
 	/** Whether this movement is influenced by gravity */
 	public boolean hasGravity;
     
+	/** Player action set on PlayerMoveEvents. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
+	public boolean isGliding;
+
+    /** Set with PlayerData.isUsingItem() */
+    public boolean slowedByUsingAnItem;
+	
+	/** 
+	 * Player action set on PlayerMoveEvents. 
+	 * NOTE: this is NOT the propelling moment triggered by PlayerRiptideEvent, 
+	 * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, autoSpentityhuman.startAutoSpinAttack(20))
+	 */
+	public boolean isRiptiding;
+	
+	/** Player action set on PlayerMoveEvents */
+	public boolean isSprinting;
+	
+	/** Player action set on PlayerMoveEvents */
+	public boolean isSneaking;
+	
+	/** Player action set on PlayerMoveEvents */
+	public boolean isSwmming;
+	
     /**
      * The distance covered by a move from the setback point to the to.getY() point.
      */
@@ -86,7 +108,7 @@ public class PlayerMoveData extends MoveData {
 
     /** The player can potentially jump with this move. Set in SurvivalFly.check(vdistrel) */
     public boolean canJump;
-
+    
 
     // Meta stuff.
     /**
@@ -119,6 +141,12 @@ public class PlayerMoveData extends MoveData {
         hasSlowfall = false;
         hasGravity = true; // Assume one to have gravity rather than the opposite... :)
         hasAttackSlowDown = false;
+        isGliding = false;
+    	isRiptiding = false;
+    	isSprinting = false;
+    	isSneaking = false;
+    	isSwmming = false;
+        slowedByUsingAnItem = false;
         // Properties involving the environment.
         bunnyHop = false;
         canStep = false;

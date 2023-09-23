@@ -105,7 +105,7 @@ public class MovingUtil {
                     || !isGlidingWithElytraValid(player, fromLocation, data, cc)
                 )
                 // Riptiding is handled by Cf.
-                && !Bridge1_13.isRiptiding(player)
+                || Bridge1_13.isRiptiding(player)
             ;
     }
 

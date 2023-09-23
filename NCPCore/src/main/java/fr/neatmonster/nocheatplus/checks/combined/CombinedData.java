@@ -16,6 +16,8 @@ package fr.neatmonster.nocheatplus.checks.combined;
 
 import java.util.Collection;
 
+import org.bukkit.Material;
+
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.access.ACheckData;
 import fr.neatmonster.nocheatplus.components.data.IDataOnRemoveSubCheckData;
@@ -57,6 +59,8 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public long releaseItemTime = 0;
     /** Detection flag */
     public boolean isHackingRI = false;
+    /** Item currently in use that is slowing the player down */
+    public Material itemInUse = null;
     
     /**
      * Reduce Improbable's data by the given amount, capped at a minimum of 0.

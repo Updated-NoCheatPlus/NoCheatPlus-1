@@ -653,7 +653,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         final InventoryData data = DataManager.getPlayerData(player).getGenericInstance(InventoryData.class);
         builder.append("Inventory click: slot: " + slot);
         builder.append(" , Inventory has been opened for: " + MathUtil.toSeconds(System.currentTimeMillis() - data.inventoryOpenTime) + " secs");
-        builder.append(" , Time between inventory click and last interaction time: " + MathUtil.toSeconds(data.lastClickTime - data.containerInteractTime) + " ms");
+        builder.append(" , Time between inventory click and last interaction time: " + MathUtil.toSeconds(data.lastClickTime - data.containerInteractTime) + " secs");
 
         // Viewers.
         builder.append(" , Viewers: ");

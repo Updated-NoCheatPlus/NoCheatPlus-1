@@ -186,7 +186,7 @@ public class PlayerEnvelopes {
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
-                            lastMove.from.onGround
+                            lastMove.from.onGround && !lastMove.to.onGround
                             // 2: With "lostground_stepdown-to": the last collision (above) is lost, so the player is seen as being in air for much longer.
                             // TODO: check for abuses.
                             // https://gyazo.com/a5c22069af8ba6a718308bf5b125659a
@@ -200,7 +200,7 @@ public class PlayerEnvelopes {
                     lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0 
                     && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain) 
                     // 1: The ordinary case. The player's speed matches the jump speed gain.
-                    || MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_TOLERANCE)
+                    || MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
                 )
             ;
     }
@@ -230,7 +230,7 @@ public class PlayerEnvelopes {
                     // (Thus, in this case, the game correctly applies friction)
                     thisMove.yDistance < 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
                     // 1: Otherwise, if motion is positive, we must check against the exact stepping motion; if we don't want abuses that is.
-                    || thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_TOLERANCE)
+                    || thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
                 )
                 // 0: ...Or having an extremely little air time from a ground status to a ground status (lastMove: from air/ground OR to air/ground thisMove: toOnGround.
                 || lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, Math.abs(thisMove.yDistance) * 1.3)

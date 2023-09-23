@@ -117,6 +117,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Temporary snow fix flag */
     // TODO: remove.
     public boolean snowFix = false;
+    public boolean wasUsingTrident = false;
     /** Last used block change id (BlockChangeTracker). */
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     

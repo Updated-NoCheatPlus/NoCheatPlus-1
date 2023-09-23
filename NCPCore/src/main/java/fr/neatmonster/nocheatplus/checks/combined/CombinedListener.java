@@ -14,7 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.checks.combined;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -28,8 +27,6 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
@@ -45,8 +42,6 @@ import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
-import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -185,7 +180,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             pData.setSneaking(false);
             return;
         }
-        if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGlidingWithElytra(event.getPlayer())) {
+        if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGlidingWithElytra(event.getPlayer()) || Bridge1_13.isRiptiding(event.getPlayer())) {
             // Bukkit is not entirely consistent with what "sneaking" means":
             // ----> For Bukkit, sneaking (read as: moving slower than normal) = tapping the shift key; the event is fired with action packets (RELEASE/PRESS_SHIFT_KEY).
             // For Minecraft, this is not necessarily true.
@@ -194,7 +189,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             //      - isMovingSlowly -> Which is the method that the game actually employs to slow inputs down (Code in LocalPlayer.java, aiStep() function, see then isMovingSlowly in the same class).
             //      - isShiftKeyDown -> This is just a flag to tell that the player pressed the key. But does not strictly mean that they are also sneaking, which is determined instead by the method above, which uses player poses.
             // In this case, the player can tap shift (and for bukkit, this equals sneaking) but they won't get slowed down, because isMovingSlowly would return false.
-            // TODO: This probably affects gliding and riptiding as well. Haven't tested it yet, but shifting does nothing when glidind anyway.
             pData.setSneaking(false);
             return;
         }

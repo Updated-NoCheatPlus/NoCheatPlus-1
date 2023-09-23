@@ -20,6 +20,7 @@ import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.components.location.IGetPosition;
 import fr.neatmonster.nocheatplus.components.location.IGetPositionWithLook;
+import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 
 
 /**
@@ -192,6 +193,22 @@ public class TrigUtil {
      * @return The distance between the locations.
      */
     public static final double distance(final Location location1, final Location location2)
+    {
+        return distance(location1.getX(), location1.getY(), location1.getZ(), location2.getX(), location2.getY(), location2.getZ());
+    }
+
+     /**
+     * Obsolete method to calculate the 3D-distance of two locations.
+     * (Bukkit used to have inverted methods: distance() was the distance squared and distanceSquared() was the distance non-squared)
+     * To ignore world checks it might be "useful".
+     * 
+     * @param location1
+     *            the location1
+     * @param location2
+     *            the location2
+     * @return The distance between the locations.
+     */
+    public static final double distance(final PlayerLocation location1, final PlayerLocation location2)
     {
         return distance(location1.getX(), location1.getY(), location1.getZ(), location2.getX(), location2.getY(), location2.getZ());
     }

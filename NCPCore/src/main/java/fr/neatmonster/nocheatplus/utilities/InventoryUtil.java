@@ -211,8 +211,11 @@ public class InventoryUtil {
         }
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
+        if (data.containerInteractTime == 0 || data.lastClickTime == 0) {
+            return false;
+        }
         // The player first interacts with the container, then clicks in its inventory, so interaction should always be smaller than click time
-        return data.lastClickTime - data.containerInteractTime < timeAge;
+        return Math.abs(data.lastClickTime - data.containerInteractTime) < timeAge;
     }
 
     /**

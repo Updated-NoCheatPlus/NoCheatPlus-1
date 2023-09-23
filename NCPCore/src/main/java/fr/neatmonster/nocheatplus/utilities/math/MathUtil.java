@@ -236,6 +236,16 @@ public class MathUtil {
         int toInt = (int)value;
        return value > (double)toInt ? toInt + 1 : toInt;
     }
+    
+    /**
+     * Square root method from NMS
+     * 
+     * @param var0
+     * @return floored double
+     */
+    public static float sqrt(float f) {
+        return (float) Math.sqrt((double) f);
+    }
 
     /**
      * Calculate the standard deviation of this data.

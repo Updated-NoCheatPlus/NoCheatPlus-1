@@ -721,11 +721,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         data.resetSetBack(); // To force dataOnJoin to set it to loc.
         // Handle respawn like join.
         dataOnJoin(player, event.getRespawnLocation(), true, data, pData.getGenericInstance(MovingConfig.class), pData.isDebugActive(checkType));
-        // Patch up issues.
-        if (Bridge1_9.hasGetItemInOffHand() && player.isBlocking()) {
-            // Attempt to fix server-side-only blocking after respawn.
-            redoShield(player);
-        }
     }
 
 
@@ -1184,7 +1179,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
         // " " has gravity
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
-    
+        thisMove.isGliding = Bridge1_9.isGlidingWithElytra(player);
+        thisMove.isRiptiding = Bridge1_13.isRiptiding(player);
+        thisMove.isSprinting = pData.isSprinting();
+        thisMove.isSneaking = pData.isSneaking();
+        thisMove.isSwmming = Bridge1_13.isSwimming(player);
+        thisMove.slowedByUsingAnItem = pData.isUsingItem();
+
 
         ////////////////////////////
         // Potion effect "Jump".  //
@@ -2393,30 +2394,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final ViolationData vd = new ViolationData(noFall, player, data.noFallVL, 1.0, cc.noFallActions);
         if (tag != null) vd.setParameter(ParameterName.TAGS, tag);
         return noFall.executeActions(vd).willCancel();
-    }
-
-    /**
-     * Attempt to fix server-side-only blocking after respawn.
-     * @param player
-     */
-    private void redoShield(final Player player) {
-        // Does not work: DataManager.getPlayerData(player).requestUpdateInventory();
-        if (mcAccess.getHandle().resetActiveItem(player)) {
-            return;
-        }
-        final PlayerInventory inv = player.getInventory();
-        ItemStack stack = inv.getItemInOffHand();
-        if (stack != null && stack.getType() == Material.SHIELD) {
-            // Shield in off-hand.
-            inv.setItemInOffHand(stack);
-            return;
-        }
-        stack = inv.getItemInMainHand();
-        if (stack != null && stack.getType() == Material.SHIELD) {
-            // Shield in off-hand.
-            inv.setItemInMainHand(stack);
-            return;
-        }
     }
 
 

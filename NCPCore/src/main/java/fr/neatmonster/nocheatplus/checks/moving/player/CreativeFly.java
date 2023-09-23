@@ -814,43 +814,6 @@ public class CreativeFly extends Check {
         return new double[] {resultV, resultH};
     }
     
-
-    // From TridentItem.java
-    //   private double[] riptideCheck(final PlayerLocation from, final PlayerLocation to, final MovingData data) {
-    //       double vAllowedDistance = lastMove.yDistance;
-    //       double hAllowedDistance = lastMove.hDistance;
-    //       final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-    //       final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-    //       final double RiptideLevel = BridgeEnchant.getRiptideLevel(player);
-    //   
-    //       if (RiptideLevel > 0.0) {
-    //           float yaw = to.getYaw();
-    //           float pitch = to.getPitch();
-    //           float xDistance = -TrigUtil.sin(yaw * TrigUtil.DEG_TO_RAD) * TrigUtil.cos(pitch * TrigUtil.DEG_TO_RAD);
-    //           float yDistance = -TrigUtil.sin(pitch * TrigUtil.DEG_TO_RAD);
-    //           float zDistance = TrigUtil.cos(yaw * TrigUtil.DEG_TO_RAD) * TrigUtil.cos(pitch * TrigUtil.DEG_TO_RAD);
-    //           float distance3D = (float) Math.sqrt(xDistance * xDistance + yDistance * yDistance + zDistance * zDistance);
-    //           float force = 3.0F * ((1.0F + (float) RiptideLevel) / 4.0F);
-    //   
-    //           xDistance *= force / distance3D;
-    //           yDistance *= force / distance3D;
-    //           zDistance *= force / distance3D;
-    //           // Set the new distances: the game calls the push method, which means the new distance is simply added to the previous delta
-    //           hAllowedDistance += (double) MathUtil.dist(xDistance, zDistance);
-    //           vAllowedDistance += (double) yDistance;
-    //           thisMove.hAllowedDistance = hAllowedDistance;
-    //           // here, the games calls the actual moving method instead.
-    //           if (from.isOnGround()) {
-    //               vAllowedDistance *= 1.1999999F;
-    //           }
-    //       }
-    //       // Expected differences from current to allowed distance
-    //       double hDistDiffEx = thisMove.hDistance - thisMove.hAllowedDistance;
-    //       double yDistDiffEx = thisMove.yDistance - vAllowedDistance;
-    //       return new double[]{thisMove.hAllowedDistance, vAllowedDistance};
-    //   
-    //   }
-    
     
     /**
      * 

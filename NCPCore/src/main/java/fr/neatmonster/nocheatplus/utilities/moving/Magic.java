@@ -111,7 +111,7 @@ public class Magic {
     ///////////////////////////////////////////
     // *----------Misc.----------*
     public static final double PAPER_DIST = 0.01;
-    public static final double PREDICTION_TOLERANCE = 0.0001;
+    public static final double PREDICTION_EPSILON = 0.0001;
     /**
      * Extreme move check threshold (Actual like 3.9 upwards with velocity,
      * velocity downwards may be like -1.835 max., but falling will be near 3

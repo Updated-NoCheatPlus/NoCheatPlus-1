@@ -63,7 +63,7 @@ public class AirWorkarounds {
      * @param fromOnGround
      * @return True, if a workaround applies
      */
-    public static boolean oddLevitation(final MovingData data, final Player player, final PlayerLocation from, final boolean fromOnGround) {
+    private static boolean oddLevitation(final MovingData data, final Player player, final PlayerLocation from, final boolean fromOnGround) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
