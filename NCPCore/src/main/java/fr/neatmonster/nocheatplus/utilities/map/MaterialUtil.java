@@ -156,6 +156,8 @@ public class MaterialUtil {
     // Material collections with common properties
     // (May not always have all aspects in common.)
     /////////////////////////////////////////////////
+	public static final Set<Material> ALL_CAULDRONS = Collections.unmodifiableSet(
+            BridgeMaterial.getBySuffix("cauldron", AlmostBoolean.YES, "legacy"));
 
     public static final Set<Material> ALL_BUTTONS = Collections.unmodifiableSet(
             BridgeMaterial.getBySuffix("_button", AlmostBoolean.YES, "legacy"));
@@ -550,7 +552,8 @@ public class MaterialUtil {
                     BridgeMaterial.SUGAR_CANE, BridgeMaterial.BEETROOTS))
             ));
 
-    public static final Set<Material> FARMABLE = Collections.unmodifiableSet(join(new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
+    @SuppressWarnings("unchecked")
+	public static final Set<Material> FARMABLE = Collections.unmodifiableSet(join(new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
                     BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 
                     BridgeMaterial.POTATOES, BridgeMaterial.GRASS,
                     Material.PUMPKIN_STEM, Material.MELON_STEM,
@@ -620,6 +623,7 @@ public class MaterialUtil {
     public static final Set<Material> LIQUID_BLOCKS = Collections.unmodifiableSet(join(
             DEAD_CORAL_PARTS, WATER_PLANTS
             ));
+
 
     ////////////////////
     // Access methods.

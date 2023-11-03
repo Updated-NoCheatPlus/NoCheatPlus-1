@@ -36,7 +36,7 @@ public class BlockPlaceData extends ACheckData {
     public double speedVL;
 
     // AutoSign.
-    public long autoSignPlacedTime = 0;
+    public long signOpenTime = 0;
     /** Using Material.SIGN . */
     public long autoSignPlacedHash = 0;
 

@@ -16,10 +16,13 @@ package fr.neatmonster.nocheatplus.utilities.math;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.location.IGetPosition;
 import fr.neatmonster.nocheatplus.components.location.IGetPositionWithLook;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 
 
@@ -110,23 +113,33 @@ public class TrigUtil {
     }
 
     /**
-     * Returns the looking direction vector of the player.
-     * (This uses MC's trigonometric look-up table)
+     * Returns the looking direction vector of the player.<br>
+     * Uses Minecraft's trigonometric look-up table, unlike Location#getDirection().<br>
+     * Also accounts for 1.12.2 different method of calculating the view vector.
+     * 
      * @param yaw
      *            Horizontal looking direction
      * @param pitch
      *            Vertical looking direction
      * @return the vector
      */
-    public static final Vector getLookingDirection(float pitch, float yaw) 
-    {
-        float radPitch = pitch * toRadians;
-        float radYaw = -yaw * toRadians;
-        float cosYaw = cos(radYaw);
-        float sinYaw = sin(radYaw);
-        float cosPitch = cos(radPitch);
-        float sinPitch = sin(radPitch);
-        return new Vector((double)(sinYaw * cosPitch), (double)(-sinPitch), (double)(cosYaw * cosPitch));
+    public static final Vector getLookingDirection(float yaw, float pitch, final Player player) {
+        if (DataManager.getPlayerData(player).getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_12_2)) {
+            // Legacy
+            float f = cos(-yaw * toRadians - (float)Math.PI);
+            float f1 = sin(-yaw * toRadians - (float)Math.PI);
+            float f2 = cos(-pitch * toRadians);
+            float f3 = sin(-pitch * toRadians);
+            return new Vector(f1 * f2, f3, f * f2);
+        }
+        // Modern
+        float f = pitch * toRadians;
+        float f1 = -yaw * toRadians;
+        float f2 = cos(f1);
+        float f3 = sin(f1);
+        float f4 = cos(f);
+        float f5 = sin(f);
+        return new Vector((double)(f3 * f4), (double)-f5, (double)(f2 * f4));
     }
     
     /**
@@ -135,9 +148,9 @@ public class TrigUtil {
      * @param loc
      * @return the vector
      */
-    public static final Vector getLookingDirection(final IGetPositionWithLook loc) 
+    public static final Vector getLookingDirection(final IGetPositionWithLook loc, final Player player) 
     {
-        return getLookingDirection(loc.getPitch(), loc.getYaw());
+        return getLookingDirection(loc.getYaw(), loc.getPitch(), player);
     }
     
     /**
@@ -146,9 +159,9 @@ public class TrigUtil {
      * @param loc
      * @return the vector
      */
-    public static final Vector getLookingDirection(final Location loc) 
+    public static final Vector getLookingDirection(final Location loc, final Player player) 
     {
-        return getLookingDirection(loc.getPitch(), loc.getYaw());
+        return getLookingDirection(loc.getYaw(), loc.getPitch(), player);
     }
      
     /**
@@ -156,9 +169,9 @@ public class TrigUtil {
      * @param yaw
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final float yaw) 
+    public static final Vector getHorizontalLookingDirection(final float yaw, final Player player) 
     {
-    	return getLookingDirection(0.0f, yaw);
+    	return getLookingDirection(yaw, 0.0f, player);
     }
     
     /**
@@ -166,9 +179,9 @@ public class TrigUtil {
      * @param loc
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final IGetPositionWithLook loc) 
+    public static final Vector getHorizontalLookingDirection(final IGetPositionWithLook loc, final Player player) 
     {
-    	return getHorizontalDirection(loc.getYaw());
+    	return getHorizontalLookingDirection(loc.getYaw(), player);
     }
     
     /**
@@ -176,9 +189,35 @@ public class TrigUtil {
      * @param loc
      * @return the h-look vector
      */
-    public static final Vector getHorizontalDirection(final Location loc) 
+    public static final Vector getHorizontalLookingDirection(final Location loc, final Player player) 
     {
-    	return getHorizontalDirection(loc.getYaw());
+    	return getHorizontalLookingDirection(loc.getYaw(), player);
+    }
+
+    /**
+     * Distance squared.
+     *
+     * @param x
+     * @param y
+     * @param z
+     * @return the double
+     */
+    public static final double lengthSquared(final double x, final double y, final double z) 
+    {
+        return x*x + y*y + z*z;
+    }
+
+    /**
+     * Sqrt distance.
+     * 
+     * @param x
+     * @param y
+     * @param z
+     * @return the double
+     */
+    public static final double length(final double x, final double y, final double z) 
+    {
+        return Math.sqrt(x*x + y*y + z*z);
     }
 
     /**

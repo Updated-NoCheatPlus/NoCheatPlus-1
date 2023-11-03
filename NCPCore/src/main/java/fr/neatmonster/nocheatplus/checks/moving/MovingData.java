@@ -117,7 +117,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Temporary snow fix flag */
     // TODO: remove.
     public boolean snowFix = false;
-    public boolean wasUsingTrident = false;
     /** Last used block change id (BlockChangeTracker). */
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     
@@ -147,6 +146,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double nextFrictionVertical = 0.0;
     /** Ordinary vertical friction factor (lava, water, air) */
     public double lastFrictionVertical = 0.0;
+    public double lastNonVanillaFrictionVertical = 0.0;
+    public double nextNonVanillaFrictionVertical = 0.0;
 
     // *----------Move / Vehicle move tracking----------*
     /** Keep track of currently processed (if) and past moves for player moving. Stored moves can be altered by modifying the int. */
@@ -155,7 +156,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         public PlayerMoveData call() throws Exception {
             return new PlayerMoveData();
         }
-    }, 18); 
+    }, 15); 
     /** Keep track of currently processed (if) and past moves for vehicle moving. Stored moves can be altered by modifying the int. */
     // TODO: There may be need to store such data with vehicles, or detect tandem abuse in a different way.
     public final MoveTrace <VehicleMoveData> vehicleMoves = new MoveTrace<VehicleMoveData>(new Callable<VehicleMoveData>() {
@@ -278,7 +279,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int lastSetBackHash = 0;
     /** Position teleported from into another world. Only used for certain contexts for workarounds. */
     public IPositionWithLook crossWorldFrom = null;
-    /** Indicate there was a duplicate move */
+    /** Indicates that this PlayerMoveEvent has no movement change (FROM and TO have the same position), because of the client re-sending a position packet on right-clicking (effectively duplicating the move). */
     public boolean lastMoveNoMove = false;
 
     // *----------Vehicles----------*
@@ -420,6 +421,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         nextBlockSpeedMultiplier = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround, thisMove);
         nextFrictionVertical = BlockProperties.getVerticalFrictionFactor(player, loc, cc.yOnGround, thisMove);
         nextStuckInBlockVertical = BlockProperties.getStuckInBlockVerticalFactor(player, loc, cc.yOnGround, thisMove);
+        nextNonVanillaFrictionVertical = BlockProperties.getNonVanillaVerticalFrictionFactor(player, loc, cc.yOnGround, thisMove);
     }
 
 
@@ -495,6 +497,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         lastFrictionHorizontal = 0.6f;
         lastBlockSpeedMultiplier = 1.0f;
         lastInertia = 0.0f;
+        lastNonVanillaFrictionVertical = 0.0;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }

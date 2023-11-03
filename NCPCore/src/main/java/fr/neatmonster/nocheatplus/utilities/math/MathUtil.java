@@ -234,7 +234,7 @@ public class MathUtil {
      */
     public static int ceil(double value) {
         int toInt = (int)value;
-       return value > (double)toInt ? toInt + 1 : toInt;
+        return value > (double)toInt ? toInt + 1 : toInt;
     }
     
     /**
@@ -270,8 +270,8 @@ public class MathUtil {
      */
     public static double mean(double[] values) {
         double sum = 0.0;
-        for (double n : values) {
-            sum += n;
+        for (double value : values) {
+            sum += value;
         }
         double mean = sum / values.length;
         return mean;

@@ -57,10 +57,9 @@ public class AutoSign extends Check {
      * @param block
      * @param lines
      * @param pData
-     * @param fakeNews This SignChangeEvent was triggered by player-editing, not by a newly placed sign.
      * @return true if the player failed the check.
      */
-    public boolean check(final Player player, final Block block, final String[] lines, final IPlayerData pData, final boolean fakeNews) {
+    public boolean check(final Player player, final Block block, final String[] lines, final IPlayerData pData) {
         tags.clear();
         final long time = System.currentTimeMillis();
         final BlockPlaceData data = pData.getGenericInstance(BlockPlaceData.class);
@@ -91,17 +90,17 @@ public class AutoSign extends Check {
         }
 
         // Check hash match
-        if (data.autoSignPlacedHash != BlockPlaceListener.getBlockPlaceHash(block, mat) && !fakeNews) {
+        if (data.autoSignPlacedHash != 0 && data.autoSignPlacedHash != BlockPlaceListener.getBlockPlaceHash(block, mat)) {
             tags.add("block_mismatch");
             return handleViolation(player, maxEditTime, data, cc);
         }
 
-        if (time < data.autoSignPlacedTime) {
-            data.autoSignPlacedTime = 0;
+        if (time < data.signOpenTime) {
+            data.signOpenTime = 0;
             return false;
         }
         // Check time, mind lag.
-        final long editTime = time - data.autoSignPlacedTime;
+        final long editTime = time - data.signOpenTime;
         long expected = getExpectedEditTime(lines, cc.autoSignSkipEmpty);
         if (expected == 0) {
             return false;

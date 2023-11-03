@@ -90,7 +90,8 @@ public class ReflectEntity extends ReflectGetHandleBase<Entity> {
         //                            fj(1.19-19.4)
         //                            eR(???)
         //                            clearActiveItem(1.13-???)
-        String[] methodname = {"fn", "fj", "eR", "clearActiveItem"};
+        //                            fr (1.20.2)
+        String[] methodname = {"fn", "fj", "eR", "clearActiveItem", "fr"};
         for (String name : methodname) {
             Method method = ReflectionUtil.getMethodNoArgs(nmsClass, name);
             if (method != null) return method;

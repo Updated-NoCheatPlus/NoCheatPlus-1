@@ -91,6 +91,7 @@ public class NoFall extends Check {
 
     /**
      * Calculate the damage in hearts from the given fall distance.
+     * 
      * @param fallDistance
      * @return
      */
@@ -102,6 +103,7 @@ public class NoFall extends Check {
     /**
      * Deal damage if appropriate. To be used for if the player is on ground
      * somehow. Contains checking for skipping conditions (getAllowFlight set + configured to skip).
+     * 
      * @param player
      * @param y
      * @param previousSetBackY
@@ -147,7 +149,7 @@ public class NoFall extends Check {
 
 
     /**
-     * Change the state of selected blocks when the player falls onto them, like Farmland
+     * Change the state of selected blocks when the player falls onto them, like Farmland.
      * (This is to workaround the issue described in the TODO above)
      * 
      * @param player
@@ -157,6 +159,7 @@ public class NoFall extends Check {
     private void fallOn(final Player player, final double fallDist) {
         // TODO: Need move data pTo, this location isn't updated
         Block block = player.getLocation(useLoc2).subtract(0.0, 1.0, 0.0).getBlock();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         if (block.getType() == BridgeMaterial.FARMLAND && fallDist > 0.5 && random.nextFloat() < fallDist - 0.5) {
             final BlockState newState = block.getState();
             newState.setType(Material.DIRT);
@@ -165,6 +168,9 @@ public class NoFall extends Check {
                 // Move up a little bit in order not to stuck in a block
                 player.setVelocity(new Vector(player.getVelocity().getX() * -1, 0.062501, player.getVelocity().getZ() * -1));
                 block.setType(Material.DIRT);
+                if (pData.isDebugActive(type)) {
+                    debug(player, "Fallen on soil: apply workaround for dirt conversion.");
+                }
             }
             useLoc2.setWorld(null);
             return;
@@ -178,6 +184,9 @@ public class NoFall extends Check {
                     egg.setEggs(egg.getEggs() - 1);
                 } 
                 else block.setType(Material.AIR);
+                if (pData.isDebugActive(type)) {
+                    debug(player, "Fallen on turtle eggs: destroy eggs (workaround).");
+                }
             }
         }
         useLoc2.setWorld(null);
@@ -185,7 +194,7 @@ public class NoFall extends Check {
     
 
     /**
-     * Fire events to see if other plugins allow to change the state of this block
+     * Fire events to see if other plugins allow to change the state of this block.
      * 
      * @param player
      * @param block
@@ -303,8 +312,7 @@ public class NoFall extends Check {
     private static double getApplicableFallHeight(final Player player, final double y, final double previousSetBackY, final MovingData data) {
         //return getDamage(Math.max((float) (data.noFallMaxY - y), Math.max(data.noFallFallDistance, player.getFallDistance())));
         final double yDistance = Math.max(data.noFallMaxY - y, data.noFallFallDistance);
-        if (yDistance > 0.0 && data.jumpAmplifier > 0.0 
-            && previousSetBackY != Double.NEGATIVE_INFINITY) {
+        if (yDistance > 0.0 && data.jumpAmplifier > 0.0 && previousSetBackY != Double.NEGATIVE_INFINITY) {
             // Fall height counts below previous set-back-y.
             // TODO: Likely updating the amplifier after lift-off doesn't make sense.
             // TODO: In case of velocity... skip too / calculate max exempt height?
@@ -320,6 +328,7 @@ public class NoFall extends Check {
 
     /**
      * Estimate the applicable fall height for the given data.
+     * 
      * @param player
      * @param y
      * @param data
@@ -373,33 +382,25 @@ public class NoFall extends Check {
         data.noFallSkipAirCheck = true;
     }
 
-
+   
     private void dealFallDamage(final Player player, final double damage) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
         if (mcAccess.getHandle().dealFallDamageFiresAnEvent().decide()) {
             // TODO: Better decideOptimistically?
             mcAccess.getHandle().dealFallDamage(player, damage);
+            if (pData.isDebugActive(type)) {
+                debug(player, "Handle dealFallDamage through NMS.");
+            }
         }
         else {
             final EntityDamageEvent event = BridgeHealth.getEntityDamageEvent(player, DamageCause.FALL, damage);
             Bukkit.getPluginManager().callEvent(event);
             if (!event.isCancelled()) {
-                // For some odd reason, player#setNoDamageTicks does not actually
-                // set the no damage ticks. As a workaround, wait for it to be zero and then damage the player.
-                if (player.getNoDamageTicks() > 0) {
-                    TickListener damagePlayer = new TickListener() {
-                        @Override
-                        public void onTick(int tick, long timeLast) {
-                            if (player.getNoDamageTicks() > 0) return;
-                            player.setLastDamageCause(event);
-                            mcAccess.getHandle().dealFallDamage(player, BridgeHealth.getRawDamage(event));
-                            TickTask.removeTickListener(this);
-                        }
-                    };
-                    TickTask.addTickListener(damagePlayer);
-                } 
-                else {
-                    player.setLastDamageCause(event);
-                    mcAccess.getHandle().dealFallDamage(player, BridgeHealth.getRawDamage(event));
+                // TODO: account for no damage ticks etc.
+                player.setLastDamageCause(event);
+                mcAccess.getHandle().dealFallDamage(player, BridgeHealth.getRawDamage(event));
+                if (pData.isDebugActive(type)) {
+                    debug(player, "Handle dealFallDamage with artificial Bukkit event firing.");
                 }
             }
         }

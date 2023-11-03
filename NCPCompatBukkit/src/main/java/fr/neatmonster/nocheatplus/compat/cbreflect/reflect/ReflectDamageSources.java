@@ -34,7 +34,13 @@ public class ReflectDamageSources {
         // 1.19 Entity.damageSources()
         nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dG", nmsClass);
         // 1.20
-        if (nmsDamageSources == null) nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dJ", nmsClass);
+        if (nmsDamageSources == null) {
+            nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dJ", nmsClass);
+        }
+        // 1.20.2
+        if (nmsDamageSources == null) {
+            nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dM", nmsClass);
+        }
         nmsfall = ReflectionUtil.getMethodNoArgs(nmsClass, "k", reflectDamageSource.nmsClass);
     }
 

@@ -16,17 +16,16 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 
 /**
  * Basic preset envelopes for moving off one medium.
- * Jump speed values are from Minecraft (JumpPower); heights are our estimations.
  * 
  * @author asofold
  *
  */
 public enum LiftOffEnvelope {
     /** Normal in-air lift off, without any restrictions/specialties. */
-    NORMAL(0.42, 1.26, 6, true),
+    NORMAL(0.42, 1.29, 6, true),
     /** (Non-vanilla) Simple calm water surface, strong limit */
     LIMIT_LIQUID(0.1, 0.27, 3, false),
-    // NOTE: Stuck-speed all have a jump height that is equal to lift-off speed.
+    // NOTE: Stuck-speed all have a jump height that is (almost) equal to lift-off speed.
     /** Web jump envelope (stuck-speed) */
     LIMIT_WEBS(0.021, 0.021, 0, true),
     /** Berry bush jump envelope (stuck-speed). */
@@ -66,6 +65,7 @@ public enum LiftOffEnvelope {
 
     /**
      * The expected speed with lift-off, with a custom factor for the jump amplifier.
+     * Values are from EntityLiving.java
      * 
      * @param jumpAmplifier
      * @param factor 
@@ -80,7 +80,7 @@ public enum LiftOffEnvelope {
     }
     
     /**
-     * Maximum jump height in blocks.
+     * Maximum estimate for jump height in blocks.
      * Might not be the most accurate value; partly taken from various sources, partly from testing.
      * 
      * @param jumpAmplifier

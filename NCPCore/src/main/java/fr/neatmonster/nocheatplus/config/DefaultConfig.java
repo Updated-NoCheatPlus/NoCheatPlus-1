@@ -339,9 +339,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_ANGLE_ACTIONS, "cancel vl>100 log:angle:6:5:i cancel vl>800 log:angle:0:20:if cancel", 154);
         // Critical
         set(ConfPaths.FIGHT_CRITICAL_CHECK, "default", 154);
-        set(ConfPaths.FIGHT_CRITICAL_FALLDISTANCE, 0.075, 154); 
-        set(ConfPaths.FIGHT_CRITICAL_FALLDISTLENIENCY, 0.0009, 154);
-        set(ConfPaths.FIGHT_CRITICAL_ACTIONS, "cancel vl>5 cancel log:critical:6:10:i vl>60 cancel log:critical:0:5:icf cmd:clearcritical:0:5 cmdc:kickcritical:0:2", 154);
+        set(ConfPaths.FIGHT_CRITICAL_ACTIONS, "cancel vl>5 cancel log:critical:6:10:i vl>60 cancel log:critical:0:5:icf cmd:clearcritical:0:5 cmdc:kickcritical:0:2", 1153);
         // Direction
         set(ConfPaths.FIGHT_DIRECTION_CHECK, "default", 154);
         set(ConfPaths.FIGHT_DIRECTION_STRICT, true, 154);
@@ -446,12 +444,6 @@ public class DefaultConfig extends ConfigFile {
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "spectator." + ConfPaths.SUB_VERTICAL_ASCEND_SPEED, 170, 154);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "spectator." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 154);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "spectator." + ConfPaths.SUB_GROUND, false, 154);
-        }
-        if (Bridge1_13.hasIsRiptiding()) {
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding." + ConfPaths.SUB_HORIZONTAL_SPEED, 700, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding." + ConfPaths.SUB_VERTICAL_ASCEND_SPEED, 600, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding." + ConfPaths.SUB_MODIFIERS, false, 154);
         }
         if (Bridge1_9.hasElytra()) {
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_HORIZONTAL_SPEED, 666, 154);
@@ -624,7 +616,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".chatnormal", start + "seems to be spamming the server chat" + end, 154);
         set(ConfPaths.STRINGS + ".commands", start + "issued too many commands too quickly" + end, 154);
         set(ConfPaths.STRINGS + ".creativefly", start + "tried to perform a move that deviates from the model (Model: &6[model]&7, Tags: &6[tags]&7)" + end, 154);
-        set(ConfPaths.STRINGS + ".critical", start + "tried to perform an illegal critical hit (Tags: &6[tags]&7)" + end, 154);
+        set(ConfPaths.STRINGS + ".critical", start + "tried to perform an illegal critical hit" + end, 154);
         set(ConfPaths.STRINGS + ".fastbreak", start + "tried to break a block faster than possible (Block: &6[blocktype]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".fastclick", start + "tried to move items in their inventory too quickly (Tags: &6[tags]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".fastconsume", start + "tried to consume an item too quickly (Food: &6[food][tags]&7)" + end, 154);

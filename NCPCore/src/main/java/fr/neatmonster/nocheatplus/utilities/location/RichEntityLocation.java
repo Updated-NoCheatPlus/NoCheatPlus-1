@@ -23,9 +23,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
@@ -36,6 +38,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
@@ -167,6 +170,106 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
+     * @return true, if is in a water logged block.
+     */
+    public boolean isInWaterLogged() {
+    	final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        boolean res = super.isInWaterLogged();
+        if (p != null && res && pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+        	// Waterlogged blocks don't exist for older clients.
+            res = inWaterLogged = false;
+        }
+        return res;
+    }
+
+    /**
+     * Check if the location is in lava, accounting for version-dependant subtleties.
+     * 
+     * @return true, if the player is in lava
+     */
+    public boolean isInLava() {
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        // 1.13 and below clients use this no-sense method to check for lava collision... 
+        // 1.8 client, Entity.java -> handleLavaMovement() -> isMaterialInBB in World.java
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+            // Force-override the inLava result from RichBoundsLocation.
+            inLava = false;
+            double[] aaBB = getAABBCopy();
+            int iMinX = MathUtil.floor(aaBB[0] + 0.1);
+            int iMaxX = MathUtil.floor(aaBB[3] - 0.1 + 1.0);
+            int iMinY = MathUtil.floor(aaBB[1] + 0.4);
+            int iMaxY = MathUtil.floor(aaBB[4] - 0.4 + 1.0);
+            int iMinZ = MathUtil.floor(aaBB[2] + 0.1);
+            int iMaxZ = MathUtil.floor(aaBB[5] - 0.1 + 1.0);
+            for (int x = iMinX; x < iMaxX; x++) {
+                for (int y = iMinY; y < iMaxY; y++) {
+                    for (int z = iMinZ; z < iMaxZ; z++) {
+                        final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
+                        if ((BlockFlags.getBlockFlags(node.getType()) & BlockFlags.F_LAVA) != 0) {
+                            inLava = true;
+                            return inLava;
+                        }
+                    }
+                }
+            }
+            // Did not collide.
+            return inLava;
+        }
+        // Mojang tweaked lava collision in 1.14 to use the checkInsideBlocks method, like webs / berry bushes / powder snow etc...)
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_16) 
+            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+            // Force-override the inLava result from RichBoundsLocation
+            inLava = false;
+            double[] aaBB = getAABBCopy();
+            inLava = BlockProperties.collides(blockCache, aaBB[0]+0.001, aaBB[1]+0.001, aaBB[2]+0.001, aaBB[3]-0.001, aaBB[4]-0.001, aaBB[5]-0.001, BlockFlags.F_LIQUID);
+            return inLava;
+        }
+        // Not a legacy client, nothing to do.
+        return super.isInLava();
+    }
+
+    /**
+     * Checks if the location is in water using Minecraft collision logic.
+     * 
+     * @return true, if is in water
+     */
+    public boolean isInWater() {
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+            // 1.13 and below use this extra contraction for water collision.
+            inWater = false;
+            double extraContraction = 0.4;
+            final int iMinX = MathUtil.floor(minX + 0.001);
+            final int iMaxX = MathUtil.ceil(maxX - 0.001);
+            final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
+            final int iMinZ = MathUtil.floor(minZ + 0.001);
+            final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
+            // NMS collision method
+            for (int iX = iMinX; iX < iMaxX; iX++) {
+                for (int iY = iMinY; iY < iMaxY; iY++) {
+                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_WATER);
+                        double liquidHeightToWorld = iY + liquidHeight;
+                        if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
+                            // Collided.
+                            inWater = true;
+                            return inWater;
+                        }
+                    }
+                }
+            }
+            // Did not collide, override the inWater flag.
+            return inWater;
+        }
+        // Not a legacy client, return the result.
+        return super.isInWater();
+    }
+    
+    /**
      * Check if the entity is on a honey block including: cross-version checking and Mojang's 1.20 block-collision fix.
      * @return Whether the entity is on a honey block.
      */
@@ -187,15 +290,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 res = onHoneyBlock = false;
             }
         }
-        // if (!res) {
-            // Is the player really off the block?
-            //if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
-                // Collision is done correctly in 1.20 [See: checkSupportingBlock() function in Entity.java]: the player is considered as "on" the block not just with the center box.
-                // From my understanding, the game checks if the block is the only one supporting the AABB of the player.
-                // if so, the game applies the properties of said block, if there are other ground-like blocks around, the game will apply the properties of the block covered the most by the AABB
-            //    res = onHoneyBlock = false;
-            //}
-        // }
+        // TODO: 1.20 block collision fix.
         return res;
     }
     
@@ -211,12 +306,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         boolean res = super.isInSoulSand();
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        // if (!res && p != null) {
-        //     if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
-        //         // Collision is done correctly in 1.20: the player is considered as "on" the block not just with the center box.
-        //         res = inSoulSand = isOnGround() && (collectedFlags & BlockFlags.F_SOULSAND) != 0;
-        //     }
-        // }
+        // TODO: 1.20 block collision fix.
         return res;
     }
 
@@ -252,16 +342,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         boolean res = super.isInPowderSnow();
         final Player p = (Player) entity;
-        /*if (res && p != null) {
-            // Actually inside?
-            final IPlayerData pData = DataManager.getPlayerData(p);
-            // Player is in powder snow (for NCP) but the game has this really nice mechanic where the block shape is smaller if the player is falling from far above.
-            if (entity != null && isLiving() && entity.getFallDistance() > 2.5f && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)) {
-                // FALLING_COLLISION_SHAPE: 0.8999999761581421D in PowderSnowBlock.java
-                // (That would be the block's height but we cannot dynamically change block shapes, so this is yet another workaround [simply contract the bounding box minY by the difference between max and actual block height])
-                res = inPowderSnow = BlockProperties.collides(blockCache, minX+0.001, minY + (1.0D - 0.8999999761581421D)+0.001, minZ+0.001, maxX-0.001, maxY-0.001, maxZ-0.001, BlockFlags.F_POWDERSNOW);
-            }
-        }*/
+        // TODO: Handle powder snow bb contraction if falling with fall distance >2.5
         return res;
     }
 
@@ -386,9 +467,91 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
+     * Straw-man method to account for this specific bug: https://bugs.mojang.com/browse/MC-2404
+     * Should not be used outside of its intended context (sneaking on edges), or if vanilla uses it.
+     */
+    public boolean isAboveGround() {
+        Player player = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        double[] aaBBCopy = getAABBCopy();
+        double yBelow = player.getFallDistance() - cc.sfStepHeight;
+        return  isOnGround() 
+                || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16_2) 
+                && (
+                    player.getFallDistance() < cc.sfStepHeight 
+                    && BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND)
+                )
+            ;
+    }
+    
+    /**
+     * From EntityHuman.java <br>
+     * Set the speed needed to back the player off from edges in the given vector.
+     * This assumes that you have checked for preconditions already (!) <br>
+     * [Pre-requisites are: the player must be _shifting_(not sneaking); must be above ground; must have negative or 0 y-distance; must not be flying]
+     * 
+     * @param Vector
+     * @return the modified vector
+     */
+    public Vector maybeBackOffFromEdge(Vector vector) {
+        Player player = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        double xDistance = vector.getX();
+        double zDistance = vector.getZ();
+        /** Parameter for searching for collisions below */
+        double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1;
+        double[] aaBBCopy = getAABBCopy();
+
+        // Move AABB alongisde the X axis.
+        boolean collidesX = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND);
+        while (xDistance != 0.0 && !collidesX) {
+            if (xDistance < 0.05 && xDistance >= -0.05) {
+                xDistance = 0.0;
+            } 
+            else if (xDistance > 0.0) {
+                xDistance -= 0.05;
+            } 
+            else xDistance += 0.05;
+        }
+        // Move AABB alongside the Z axis.
+        boolean collidesZ = BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
+        while (zDistance != 0.0 && !collidesZ) {
+            if (zDistance < 0.05 && zDistance >= -0.05) {
+                zDistance = 0.0;
+            } 
+            else if (zDistance > 0.0) {
+                zDistance -= 0.05;
+            } 
+            else zDistance += 0.05;
+        }
+        // Move AABB alongside both (diagonally)
+        boolean collidesXZ = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
+        while (xDistance != 0.0 && zDistance != 0.0 && !collidesXZ) {
+            if (xDistance < 0.05 && xDistance >= -0.05) {
+                xDistance = 0.0;
+            } 
+            else if (xDistance > 0.0) {
+                xDistance -= 0.05;
+            } 
+            else xDistance += 0.05;
+
+            if (zDistance < 0.05 && zDistance >= -0.05) {
+                zDistance = 0.0;
+            } 
+            else if (zDistance > 0.0) {
+                zDistance -= 0.05;
+            } 
+            else zDistance += 0.05;
+        }
+        vector = new Vector(xDistance, 0.0, zDistance);
+        return vector;
+    }
+    
+    /**
      * How Minecraft calculates liquid pushing speed.
      * Can be found in: Entity.java, updateFluidHeightAndDoFluidPushing()
-     * Does check if the entity is inside liquid.
      * 
      * @param xDistance 
      * @param zDistance
@@ -396,9 +559,6 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return A vector representing the pushing force (read as: speed) of the liquid.
      */
     public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
-        if (!isInLiquid()) {
-            return new Vector();
-        }
         final Player p = (Player) entity;
         if (p == null) {
             return new Vector();
@@ -409,10 +569,12 @@ public class RichEntityLocation extends RichBoundsLocation {
             return new Vector();
         }
         // No Location#locToBlock() here (!)
+        // Contract bounding box.
+        double extraContraction = pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? 0.4 : 0.0;
         final int iMinX = MathUtil.floor(minX + 0.001);
         final int iMaxX = MathUtil.ceil(maxX - 0.001);
-        final int iMinY = MathUtil.floor(minY + 0.001); // (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? (0.4 + 0.001) : 0.0));
-        final int iMaxY = MathUtil.ceil(maxY - 0.001);
+        final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction);
+        final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
         final int iMinZ = MathUtil.floor(minZ + 0.001);
         final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
         double d2 = 0.0;
@@ -488,21 +650,21 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     // (Taken from Grim :p)
-    private static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
+    private boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
         return BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) == 0
                || BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) > 0 
                && BlockProperties.getLiquidHeight(access, x1, y1, z1, liquidTypeFlag) > 0; 
     }
     
     // (Taken from Grim :p)
-    private static Vector normalizedVectorWithoutNaN(Vector vector) {
+    private Vector normalizedVectorWithoutNaN(Vector vector) {
         double var0 = vector.length();
         return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
     }
     
     /**
+     * Minecraft's function to calculate the liquid's flow force.
      * FlowingFluid.java, getFlow()
-     * Does check if the entity is inside liquid.
      * 
      * @param access
      * @param x
@@ -515,34 +677,30 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (p == null) {
             return new Vector();
         }
-        if (!isInLiquid()) {
-            return new Vector();
-        }
         double xModifier = 0.0D;
         double zModifier = 0.0D;
-        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); //node.getData(blockCache, x, y, z) / 9.0f; // getOwnHeight()
+        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); 
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
             if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
-                float modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y, modZ) / 9.0f;
+                float modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); 
                 float flowForce = 0.0F;
                 if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
-                    final long flagsAtThisBlock = BlockFlags.getBlockFlags(node.getType());
-                    // VANILLA: block needs a HITbox to block motion (thus, some materials which are passable but do have a hitbox may be considered by the game as capable of blocking motion)
+                    final Material matAtThisLoc = node.getType();
                     //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
-                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions, due to the reasonabove)
-                    if ((flagsAtThisBlock & (BlockFlags.F_GROUND | BlockFlags.F_SOLID)) == 0) { 
+                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
+                    if (!matAtThisLoc.isSolid()) { 
                         if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
-                            modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); // node.getData(blockCache, modX, y - 1, modZ) / 9.0f;
+                            modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
                             if (modLiquidHeight > 0.0F) {
-                                flowForce = liquidLevel - (modLiquidHeight - 0.8888889F);
+                                flowForce = liquidLevel - (modLiquidHeight - 0.8888889f);
                             }
                         }
                     }
                 } 
-                else if (modLiquidHeight > 0.0F) {
+                else if (modLiquidHeight > 0.0f) {
                     flowForce = liquidLevel - modLiquidHeight;
                 }
                 if (flowForce != 0.0F) {
@@ -552,14 +710,12 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         // Compose the speed vector
-        Vector flowingVector = new Vector(xModifier, 0.0D, zModifier);
-        // p.sendMessage("FlowingVector: " + flowingVector.toString());
-        //IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
-        // TODO: Implement & Research "isSolidFace" method.
-        /*if (BlockProperties.isLiquid(node.getType()) && node.getData(access, x, y, z) >= 8) { // 8-15 - falling liquid
+        Vector flowingVector = new Vector(xModifier, 0.0, zModifier);
+        /*IBlockCacheNode originalNode = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
+        if (BlockProperties.isLiquid(originalNode.getType()) && originalNode.getData(blockCache, x, y, z) >= 8) { // 8-15 - falling liquid
             for (BlockFace direction : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-                if (isSolidFace(player, x, y, z, direction) || isSolidFace(player, x, y + 1, z, direction)) {
-                    flowingVector = flowingVector.normalize().add(new Vector(0.0D, -6.0D, 0.0D));
+                if (isSolidFace((Player) entity, x, y, z, direction, liquidTypeFlag) || isSolidFace((Player) entity, x, y + 1, z, direction, liquidTypeFlag)) {
+                    flowingVector = normalizedVectorWithoutNaN(flowingVector).add(new Vector(0.0D, -6.0D, 0.0D));
                     break;
                 }
             }
@@ -655,7 +811,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                  * Powder snow: hack around NCP not having per-player blocks / dynamic removal or addition of flags.
                  * This would always return true due to the block having the GROUND flag, but for the purpose of THIS check, powder snow cannot obstruct a player's head/jump (jumping with powder snow above will simply let the player go through it).
                  */
-                && !BlockProperties.collides(blockCache, minX , maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
+                && !BlockProperties.collides(blockCache, minX, maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
                 // Here the player's AABB would be INSIDE the block sideways(thus, the maxY's AABB would result as hitting the honey block above)
                 && !isNextToBlock(0.01, BlockFlags.F_STICKY);
     }
@@ -748,10 +904,10 @@ public class RichEntityLocation extends RichBoundsLocation {
             final LivingEntity living = (LivingEntity) entity;
             final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             eyeHeight = living.getEyeHeight();
-            // Sneaking in Minecraft 1.14 and possibility later version will have lower height
-            // But allow changing height in 1.13 too for on ground swimming
+            // Mojang added a new mechanic in 1.14: crouching will now actually contract the bounding box of the player.
+            // On 1.13 and 1.9 the player's bounding box can change as well due to swimming and gliding
             // 0.179999?
-            // TODO: Better documentation.
+            // TODO: What's the 0.179 magic value?
             fullHeight = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) || Bridge1_9.isGliding(living) ? eyeHeight + 0.179 : Math.max(Math.max(fullHeight, eyeHeight), living.getEyeHeight(true));
         }
         else {

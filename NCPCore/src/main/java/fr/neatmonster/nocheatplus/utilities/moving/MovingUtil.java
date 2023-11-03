@@ -42,6 +42,7 @@ import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
+import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichBoundsLocation;
@@ -104,7 +105,7 @@ public class MovingUtil {
                     !Bridge1_9.isGlidingWithElytra(player) 
                     || !isGlidingWithElytraValid(player, fromLocation, data, cc)
                 )
-                // Riptiding is handled by Cf.
+                // Riptiding is handled by Sf.
                 || Bridge1_13.isRiptiding(player)
             ;
     }
@@ -140,8 +141,7 @@ public class MovingUtil {
 
 
     /**
-     * Consistency / cheat check. Prerequisite is
-     * Bridge1_9.isGlidingWithElytra(player) having returned true.
+     * Consistency / cheat check. Prerequisite is Bridge1_9.isGlidingWithElytra(player) having returned true.
      * 
      * @param player
      * @param fromLocation
@@ -159,17 +159,15 @@ public class MovingUtil {
          * TODO: Allow if last move not touched ground (+-) after all the
          * onGround check isn't much needed, if we can test for the relevant stuff (web?).
          */
-
-        // Check start glide conditions.
-        final PlayerMoveData firstPastMove = data.playerMoves.getFirstPastMove();
+        
+        // Firstly, validate the lift off, if the EntityToggleGlideEvent is not present.
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         if (
-                // Skip lift-off conditions if the EntityToggleGlideEvent is present (checked there).
-                !Bridge1_9.hasEntityToggleGlideEvent()
-                // Otherwise only treat as lift-off, if not already gliding.
-                && !firstPastMove.toIsValid || firstPastMove.modelFlying == null 
-                || !MovingConfig.ID_JETPACK_ELYTRA.equals(firstPastMove.modelFlying.getId())) {
+                !Bridge1_9.hasEntityToggleGlideEvent() 
+                // If the event is absent (for whatever reason) use our own definition of "toggle glide on" 
+                || lastMove.modelFlying == null // Last move didn't have a model and the player is now gliding. Assume this is a lift off.
+                || !MovingConfig.ID_JETPACK_ELYTRA.equals(lastMove.modelFlying.getId())) { // Same as above.
             // Treat as a lift off.
-            // TODO: Past map states might allow lift off (...).
             return canLiftOffWithElytra(player, fromLocation, data);
         }
 
@@ -182,55 +180,42 @@ public class MovingUtil {
         //        if (InventoryUtil.isItemBroken(player.getInventory().getChestplate())) {
         //            return false;
         //        }
-
-        /*
-         * TODO: Rather focus on abort conditions (in-medium stay time for
-         * special blocks, sleeping / dead / ...)?
-         */
-
-        // Only the web can stop a player who isn't propelled by a rocket.
-        return data.fireworksBoostDuration > 0 || !BlockProperties.collides(fromLocation.getBlockCache(), 
-                fromLocation.getMinX(), fromLocation.getMinY(), fromLocation.getMinZ(), 
-                fromLocation.getMaxX(), fromLocation.getMinY() + 0.6, fromLocation.getMaxZ(),
-                BlockFlags.F_COBWEB);
+        // Actually check if this gliding phase is valid, finally.
+        // Only stuck-speed blocks (webs/berry bushes/powder snow?) can stop a player who isn't propelled by a rocket.
+        return data.fireworksBoostDuration > 0 || !fromLocation.isInWeb() || !player.isDead() || !player.isSleeping();
     }
 
 
     /**
-     * Check lift-off (CB: on ground is done wrongly, inWater probably is
-     * correct, web is not checked).
+     * To be called on EntityToggleGligeEvent(s). If the event is absent, this must be called after checking for lift-off assumption conditions.
+     * (CB: on ground is done wrongly, inWater is probably not correct, web is not checked).
      * 
      * @param player
      * @param loc
      * @param data
-     * @return
+     * @return False, if the player is judged to not be able to start gliding (in which case player.setGliding(false) will be called, or the event cancelled).
      */
     public static boolean canLiftOffWithElytra(final Player player, final PlayerLocation loc, final MovingData data) {
-        // TODO: Item durability here too?
         // TODO: this/firstPast- Move not touching or not explicitly on ground would be enough?
         return 
                 loc.isPassableBox() // Full box as if standing for lift-off.
-                //&& !loc.isInWeb()
                 // Durability is checked within PlayerConnection (toggling on).
-                // && !InventoryUtil.isItemBroken(player.getInventory().getChestplate())
-                /*
-                 * TODO: Could be a problem with too high yOnGround. Actual
-                 * cheating rather would have to be prevented by monitoring
-                 * jumping more tightly (low jump = set back, needs
-                 * false-positive-free checking (...)).
-                 */
-                && !loc.isOnGround(0.001)
-                //&& !loc.isInBerryBush() 
-                // Assume water is checked correctly.
-                //                && (
-                //                        !fromLocation.isInLiquid() // (Needs to check for actual block bounds).
-                //                        /*
-                //                         * Observed with head free, but feet clearly in water:
-                //                         * lift off from water (not 100% easy to do).
-                //                         */
-                //                        || !BlockProperties.isLiquid(fromLocation.getTypeId())
-                //                        || !BlockProperties.isLiquid(fromLocation.getTypeIdAbove())
-                //                        )
+                // We check for it anyway in case of deync states or something changes on Bukkit's side.
+                && !InventoryUtil.isItemBroken(player.getInventory().getChestplate())
+                && !loc.isOnGround()
+                // Immediately stop this gliding phase if colliding with a liquid block.
+                // Players can technically maintain the gliding _POSE_ when in a liquid, but Minecraft does not allow gliding in it. (In EntityLiving.java, travel() you can see that the game checks for gliding separately)
+                // This results in a very glitchy interaction when players want to get out of a liquid with a gliding pose (they can bob up and down on the surface)
+                // This effectively (and slightly) alters vanilla behaviour. Unless there are legit vanilla techniques that do make use of this stuff, we are not going to remove this fix.
+                && (
+                    !loc.isInLiquid() 
+                    // Observed with head free, but feet clearly in water:
+                    // lift off from water (not 100% easy to do).
+                    || !BlockProperties.isLiquid(loc.getTypeId())
+                    || !BlockProperties.isLiquid(loc.getTypeIdAbove())
+                )
+                // Minecraft does not allow players to toggle glide on with levitation.
+                && Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))
                 ;
     }
 

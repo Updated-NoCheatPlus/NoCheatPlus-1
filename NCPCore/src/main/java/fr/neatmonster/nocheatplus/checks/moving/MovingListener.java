@@ -34,7 +34,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
@@ -204,19 +203,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
         api.addComponent(vehicleChecks);
         blockChangeTracker = NCPAPIProvider.getNoCheatPlusAPI().getBlockChangeTracker();
-        if (Bridge1_9.hasEntityToggleGlideEvent()) {
-            queuedComponents.add(new Listener() {
-                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-                public void onEntityToggleGlide(final EntityToggleGlideEvent event) {
-                    if (handleEntityToggleGlideEvent(event.getEntity(), event.isGliding())) {
-                        event.setCancelled(true);
-                    }
-                }
-            });
-        }
-
         // Register config and data.
-        // TODO: Should register before creating Check instances ?
+        // Should register before creating Check instances ?
         api.register(api.newRegistrationContext()
                 // MovingConfig
                 .registerConfigWorld(MovingConfig.class)
@@ -240,34 +228,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 .removeSubCheckData(CheckType.MOVING, true)
                 .context() //
                 );
-    }
-
-    /**
-     * 
-     * @param entity
-     * @param isGliding
-     * @return True, if the event is to be cancelled.
-     */
-    private boolean handleEntityToggleGlideEvent(final Entity entity, final boolean isGliding) {
-        // Ignore non players.
-        if (!(entity instanceof Player)) {
-            return false;
-        }
-        final Player player = (Player) entity;
-        if (isGliding && !Bridge1_9.isGlidingWithElytra(player)) { // Includes check for elytra item.
-            final PlayerMoveInfo info = aux.usePlayerMoveInfo();
-            info.set(player, player.getLocation(info.useLoc), null, 0.001); // Only restrict very near ground.
-            final IPlayerData pData = DataManager.getPlayerData(player);
-            final MovingData data = pData.getGenericInstance(MovingData.class);
-            final boolean res = !MovingUtil.canLiftOffWithElytra(player, info.from, data);
-            info.cleanup();
-            aux.returnPlayerMoveInfo(info);
-            if (res && pData.isDebugActive(checkType)) {
-                debug(player, "Prevent toggle glide on.");
-            }
-            return res;
-        }
-        return false;
     }
 
 
@@ -658,8 +618,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
         // Cross world teleportation issues with the end.
         final Location from = event.getFrom();
-        if (from != null 
-            && event.getCause() == TeleportCause.END_PORTAL // Currently only related to this.
+        if (from != null && event.getCause() == TeleportCause.END_PORTAL // Currently only related to this.
             && !from.getWorld().getName().equals(to.getWorld().getName())) { // Less java, though.
             // Remember the position teleported from.
             data.crossWorldFrom = new SimplePositionWithLook(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
@@ -697,7 +656,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
 
     /** Listen to damage events for fall damage */
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityDamage(final EntityDamageEvent event) {
         if (event.getCause() != DamageCause.FALL) {
             return;
@@ -884,7 +843,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
         // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
         // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B).
-        // Now, to fix this, we'd need to re-code NCP to run movement checks on packet level instead. Such is out of the question: would require a massive work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
+        // Now, to fix this, we'd need to re-code NCP to run movement checks on packet level instead. Such option is out of the question however: it would require a massive work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
         // Essentially, after Bukkit fires a PlayerMoveEvent, NCP will check if it had been fired normally. If it wasn't, the flying-packet queue is used to get the correct "from" and "to" locations.
         // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
         // (For simplicity, the mechanic is internally referred to as "split move", because the event is essentially split by how many moves were lost, with a cap)
@@ -1016,7 +975,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * Split the incoming move event into two different moves, by using player#getLocation() exclusively. <br>
      * This is a really inaccurate split, as without ProtocolLib, we cannot tell how many moves have been skipped between the event#getFrom/To() and player#getLocation().
      * (Which can be much more than 2)
-     * So, checking for distances (or anything that has to do with coordinates) during such phases should be avoided.
+     * So, checking for anything that needs high precision (like a prediction implementation) during these phases should be avoided.
      * 
      * @param player
      * @param moveInfo
@@ -1165,26 +1124,19 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         ////////////////////////////////////
         // Set some data for this move.   //
         ////////////////////////////////////
-        // Set coordinates
         thisMove.set(pFrom, pTo);
-        // Set this split move phase.
         thisMove.multiMoveCount = multiMoveCount;
-        // Check if head is obstructed.
         thisMove.headObstructed = (thisMove.yDistance > 0.0 ? pFrom.isHeadObstructed(thisMove.yDistance) : pFrom.isHeadObstructed());
-        // Get the distance to set-back.
         thisMove.setBackYDistance = pTo.getY() - data.getSetBackY();
-        // Flag to tell us if this move is levitating.
         thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player));
-        // " " is slow falling.
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
-        // " " has gravity
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
         thisMove.isGliding = Bridge1_9.isGlidingWithElytra(player);
         thisMove.isRiptiding = Bridge1_13.isRiptiding(player);
         thisMove.isSprinting = pData.isSprinting();
         thisMove.isSneaking = pData.isSneaking();
         thisMove.isSwmming = Bridge1_13.isSwimming(player);
-        thisMove.slowedByUsingAnItem = pData.isUsingItem();
+        thisMove.slowedByUsingAnItem = pData.isUsingItem() || player.isBlocking();
 
 
         ////////////////////////////
@@ -1454,14 +1406,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 1.1: Prepare from, to, thisMove for full checking.
             // TODO: Could further differentiate if really needed to (newTo / NoFall).
             MovingUtil.prepareFullCheck(pFrom, pTo, thisMove, Math.max(cc.noFallyOnGround, cc.yOnGround));
-            // 1.2: HACK: Add velocity for transitions between creativefly and survivalfly.
-            if (lastMove.toIsValid && lastMove.flyCheck == CheckType.MOVING_CREATIVEFLY) { 
-                final long tickHasLag = data.delayWorkaround + Math.round(200 / TickTask.getLag(200, true));
-                if (data.delayWorkaround > time || tickHasLag < time) {
-                    workaroundFlyCheckTransition(player, tick, debug, data, cc);
-                    data.delayWorkaround = time;
-                }
-            }
 
             // 1.3: Actual check.
             // Only check if passable has not already set back.
@@ -1831,22 +1775,17 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove(); 
-        final boolean riptideBounce = Bridge1_13.isRiptiding(player) && data.verticalBounce != null 
-                                      && thisMove.yDistance < 8.0 && thisMove.yDistance > Magic.EXTREME_MOVE_DIST_HORIZONTAL; // At least ensure that cheaters cannot go any higher than a legit player.
-        final boolean ripglide = Bridge1_9.isGlidingWithElytra(player) && Bridge1_13.isRiptiding(player) && thisMove.yDistance > Magic.EXTREME_MOVE_DIST_VERTICAL * 1.7;
-        final boolean levitationHighLevel = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && Bridge1_9.getLevitationAmplifier(player) >= 89 && Bridge1_9.getLevitationAmplifier(player) <= 127;
         // TODO: Latency effects.
-        double violation = 0.0; // h + v violation (full move).
+        double violation = 0.0;
         // Vertical move.
         final boolean allowVerticalVelocity = false; // TODO: Configurable
-        if (Math.abs(thisMove.yDistance) > Magic.EXTREME_MOVE_DIST_VERTICAL * (Bridge1_13.isRiptiding(player) ? 1.7 : 1.0)) {
+        if (Math.abs(thisMove.yDistance) > Magic.EXTREME_MOVE_DIST_VERTICAL) {
             // Exclude valid moves first.
             // About 3.9 seems to be the positive maximum for velocity use in survival mode, regardless jump effect.
             // About -1.85 seems to be the negative maximum for velocity use in survival mode. Falling can result in slightly less than -3.
             if (lastMove.toIsValid && Math.abs(thisMove.yDistance) < Math.abs(lastMove.yDistance)
                 && (thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 || thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0) 
-                || allowVerticalVelocity && data.getOrUseVerticalVelocity(thisMove.yDistance) != null
-                || riptideBounce || ripglide || levitationHighLevel) {
+                || allowVerticalVelocity && data.getOrUseVerticalVelocity(thisMove.yDistance) != null) {
                 // Speed decreased or velocity is present.
             }
             else violation += thisMove.yDistance; // Could subtract lastMove.yDistance.
@@ -1906,28 +1845,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         return null;
     }
 
-
-    /**
-     * Add velocity, in order to work around issues with transitions between Fly checks.
-     * Asserts last distances are set.
-     * TODO: with the vDistRel and hDistRel overhaul, this will be obsolete.
-     * 
-     * @param tick
-     * @param data
-     */
-    private void workaroundFlyCheckTransition(final Player player, final int tick, final boolean debug, 
-                                              final MovingData data, final MovingConfig cc) {
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final double amount = guessVelocityAmount(player, data.playerMoves.getCurrentMove(), lastMove, data, cc);
-        data.clearActiveHorVel(); // Clear active velocity due to adding actual speed here.
-        data.bunnyhopDelay = 0; // Remove bunny hop due to add velocity 
-        if (amount > 0.0) data.addHorizontalVelocity(new AccountEntry(tick, amount, cc.velocityActivationCounter, MovingData.getHorVelValCount(amount)));
-        data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance, cc.velocityActivationCounter));
-        data.addVerticalVelocity(new SimpleEntry(0.0, cc.velocityActivationCounter));
-        data.setFrictionJumpPhase();
-        if (debug) debug(player, "*** Transition from CreativeFly to SurvivalFly: Add velocity.");
-    }
-
     /** TODO: Get rid with the hDistrel and vDistrel overhaul */
     private static double guessVelocityAmount(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
                                               final MovingData data, final MovingConfig cc) {
@@ -1951,10 +1868,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             //    else if (lastMove.toIsValid && lastMove.hAllowedDistance > 0.0) return lastMove.hAllowedDistance; // This one might replace below?
             //    return defaultAmount + 0.5;
             //}
-        }
-        else if (lastMove.modelFlying != null && lastMove.modelFlying.getId().equals(MovingConfig.ID_EFFECT_RIPTIDING)){
-            data.addVerticalVelocity(new SimpleEntry(0.0, 10)); // Not using cc.velocityActivationCounter to be less exploitable.
-            data.keepfrictiontick = -7;
         }
         return defaultAmount;
     }
@@ -2782,72 +2695,27 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final CombinedData cData = DataManager.getPlayerData(player).getGenericInstance(CombinedData.class);
         final Location loc = player.getLocation();
         builder.append(CheckUtils.getLogMessagePrefix(player, checkType));
-        builder.append("MOVE in world " + from.getWorld().getName() + ":\n");
+        builder.append("MOVE in world (" + from.getWorld().getName() + ") ------>\n");
         DebugUtil.addMove(from, to, loc, builder);
+        final Vector v = player.getVelocity();
+        if (v.lengthSquared() > 0.0) {
+            builder.append("\n");
+            builder.append("Bukkit velocity: " + StringUtil.fdec6.format(v.getX()) + ", " + StringUtil.fdec6.format(v.getY()) + ", " + StringUtil.fdec6.format(v.getZ()));
+        }
         final double jump = mcAccess.getJumpAmplifier(player);
         final double speed = mcAccess.getFasterMovementAmplifier(player);
         final double strider = BridgeEnchant.getDepthStriderLevel(player);
         final double swiftSneak = BridgeEnchant.getSwiftSneakLevel(player);
         final IPlayerData pData = DataManager.getPlayerData(player);
         if (BuildParameters.debugLevel > 0) {
-            builder.append("\n(walkspeed(attr)=" + attributeAccess.getHandle().getMovementSpeed(player) + " flyspeed=" + player.getFlySpeed() + ")");
-            if (player.isSprinting()) {
-                builder.append("(sprinting)");
-            }
-            if (player.isSneaking()) {
-                builder.append("(sneaking)");
-            }
-            if (player.isBlocking()) {
-                builder.append("(blocking)");
-            }
-            if (pData.isUsingItem()) {
-                builder.append("(using item)");
-            }
-            final Vector v = player.getVelocity();
-            if (v.lengthSquared() > 0.0) {
-                builder.append("(svel=" + v.getX() + "," + v.getY() + "," + v.getZ() + ")");
-            }
-        }
-        if (!Double.isInfinite(speed)) {
-            builder.append("(e_speed=" + (speed + 1) + ")");
-        }
-        final double slow = PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW);
-        if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))) {
-            builder.append("(e_slowfall= " + (Bridge1_13.getSlowfallingAmplifier(player) + 1) + ")");
-        }
-        if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
-            builder.append("(e_levitation= " + (Bridge1_9.getLevitationAmplifier(player) + 1) + ")");
-        }
-        if (!Double.isInfinite(slow)) {
-            builder.append("(e_slow=" + (slow + 1) + ")");
-        }
-        if (!Double.isInfinite(jump)) {
-            builder.append("(e_jump=" + (jump + 1) + ")");
-        }
-        if (strider != 0) {
-            builder.append("(e_depth_strider=" + strider + ")");
-        }
-        if (swiftSneak != 0) {
-            builder.append("(swift_sneak=" + swiftSneak + ")");
-        }
-        if (Bridge1_9.isGliding(player)) {
-            builder.append("(gliding)");
-        }
-        if (player.getAllowFlight()) {
-            builder.append("(allow_flight)");
-        }
-        if (player.isFlying()) {
-            builder.append("(flying)");
-        }
-        // Print basic info first in order
-        NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
-        // Extended info.
-        if (BuildParameters.debugLevel > 0) {
-            builder.setLength(0);
             // Note: the block flags are for normal on-ground checking, not with yOnGrond set to 0.5.
             from.collectBlockFlags(maxYOnGround);
             if (from.getBlockFlags() != 0) {
-                builder.append("\nFrom flags: " + StringUtil.join(BlockFlags.getFlagNames(from.getBlockFlags()), "+"));
+                builder.append("\nFrom flags: " + StringUtil.join(BlockFlags.getFlagNames(from.getBlockFlags()), " + "));
+            }
+            to.collectBlockFlags(maxYOnGround);
+            if (to.getBlockFlags() != 0) {
+                builder.append("\nTo flags: " + StringUtil.join(BlockFlags.getFlagNames(to.getBlockFlags()), " + "));
             }
             if (!BlockProperties.isAir(from.getTypeId())) {
                 DebugUtil.addBlockInfo(builder, from, "\nFrom");
@@ -2858,10 +2726,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (!from.isOnGround() && from.isOnGround(0.5)) {
                 builder.append(" (ground within 0.5)");
             }
-            to.collectBlockFlags(maxYOnGround);
-            if (to.getBlockFlags() != 0) {
-                builder.append("\nTo flags: " + StringUtil.join(BlockFlags.getFlagNames(to.getBlockFlags()), "+"));
-            }
             if (!BlockProperties.isAir(to.getTypeId())) {
                 DebugUtil.addBlockInfo(builder, to, "\nTo");
             }
@@ -2870,6 +2734,65 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             }
             if (!to.isOnGround() && to.isOnGround(0.5)) {
                 builder.append(" (ground within 0.5)");
+            }
+        }
+        NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
+        if (BuildParameters.debugLevel > 0) {
+            builder.setLength(0);
+            builder.append("\n(attribute speed= " + attributeAccess.getHandle().getMovementSpeed(player));
+            builder.append("\n(attribute fly speed= " + player.getFlySpeed() + ")");
+            if (player.isSprinting()) { 
+                builder.append("\n(Bukkit sprinting)");
+            }
+            if (pData.isSprinting()) {
+                builder.append("\n(NCP sprinting)");
+            }
+            if (player.isSneaking()) {
+                builder.append("\n(Bukkit sneaking)");
+            }
+            if (pData.isSneaking()) {
+                builder.append("\n(NCP sneaking)");
+            }
+            if (player.isBlocking()) {
+                builder.append("\n(blocking)");
+            }
+            if (pData.isUsingItem()) {
+                builder.append("\n(NCP using item)");
+            }
+            if (!Double.isInfinite(speed)) {
+                builder.append("\n(e_speed= " + (speed + 1) + ")");
+            }
+            final double slow = PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW);
+            if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))) {
+                builder.append("\n(e_slowfall= " + (Bridge1_13.getSlowfallingAmplifier(player) + 1) + ")");
+            }
+            if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
+                builder.append("\n(e_levitation= " + (Bridge1_9.getLevitationAmplifier(player) + 1) + ")");
+            }
+            if (!Double.isInfinite(slow)) {
+                builder.append("\n(e_slow= " + (slow + 1) + ")");
+            }
+            if (!Double.isInfinite(jump)) {
+                builder.append("\n(e_jump= " + (jump + 1) + ")");
+            }
+            if (strider != 0) {
+                builder.append("\n(e_depth_strider= " + strider + ")");
+            }
+            if (swiftSneak != 0) {
+                builder.append("\n(swift sneak= " + swiftSneak + ")");
+            }
+            if (Bridge1_9.isGliding(player)) {
+                builder.append("\n(gliding, no elytra check)");
+            }
+            if (Bridge1_13.isRiptiding(player)) {
+                builder.append("\n(riptiding with Lvl: " + BridgeEnchant.getRiptideLevel(player) + ")");
+
+            }
+            if (player.getAllowFlight()) {
+                builder.append("\n(allow flight)");
+            }
+            if (player.isFlying()) {
+                builder.append("\n(flying)");
             }
             NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
         }

@@ -56,7 +56,6 @@ public class MovingConfig extends ACheckConfig {
 
     // Model flying ids.
     public static final String ID_JETPACK_ELYTRA = "jetpack.elytra";
-    public static final String ID_EFFECT_RIPTIDING = "effect.riptiding";
 
     // INSTANCE
     public final boolean ignoreCreative;
@@ -64,7 +63,6 @@ public class MovingConfig extends ACheckConfig {
 
     private final Map<GameMode, ModelFlying> flyingModelGameMode = new HashMap<GameMode, ModelFlying>();
     private final ModelFlying flyingModelElytra;
-    private final ModelFlying flyingModelRiptiding;
     public final ActionList creativeFlyActions;
 
     /** Assumed number of packets per second under ideal conditions. */
@@ -186,9 +184,6 @@ public class MovingConfig extends ACheckConfig {
             flyingModelGameMode.put(gameMode, new ModelFlying("gamemode." + gameMode.name().toLowerCase(), config, 
                     ConfPaths.MOVING_CREATIVEFLY_MODEL + (gameMode.name().toLowerCase()) + ".", defaultModel).lock());
         }
-        flyingModelRiptiding = new ModelFlying(ID_EFFECT_RIPTIDING, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "riptiding.", 
-                                               new ModelFlying(null, defaultModel).scaleRiptidingEffect(true).lock());
-
         flyingModelElytra = new ModelFlying(ID_JETPACK_ELYTRA, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra.", 
                                             new ModelFlying(null, defaultModel).verticalAscendGliding(true).lock());
 
@@ -332,7 +327,6 @@ public class MovingConfig extends ACheckConfig {
         final ModelFlying modelGameMode = flyingModelGameMode.get(gameMode);
         final boolean isGlidingWithElytra = Bridge1_9.isGlidingWithElytra(player) && MovingUtil.isGlidingWithElytraValid(player, fromLocation, data, cc);
         final long now = System.currentTimeMillis();
-        final boolean RiptidePhase = Bridge1_13.isRiptiding(player) || data.timeRiptiding + 1500 > now;
         switch(gameMode) {
             case SURVIVAL:
             case ADVENTURE:
@@ -345,20 +339,13 @@ public class MovingConfig extends ACheckConfig {
         }
         // Actual flying (ignoreAllowFlight is a legacy option for rocket boots like flying).
 
-        // NOTE: Riptiding has priority over anything else 
-        if (player.isFlying() && !RiptidePhase 
-            || !isGlidingWithElytra && !ignoreAllowFlight && player.getAllowFlight()
-            && !RiptidePhase) {
+        if (player.isFlying() 
+            || !isGlidingWithElytra && !ignoreAllowFlight && player.getAllowFlight()) {
             return modelGameMode;
         }
         // Elytra.
-        if (isGlidingWithElytra && !RiptidePhase) { // Defensive: don't demand isGliding.
+        if (isGlidingWithElytra) { // Defensive: don't demand isGliding.
             return flyingModelElytra;
-        }
-        // Riptiding
-        // TODO: Put on top priority, add data.timeRiptiding too, remove redundant
-        if (RiptidePhase) {
-            return flyingModelRiptiding;
         }
         // Default by game mode.
         return modelGameMode;

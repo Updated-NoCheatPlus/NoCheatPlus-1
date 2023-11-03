@@ -67,10 +67,7 @@ public class CreativeFly extends Check {
     * 1) It only changes vertical movement not horizontal, which still uses the NMS method
     * 2) Prevents possible bypasses with Fly checks switches.
     * ^ Done.
-    * Leave here: Spectator, Flying, Gliding, Riptiding.
-    * TODO: Completely rework riptide and prevent riptide-fly
-    * ISSUE: You guessed it! More desync issues to account for.
-    * TODO: See riptide client-code.
+    * Leave here: Spectator, Flying.
     * TODO: Cleanup pending for elytra movement handle.
     */
 
@@ -333,7 +330,6 @@ public class CreativeFly extends Check {
 
         // Modifiers.
         double fSpeed;
-        final boolean ripglide = Bridge1_13.isRiptiding(player) && Bridge1_9.isGlidingWithElytra(player);
 
         // TODO: Make this configurable ! [Speed effect should not affect flying if not on ground.]
         if (model.getApplyModifiers()) {
@@ -376,31 +372,12 @@ public class CreativeFly extends Check {
             limitH = Math.max(limitH, 0.7 * fSpeed);
         }
 
-        // "Ripglide" (riptiding+gliding phase): allow some additional speed increase
-        // Note that the ExtremeMove subcheck is skipped during such phases.
-        // TODO: Why not simply skip CreativeFly and let ExtremeMove deal with it? 
-        if (lastMove.toIsValid && ripglide && hDistance > limitH) {
-            limitH += 9.3;
-            tags.add("hripglide");
-        }
-        
-        // Special friction mechanic for riptiding 
-        // Observed: extreme/abrupt acceleration from the last hDistance: 
-        // one time hDistance around 3.01 with friction distance being at or slightly lower than last hDistance (0.51/0.52)
-        if (lastMove.toIsValid && model.getScaleRiptidingEffect() 
-            && lastMove.hDistance * Magic.FRICTION_MEDIUM_AIR <= lastMove.hDistance
-            && thisMove.hDistance > 3.0 && thisMove.hDistance < 3.9
-            && Bridge1_13.isRiptiding(player) && hDistance > limitH) {
-            limitH = Math.max((lastMove.hDistance + 2.9974) * Magic.FRICTION_MEDIUM_AIR, limitH);
-            tags.add("hfrict_ript");
-        }
-
         // Ordinary friction
         // TODO: Use last friction (as well)?
         // TODO: Test/adjust more.
         // TODO: Skipping on ripglide phases is not ideal, but at the same time, the speed increase is so much that
         // it doesn't really make much sense checking for friction as well...
-        if (lastMove.toIsValid && !ripglide) {
+        if (lastMove.toIsValid) {
             double frictionDist = lastMove.hDistance * Magic.FRICTION_MEDIUM_AIR;
             limitH = Math.max(frictionDist, limitH);
             tags.add("hfrict");
@@ -466,7 +443,6 @@ public class CreativeFly extends Check {
                                  final boolean flying, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
                                  final ModelFlying model, final MovingData data, final MovingConfig cc, final boolean debug) {
 
-        final boolean ripglide = Bridge1_13.isRiptiding(from.getPlayer()) && Bridge1_9.isGlidingWithElytra(from.getPlayer());
         // Set the vertical limit.
         double limitV = model.getVerticalAscendModSpeed() / 100.0 * ModelFlying.VERTICAL_ASCEND_SPEED; 
         double resultV = 0.0;
@@ -480,24 +456,6 @@ public class CreativeFly extends Check {
         // TODO: Better detection of an elytra model (extra flags?).
         if (model.getVerticalAscendGliding()) {
             limitV = Math.max(limitV, limitV = hackLytra(yDistance, limitV, thisMove, lastMove, from, data));
-        }
-
-        // "Ripglide" (riptiding+gliding phase): allow some additional speed increase
-        // Note that the ExtremeMove subcheck is skipped during such phases.
-        // TODO: Why not simply skip CreativeFly and let ExtremeMove deal with it? 
-        if (lastMove.toIsValid && ripglide && yDistance > limitV) {
-            limitV += 5.9;
-            tags.add("vripglide");
-        }
-        
-        // Riptiding right onto a bouncy block (2nd time, higher bounce distance)
-        // Note that the ExtremeMove subcheck is skipped during such phases.
-        if (Bridge1_13.isRiptiding(from.getPlayer()) && (from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0
-            && yDistance > limitV && data.sfJumpPhase <= 2
-            && yDistance > 0.0 && yDistance < 7.5  // Cap the distance: observed maximum speed -> 5.536355205897621 (+5.993) / 5.0
-            && thisMove.from.onGround && !thisMove.to.onGround) {
-            data.addVerticalVelocity(new SimpleEntry(yDistance, 4));
-            if (debug) debug(from.getPlayer(), "Riptide bounce: add velocity");
         }
         
         // Gliding in water
@@ -762,7 +720,6 @@ public class CreativeFly extends Check {
         // TODO: Why is a gliding check needed here? MC doesn't check for fallflying if in water (EntityLiving.travel. MC checks: if(water) else if(lava) else if(fallflying) else normal)
         else if(from.isInLiquid()) {
 
-            if (Bridge1_13.isRiptiding(player)) return new double[] {0.0, 0.0};
             allowedElytraHDistance = thisMove.hAllowedDistance;
             final int level = BridgeEnchant.getDepthStriderLevel(player);
             
@@ -840,11 +797,6 @@ public class CreativeFly extends Check {
             tags.add("e_jump");
             return yDistance;
         } 
-        // Do ignore riptiding.
-        else if (Bridge1_13.isRiptiding(from.getPlayer())) {
-            tags.add("e_riptide");
-            return yDistance;
-        }
 
         if (yDistance > Magic.GLIDE_DESCEND_PHASE_MIN && yDistance < 34.0 * Magic.GRAVITY_MAX 
             && (
@@ -998,18 +950,6 @@ public class CreativeFly extends Check {
                 if (model.getId().equals("gamemode.creative")) {
                     data.addVerticalVelocity(new SimpleEntry(0.0, 2));
                     if (debug) debug(player, "Jetpack.elytra -> gamemode.creative: add velocity");
-                }
-                return;
-            }
-            // A ripglide phase has ended, smoothen the transition.
-            if (lastMove.modelFlying != null && lastMove.modelFlying.getScaleRiptidingEffect() && thisMove.modelFlying.getVerticalAscendGliding()) {
-
-                final double amount = guessVelocityAmount(player, thisMove, lastMove, data);
-                if (!thisMove.from.onGround && !thisMove.to.onGround) {
-                    data.addVerticalVelocity(new SimpleEntry(thisMove.yDistance, cc.velocityActivationCounter));
-                    data.addVerticalVelocity(new SimpleEntry(0.0, cc.velocityActivationCounter));
-                    data.addHorizontalVelocity(new AccountEntry(amount, 4, MovingData.getHorVelValCount(amount)));
-                    if (debug) debug(player, "Effect.riptiding -> Jetpack.elytra: add velocity");
                 }
                 return;
             }

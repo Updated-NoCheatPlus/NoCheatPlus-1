@@ -61,10 +61,20 @@ public class MoveData {
     public final LocationData to = new LocationData();
 
     /**
+     * The horizontal distance covered by a move on the X axis. Only valid if toIsValid is set to true.
+     */
+    public double xDistance;
+
+    /**
      * The vertical distance covered by a move. Note the sign for moving up or
      * down. Only valid if toIsValid is set to true.
      */
     public double yDistance;
+
+    /**
+     * The horizontal distance covered by a move on the Z axis. Only valid if toIsValid is set to true.
+     */
+    public double zDistance;
 
     /**
      * The horizontal distance covered by a move. Only valid if toIsValid is set to true.
@@ -130,7 +140,9 @@ public class MoveData {
     private void setPositions(final IGetLocationWithLook from, final IGetLocationWithLook to) {
         this.from.setLocation(from);
         this.to.setLocation(to);
+        xDistance = this.to.getX() - this.from.getX();
         yDistance = this.to.getY() - this.from.getY();
+        zDistance = this.to.getZ() - this.from.getZ();
         hDistance = TrigUtil.xzDistance(from, to);
         distanceSquared = yDistance * yDistance + hDistance * hDistance;
         toIsValid = true;

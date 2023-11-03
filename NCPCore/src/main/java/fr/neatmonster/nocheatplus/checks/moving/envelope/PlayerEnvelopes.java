@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
@@ -42,7 +43,7 @@ public class PlayerEnvelopes {
                 )
                 && Magic.inAir(thisMove)
                 && lastMove.yDistance < maxJumpGain && lastMove.yDistance > maxJumpGain * 0.67
-                && PlayerEnvelopes.fallingEnvelope(yDistance, maxJumpGain, data.lastFrictionVertical, Magic.GRAVITY_SPAN);
+                && PlayerEnvelopes.isFrictionFalling(yDistance, maxJumpGain, data.lastFrictionVertical, Magic.GRAVITY_SPAN);
     }
 
     /**
@@ -57,8 +58,8 @@ public class PlayerEnvelopes {
      */
     public static boolean glideEnvelopeWithHorizontalGain(final PlayerMoveData thisMove, final PlayerMoveData lastMove, final PlayerMoveData pastMove1) {
         return pastMove1.toIsValid 
-                && PlayerEnvelopes.glideVerticalGainEnvelope(thisMove.yDistance, lastMove.yDistance)
-                && PlayerEnvelopes.glideVerticalGainEnvelope(lastMove.yDistance, pastMove1.yDistance)
+                && glideVerticalGainEnvelope(thisMove.yDistance, lastMove.yDistance)
+                && glideVerticalGainEnvelope(lastMove.yDistance, pastMove1.yDistance)
                 && lastMove.hDistance > pastMove1.hDistance && thisMove.hDistance > lastMove.hDistance
                 && Math.abs(lastMove.hDistance - pastMove1.hDistance) < Magic.GLIDE_HORIZONTAL_GAIN_MAX
                 && Math.abs(thisMove.hDistance - lastMove.hDistance) < Magic.GLIDE_HORIZONTAL_GAIN_MAX
@@ -118,8 +119,8 @@ public class PlayerEnvelopes {
      * @param extraGravity Extra amount to fall faster.
      * @return
      */
-    public static boolean fallingEnvelope(final double yDistance, final double lastYDist, 
-                                          final double lastFrictionVertical, final double extraGravity) {
+    public static boolean isFrictionFalling(final double yDistance, final double lastYDist, 
+                                            final double lastFrictionVertical, final double extraGravity) {
         if (yDistance >= lastYDist) {
             return false;
         }
@@ -131,13 +132,9 @@ public class PlayerEnvelopes {
      * Test if this move is a bunnyhop <br>
      * (Aka: sprint-jump. Increases the player's speed up to roughly twice the usual base speed)
      * 
-     * @param data
-     * @param isOnGroundOpportune Checked only during block-change activity, via the block-change-tracker. 
-     * @param sprinting (Required for bunnyhop activation)
-     * @param sneaking
+     * @param pData
      * @param fromOnGround
      * @param toOnGround
-     * @param shouldCheckForLostGround (See isJump())
      * @return If true, a 10-ticks long countdown is activated (this phase is referred to as "bunnyfly")
      *         during which, this method will return false if called, in order to prevent abuse of the speed boost.<br>
      *         Cases where the player is allowed/able to bunnyhop sooner than usual are defined in SurvivalFly (hDistRel)
@@ -168,16 +165,20 @@ public class PlayerEnvelopes {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
         final double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
         // Of course, since we have our own onGround handling, we need to take care of all caveat that it entails... (Lost ground, delayed jump etc...)
         if (thisMove.hasLevitation) {
             return false;
         }
+        if (thisMove.isRiptiding) {
+            return false;
+        }
         return  
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
-                // 0: Ground conditions... Demand player to be in a "leaving ground" state.
+                // 0: Ground conditions... Demand players to be in a "leaving ground" state.
                 && ( 
                     // 1: Ordinary lift-off.
                     fromOnGround && !toOnGround
@@ -186,21 +187,26 @@ public class PlayerEnvelopes {
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
-                            lastMove.from.onGround && !lastMove.to.onGround
+                            lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
                             // 2: With "lostground_stepdown-to": the last collision (above) is lost, so the player is seen as being in air for much longer.
                             // TODO: check for abuses.
                             // https://gyazo.com/a5c22069af8ba6a718308bf5b125659a
-                            || lastMove.touchedGroundWorkaround 
+                            || lastMove.touchedGroundWorkaround && !thisMove.touchedGroundWorkaround
+                            // 2: Second past move: 2 consecutive lost ground can happen. See: https://gyazo.com/1fbe521bf436fa2b45c196c2b4dc7ee3
+                            || thisMove.missedGroundCollision && !thisMove.to.onGround 
+                            && lastMove.touchedGroundWorkaround && !lastMove.missedGroundCollision
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
                 && (
+                    // 1: The ordinary case. The player's speed matches the jump speed gain.
+                    // This must be the current move, never the last one.
+                    MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
                     // 1: If head is obstructed, jumping cannot be predicted without MC's collision function. So, just cap motion which will be at or lower than ordinary jump gain, but never higher, and never lower than 0.1 (which is the maximum motion with no jump boost and jumping in a 2-blocks high area).
                     // Also, here, jumping with head obstructed uses the much more lenient step correction method (See comment in AirWorkarounds).
-                    lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0 
-                    && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain) 
-                    // 1: The ordinary case. The player's speed matches the jump speed gain.
-                    || MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
+                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the player has to jump)
+                    || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0 && lastMove.yDistance <= 0.0
+                    && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
                 )
             ;
     }
@@ -221,14 +227,19 @@ public class PlayerEnvelopes {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        if (thisMove.hasLevitation) {
+            return false;
+        }
+        if (thisMove.isRiptiding) {
+            return false;
+        }
         // NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
         return  
-
                 fromOnGround && toOnGround
                 && (
                     // 1: Handle "excessive ground" cases. AKA: cases where the client leaves ground, but for NCP, the distance from ground is so small that it cannot distingush, resulting as if the player never left.
                     // (Thus, in this case, the game correctly applies friction)
-                    thisMove.yDistance < 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
+                    thisMove.yDistance <= 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
                     // 1: Otherwise, if motion is positive, we must check against the exact stepping motion; if we don't want abuses that is.
                     || thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
                 )
@@ -287,7 +298,7 @@ public class PlayerEnvelopes {
         // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
         // A better way to do this would to get the maxY through another method, just can't seem to find it :/
         // Collect block flags at the current location as they may not already be there, and cause NullPointer errors.
-        if (pData.isSneaking()) {
+        if (player.isSneaking()) {
             return false;
         }
         to.collectBlockFlags();
@@ -299,6 +310,8 @@ public class PlayerEnvelopes {
                     to.getY() - blockY <= Math.max(cc.yOnGround, cc.noFallyOnGround)
                     // 1: With carpet.
                     || BlockProperties.isCarpet(to.getTypeId()) && to.getY() - to.getBlockY() <= 0.9
+                    // 1: With riptiding
+                    || Bridge1_13.isRiptiding(player)
                 ) 
                 && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
                 // 0: Within wobble-distance.

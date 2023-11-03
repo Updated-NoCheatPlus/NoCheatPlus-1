@@ -497,6 +497,36 @@ public class BlockProperties {
             return "BlockBreakKey(blockType=" + blockType + "toolType=" + toolType + "materialBase=" + materialBase + " efficiency=" + efficiency + ")";
         }
     }
+    /**
+     * Temporary friction library used within SurvivalFly.vDistLiquid() which still uses the old implementation.
+     * Will be removed once it gets refactored.
+     * 
+     * @param player
+     * @param location Inaccurate with split moves, should be avoided.
+     * @param yOnGround
+     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @return the factor 
+     */
+    public static final double getNonVanillaVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        final BlockCache blockCache = wrapBlockCache.getBlockCache();
+        blockCache.setAccess(location.getWorld());
+        pLoc.setBlockCache(blockCache);
+        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        pLoc.set(loc, player, yOnGround);
+        double friction = 1.0;
+        if (pLoc.isInWater()) {
+            friction = Magic.FRICTION_MEDIUM_WATER;
+        }
+        else if (pLoc.isInLava()) {
+            friction = Magic.FRICTION_MEDIUM_LAVA;
+        }
+        else {
+            friction = Magic.FRICTION_MEDIUM_AIR;
+        }
+        blockCache.cleanup();
+        pLoc.cleanup();
+        return friction;
+    }
 
     /**
      * NMS friction factors library for vertical motion
@@ -538,7 +568,7 @@ public class BlockProperties {
      * @return the factor 
      */
     public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+        if (player.isFlying()) {
             // Flying player are ignored by the game.
             return 1.0;
         }
@@ -639,7 +669,7 @@ public class BlockProperties {
             /** 1.15 changed the ground-seeking distance to 0.5 */
             final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
             final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
-            // Do again with below block
+            // Do it again with below block
             if (blockBelow == Material.SOUL_SAND) {
                 // Soul speed nullifies the slow down.
                 // (The boost is already included in the player's attribute speed)
@@ -666,7 +696,7 @@ public class BlockProperties {
      * @param thisMove 
      */
     public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround, final PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+        if (player.isFlying()) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -878,23 +908,6 @@ public class BlockProperties {
     }
 
     /**
-     * Climbable material that needs to be attached to a block, to allow players
-     * to climb up.<br>
-     * Currently only applies to vines.
-     *
-     * @param mat
-     *            the mat.
-     * @return true, if is attached climbable
-     */
-    public static final boolean needsToBeAttachedToABlock(final Material mat) {
-        if ((BlockFlags.getBlockFlags(mat) & BlockFlags.F_CLIMBUPABLE) != 0) {
-            // Explicitly climbable upwards, so it does not need to be attached to a block
-            return false;
-        }
-        return mat == Material.VINE;
-    }
-
-    /**
      * Checks if is blue ice.
      *
      * @param mat
@@ -903,6 +916,17 @@ public class BlockProperties {
      */
     public static final boolean isBlueIce(final Material mat) {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BLUE_ICE) != 0;
+    }
+
+    /**
+     * Test for bubble column block.
+     * 
+     * @param mat
+     *            the mat.
+     * @return true, if is bubble column
+     */
+    public static final boolean isBubbleColumn(final Material mat) {
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BUBBLECOLUMN) != 0;
     }
 
     /**
@@ -1026,9 +1050,26 @@ public class BlockProperties {
     }
 
     /**
+     * Climbable material that needs to be attached to a block, to allow players
+     * to climb up.<br>
+     * Currently only applies to vines.
+     *
+     * @param mat
+     *            the mat.
+     * @return true, if is attached climbable
+     */
+    public static final boolean needsToBeAttachedToABlock(final Material mat) {
+        if ((BlockFlags.getBlockFlags(mat) & BlockFlags.F_CLIMBUPABLE) != 0) {
+            // Explicitly climbable upwards, so it does not need to be attached to a block
+            return false;
+        }
+        return mat == Material.VINE;
+    }
+
+    /**
      * Checks if is PowderSnow.
      *
-    * @param mat
+     * @param mat
      *            the mat.
      * @return true, if is powder now
      */
@@ -1070,8 +1111,8 @@ public class BlockProperties {
     }
 
     /**
-     * Might hold true for liquids too.
-     *
+     * Checks if is actually solid (excluding signs)
+     * 
      * @param mat
      *            the mat.
      * @return true, if is solid
@@ -1111,17 +1152,6 @@ public class BlockProperties {
      */
     public static final boolean isWater(final Material mat) {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_WATER) != 0;
-    }
-
-    /**
-     * Test for bubble column block.
-     * 
-     * @param mat
-     *            the mat.
-     * @return true, if is bubble column
-     */
-    public static final boolean isBubbleColumn(final Material mat) {
-        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BUBBLECOLUMN) != 0;
     }
 
     /**
@@ -3807,12 +3837,9 @@ public class BlockProperties {
                     BlockData bd = world.getBlockAt(x,y,z).getBlockData();
                     if (bd instanceof Waterlogged && ((Waterlogged)bd).isWaterlogged()) {
                         // Clearly outside of bounds. (liquid)
-                        if (minX > 1.0 + x 
-                            || maxX < 0.0 + x
-                            || minY > LIQUID_HEIGHT_LOWERED + y 
-                            || maxY < 0.0 + y
-                            || minZ > 1.0 + z 
-                            || maxZ < 0.0 + z) {
+                        if (minX > 1.0 + x || maxX < 0.0 + x
+                            || minY > LIQUID_HEIGHT_LOWERED + y || maxY < 0.0 + y
+                            || minZ > 1.0 + z || maxZ < 0.0 + z) {
                             continue;
                         }
                         // Hitting the max-edges (if allowed).

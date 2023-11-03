@@ -41,13 +41,13 @@ public class PlayerMoveData extends MoveData {
 	/** Player action set on PlayerMoveEvents. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
 	public boolean isGliding;
 
-    /** Set with PlayerData.isUsingItem() */
+    /** Set with PlayerData.isUsingItem() on PlayerMoveEvents. */
     public boolean slowedByUsingAnItem;
 	
 	/** 
 	 * Player action set on PlayerMoveEvents. 
 	 * NOTE: this is NOT the propelling moment triggered by PlayerRiptideEvent, 
-	 * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, autoSpentityhuman.startAutoSpinAttack(20))
+	 * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, entityHuman.startAutoSpinAttack(20))
 	 */
 	public boolean isRiptiding;
 	
@@ -66,7 +66,7 @@ public class PlayerMoveData extends MoveData {
     public double setBackYDistance;
     
     /**
-     * Indicates that this movement has/should have been slowed down due to the player hitting an entity (sprinting will be reset also).<br>
+     * Indicates that this movement has/should have been slowed down due to the player hitting an entity (sprinting will be reset as well).<br>
      * Mostly intended to be used for h-speed prediction.
      */
     public boolean hasAttackSlowDown;
@@ -83,7 +83,7 @@ public class PlayerMoveData extends MoveData {
     public double zAllowedDistance;
 
     /**
-     * Allowed horizontal distance. Set in SurvivalFly.
+     * Combined XZ distance. Set in SurvivalFly.
      */
     public double hAllowedDistance;
 
@@ -120,10 +120,10 @@ public class PlayerMoveData extends MoveData {
     
     /**
      * Mojang introduced a new mechanic in 1.17 which allows player to re-send their position on right clicking.
-     * So there could have been a duplicate move (to) of the one (from) that has just been sent.
+     * On Bukkit's side, this translates in a PlayerMoveEvent which doesn't actually have any movement change (PME.getFrom() and PME.getTo() contain the same location)
      * This moving event is skipped from being processed.
      * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
-     * (Sequence is: normal -> redundant -> normal (...))
+     * (Sequence is: normal PME -> duplicate PME -> normal PME(...))
      */
     public boolean duplicateEvent;
 
@@ -132,6 +132,12 @@ public class PlayerMoveData extends MoveData {
      * during processing of moving checks.
      */
     public SimpleEntry verVelUsed = null;
+    
+    /**
+     * Signal that this movement has horizontal impulse: meaning, the player has actually pressed a WASD key.
+     * Intention is to be able to differentiate when the player is actively moving VS being passively moved by other sources (i.e.: push and velocity)
+     */
+    public boolean hasImpulse;
     
 
     @Override
@@ -161,6 +167,7 @@ public class PlayerMoveData extends MoveData {
         multiMoveCount = 0;
         verVelUsed = null;
         duplicateEvent = false;
+        hasImpulse = false;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();
     }

@@ -279,7 +279,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      *
      * @return the bounds as doubles
      */
-    public double[] getBoundsAsDoubles() {
+    public double[] getAABBCopy() {
         return new double[] {minX, minY, minZ, maxX, maxY, maxZ};
     }
 
@@ -636,7 +636,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
     
     /**
-     * Test if the location is inside a block with the given flag(s), using Minecraft's margins.
+     * Test if the location is inside a block with the given flag(s), using Minecraft's tryCheckInsideBlocks method margins.
      * 
      * @param flags The flags attached to the block.
      * @return True, if the player is inside the block with the attached flags.
@@ -677,9 +677,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Checks if the location is in lava using Minecraft collision logic.
+     * Checks if the location is in lava, using Minecraft most recent collision logic. <br>
+     * (Legacy collision methods must be checked for in RichEntityLocation)
      * 
-     * @return true, if the player is in lava
+     * @return true, if is in lava (modern)
      */
     public boolean isInLava() {
         if (inLava == null) {
@@ -694,7 +695,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             final int iMaxY = MathUtil.ceil(maxY - 0.001);
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
-            // NMS collision method
+            // NMS collision method, tweaked it AGAIN in 1.16... (See RichEntityLocation)
             for (int iX = iMinX; iX < iMaxX; iX++) {
                 for (int iY = iMinY; iY < iMaxY; iY++) {
                     for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
@@ -713,9 +714,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Checks if the location is in water using Minecraft collision logic.
+     * Checks if the location is in water, using Minecraft most recent collision logic. <br>
+     * (Legacy collision methods must be checked for in RichEntityLocation)
      * 
-     * @return true, if is in water
+     * @return true, if is in water (modern)
      */
     public boolean isInWater() {
         if (inWater == null) {
@@ -750,7 +752,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
     
     /**
-     * @return true, if is in a water logged block.
+     * @return true, if is in a water logged block. Applies to 1.13+ clients
      */
     public boolean isInWaterLogged() {
         if (inWaterLogged == null) {

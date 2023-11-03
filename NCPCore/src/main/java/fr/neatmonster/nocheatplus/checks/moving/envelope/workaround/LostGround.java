@@ -145,13 +145,14 @@ public class LostGround {
                 // TODO: Needs new model (store detailed on-ground properties).
                 // NOTE: This one always comes before the one below. Could confine by that.
                 // ^ But can also happen by itself, so maybe don't :)  
+                // (No missedGroundCollision = true here!)
                 return applyLostGround(player, from, false, thisMove, data, "stepdown-to", tags);
             }
         }
         // 2: Player landed back on ground and is now preparing to step down again, thus leaving ground yet again. 
         // This collision is lost as well (this would be the "from" onGround collision).
         // (lastMove: --- -> lost onGround(stepdownto)  | thisMove: lost onGround(stepdownfrom) -> --- ).
-        if (MathUtil.between(1, data.sfJumpPhase, 7) && thisMove.setBackYDistance < 0.0 && lastMove.setBackYDistance < 0.0
+        if (!thisMove.hasSlowfall && MathUtil.between(1, data.sfJumpPhase, 7) && thisMove.setBackYDistance < 0.0 && lastMove.setBackYDistance < 0.0
             && MathUtil.between(Magic.GRAVITY_MAX, thisMove.yDistance - lastMove.yDistance, cc.sfStepHeight) 
             && thisMove.yDistance > lastMove.yDistance && thisMove.hDistance >= 0.1) {
             if (from.isOnGround(0.6, 0.4, 0.0, 0L)) {
@@ -201,7 +202,7 @@ public class LostGround {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         /** Jump height measured as the distance traveled from the onGround Y location to current Y location */
         final double jumpHeight = from.getY() - data.getSetBackY();
-        /** Meant to represent the acceleration of the player */
+        /** Meant to represent the acceleration of the player. Positive= actually accelerating, Negative= decelerating */
         final double yAcceleration = thisMove.yDistance - lastMove.yDistance;
         /** Offset between the allowed jump height and actual height: negative= player jumped higher than possible. Positive= a normal jump/descending */
         final double jumpHeightOffSet = data.liftOffEnvelope.getMaxJumpHeight(data.jumpAmplifier) - jumpHeight;
@@ -215,7 +216,6 @@ public class LostGround {
         if (hDistance <= 0.03 && from.isOnGround(0.03) 
             && (thisMove.headObstructed && MaterialUtil.LANTERNS.contains(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 0.1), from.getBlockZ())) || data.joinOrRespawn)) {
             // This is actually a missed ground collision (corroborated by the fact that fall distance is set back to 0 when this case happens.)
-            thisMove.missedGroundCollision = true;
             return applyLostGround(player, from, true, thisMove , data, "0.03", tags);
         }
         if (yDistance > cc.sfStepHeight || hDistance > 1.5 || hDistance <= 0.001) { 
@@ -227,10 +227,10 @@ public class LostGround {
         if (jumpHeightOffSet >= 0.0) {
             // 1: Half blocks step up (definitive).
             // This one seems to aid in players stepping up small blocks and gaps.
-            if (!from.isOnGround() && to.isOnGround() && jumpHeightOffSet >= yDistance && hDistance <= thisMove.hAllowedDistance * 1.105
+            /*if (!from.isOnGround() && to.isOnGround() && jumpHeightOffSet >= yDistance && hDistance <= thisMove.hAllowedDistance * 1.105
                 && (lastMove.yDistance < 0.0 || from.isOnGround(cc.sfStepHeight - yDistance))) {
                 return applyLostGround(player, from, true, thisMove, data, "half-step", tags);
-            }
+            }*/
             // 2: Check for sprint-jumping on fences with trapdoors above (missing trapdoor's edge touch on server-side, player lands directly onto the fence [For NCP])
             // Strictly speaking, this is not a lost ground case, but a generic collision issue (NCP's VS MC's)
             if (jumpHeight > 1.0 && jumpHeight <= 1.5 && jumpHeightOffSet < 0.6 && data.bunnyhopDelay > 0 
@@ -244,6 +244,7 @@ public class LostGround {
                     if (to.isOnGround(0.007, 0.0, 0.0)) {
                         // Setbacksafe: matter of taste.
                         // With false, in case of a cheating attempt, the player will be setbacked on the ground instead of the trapdoor.
+                        // (No missedGroundCollision = true here!)
                         return applyLostGround(player, from, false, thisMove, data, "trap-fence", tags);
                     }
                 }
@@ -262,6 +263,7 @@ public class LostGround {
         // TODO: Possibly confine margin depending on side, moving direction (see client code).
         double horizontalMargin = 0.1 + from.getBoxMarginHorizontal();
         double verticalMargin = cc.sfStepHeight + from.getY();
+        // Only apply if not recently used a lostground case and ground is within 1 block distance.
         if (from.isOnGround(1.0) && !lastMove.touchedGroundWorkaround
             && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), verticalMargin, from.getZ(), to.getX(), to.getY(), to.getZ(), horizontalMargin, to.getyOnGround(), 0.0)) {
             return applyLostGround(player, from, false, thisMove, data, "couldstep", tags);
@@ -271,12 +273,14 @@ public class LostGround {
             return false;
         }
         
-        // 2: Close by ground miss (client side blocks y move, but allows h move fully/mostly, missing the edge on server side).
+        // 2: Ground miss with this move (client side blocks y move, but allows h move fully/mostly, missing the edge on server side).
+        // https://gyazo.com/5613ce5ab7bbb88b760c6b6e67fe35f4
         if (checkEdgeCollision(player, from.getBlockCache(), from.getWorld(), from.getX(), from.getY(), from.getZ(), from.getBoxMarginHorizontal(), from.getyOnGround(), lastMove, data, "-asc1", tags, from.getMCAccess())) {
+            thisMove.missedGroundCollision = true;
             // (Use covered area to last from.)
             return true;
         }
-        // 3:
+        // 3: Mostly similar to the one above
         // xzMargin 0.15: equipped end portal frame (observed and supposedly fixed on MC 1.12.2) - might use an even lower tolerance value here, once there is time to testing this.
         // TODO: Confining in x/z direction in general: should detect if collided in that direction (then skip the x/z dist <= last time).
         double horizontalMargin1 = lastMove.yDistance <= -0.23 ? 0.3 : 0.15;
@@ -322,8 +326,8 @@ public class LostGround {
     /**
      * Vertical collision with ground on client side, shifting over an edge with
      * the horizontal move. Needs last move data.
-     * @See <a href="https://i.gyazo.com/644b9a70b60902ad780a325602e2d3ed.png">
-     * This screenshot (second box, to the right, near crosshair position) for a visual representation of what's happening. </a> 
+     * @See <a href="https://gyazo.com/5613ce5ab7bbb88b760c6b6e67fe35f4">
+     * This screenshot for a visual representation of what's happening. </a> 
      * 
      * @param player
      * @param blockCache

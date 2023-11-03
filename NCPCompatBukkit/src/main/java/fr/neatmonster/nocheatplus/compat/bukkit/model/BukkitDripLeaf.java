@@ -35,7 +35,8 @@ public class BukkitDripLeaf implements BukkitShapeModel {
                     res[4] -= 0.125;
                     return res;
                 case UNSTABLE:
-                    // return new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+                    // WORKAROUND: Zero this bounding box if the tilt is unstable [NCP should take care of ground judgement then]
+                    return new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
                 case NONE:
                     return res;
                 default:

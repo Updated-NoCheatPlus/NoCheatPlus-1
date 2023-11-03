@@ -31,7 +31,6 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
-// TODO: Auto-generated Javadoc
 /**
  * Auxiliary/convenience methods for inventories.
  * @author asofold
@@ -157,7 +156,7 @@ public class InventoryUtil {
      *
      * @param player
      *            the player
-     * @return True, if the opened inventory is of any type that isn't CRAFTING and is not null.
+     * @return True, if the opened inventory is of any type that isn't CRAFTING/CREATIVE and is not null.
      */
     public static boolean hasInventoryOpen(final Player player) {
         final InventoryView view = player.getOpenInventory();
@@ -198,7 +197,7 @@ public class InventoryUtil {
     }
     
    /** 
-    * Checks if the time between interaction and inventory click is recent.
+    * Checks if the time between block interaction and inventory click is recent.
     * 
     * @param player
     * @param timeAge In milliseconds between the BLOCK interaction and inventory click to be considered as 'recent activity' (exclusive)
@@ -256,8 +255,8 @@ public class InventoryUtil {
     }
 
     /**
-     * Test if the InventoryType can hold items.
-     * Containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
+     * Test if the given InventoryType can hold items.
+     * Intention of this method is to be used within checks' contexts, thus containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
      *
      * @param stack
      *            May be null, would return false.

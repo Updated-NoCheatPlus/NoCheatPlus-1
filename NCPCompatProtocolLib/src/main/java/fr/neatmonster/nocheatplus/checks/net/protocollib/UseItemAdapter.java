@@ -329,6 +329,7 @@ public class UseItemAdapter extends BaseAdapter {
                 data.itemInUse = m;
                 return;
             }
+            // TODO: Goat horns... Those exist, apparently.
         } 
         // No item in hands, no deal.
         else {

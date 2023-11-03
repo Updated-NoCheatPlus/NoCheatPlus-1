@@ -15,7 +15,7 @@
 package fr.neatmonster.nocheatplus.compat.versions;
 
 /**
- * Convenience class to avoid having to memorize protocol IDs.
+ * This is to avoid having to memorize protocol IDs.
  * The protocol ID is retrieved through CompatNoCheatPlus currently.<br>
  * Supports clients from 1.7.2 and onwards (protocol indexing was changed with 1.7).
  */
@@ -28,7 +28,10 @@ public enum ClientVersion {
      * 1.7.6 / 1.7.7 / 1.7.8 / 1.7.9 / 1.7.10 have the same protocol version.
      */
     V_1_7_10(5),
-
+    
+    /**
+     * All 1.8 versions share the same protocol ID.
+     */
     V_1_8(47),
 
     V_1_9(107), V_1_9_1(108), V_1_9_2(109),
@@ -70,9 +73,9 @@ public enum ClientVersion {
 
     V_1_19(759), V_1_19_1(760), V_1_19_3(761), V_1_19_4(762),
     /**
-     * 1.20.1 has the same protocol version.
+     * 1.20.1 has the same protocol version of 1.20
      */
-    V_1_20(763),
+    V_1_20(763), V_1_20_2(764),
 
 
     LOWER_THAN_KNOWN_VERSIONS(V_1_7_2.protocolID - 1, false),
@@ -124,7 +127,7 @@ public enum ClientVersion {
     }
 
     /**
-     * Get the release name of this client version.
+     * Get the release name of this ClientVersion.
      * For instance, the V_1_19_4 enum constant will parse as a "1.19.4" string.
      *
      * @return The release name

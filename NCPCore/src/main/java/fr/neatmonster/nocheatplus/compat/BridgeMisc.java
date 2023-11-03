@@ -196,11 +196,11 @@ public class BridgeMisc {
      */
     public static int getFireworksPower(final ItemStack item) {
         if (item == null || item.getType() != BridgeMaterial.FIREWORK_ROCKET) {
-            return 0;
+            return -1;
         }
         final ItemMeta meta = item.getItemMeta();
         if (!(meta instanceof FireworkMeta)) { // INDIRECT: With elytra, this already exists.
-            return 0;
+            return -1;
         }
         final FireworkMeta fwMeta = (FireworkMeta) meta;
         return fwMeta.getPower();

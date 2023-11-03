@@ -8,7 +8,7 @@
 
     <name>NoCheatPlus</name>
     <description>Detect and fight the exploitation of various flaws/bugs in Minecraft.</description>
-    <url>https://dev.bukkit.org/projects/nocheatplus</url>
+    <url>https://github.com/Updated-NoCheatPlus/NoCheatPlus</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

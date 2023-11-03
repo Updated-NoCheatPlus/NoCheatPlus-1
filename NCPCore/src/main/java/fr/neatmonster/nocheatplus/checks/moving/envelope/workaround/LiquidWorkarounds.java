@@ -91,7 +91,7 @@ public class LiquidWorkarounds {
 
                 // Launched in liquid by a bubble column with space bar kept pressed.
                 if (Magic.recentlyInBubbleStream(20, data) && yDistance > 0.0 && lastMove.yDistance > 0.0
-                    && !data.isVelocityJumpPhase() && yDistance < lastMove.yDistance * data.lastFrictionVertical
+                    && !data.isVelocityJumpPhase() && yDistance < lastMove.yDistance * data.lastNonVanillaFrictionVertical
                     && yDistance < Magic.bubbleStreamAscend) {
                     return yDistance;
                 }
@@ -168,7 +168,7 @@ public class LiquidWorkarounds {
                 return yDistance;
             }
             // Lava rather.
-            else if (data.lastFrictionVertical == Magic.FRICTION_MEDIUM_LAVA 
+            else if (data.lastNonVanillaFrictionVertical == Magic.FRICTION_MEDIUM_LAVA 
                     && (
                             // Moving downstream.
                             lastMove.yDistance < 0.0 && yDistance > -0.5 && yDistance < lastMove.yDistance 

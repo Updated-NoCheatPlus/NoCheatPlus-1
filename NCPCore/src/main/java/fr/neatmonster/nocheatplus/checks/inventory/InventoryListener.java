@@ -145,7 +145,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                 .addToGroups(CheckType.INVENTORY, true, IData.class, ICheckData.class)
                 .context() //
                 );
-        // Move to BridgeMisc?
         hasInventoryAction = ReflectionUtil.getClass("org.bukkit.event.inventory.InventoryAction") != null;
     }
 
@@ -187,7 +186,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Only if a player ate food.
         if (event.getEntity() instanceof Player) {
             final Player player = (Player) event.getEntity();
-            DataManager.getPlayerData(player);
             if (player.isDead() && BridgeHealth.getHealth(player) <= 0.0) {
                 // Eat after death.
                 event.setCancelled(true);
@@ -216,11 +214,10 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             outputDebugInventoryClick(player, slot, event, inventoryAction);
         }
         // Set this one as soon as we can and regardless if the click was cancelled or not.
-        // NOTE: that ignoreCancelled is set to true, so even a cancelled click will register the click time.
         if (data.inventoryOpenTime == 0) {
             data.inventoryOpenTime = now;
             if (pData.isDebugActive(CheckType.INVENTORY)) {
-                debug(player, "*** On inventory click: register time of the first click (assume inventory is open)");
+                debug(player, "InventoryClickEvent: inventory wasn't explicitly open previously but an inventory click was sent; register time of the 1st click (assume inventory is open from this moment on)");
             }
         }
         if (event.isCancelled()) {
@@ -245,7 +242,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                     // Exempted inventories are not checked.
                     check = !cc.inventoryExemptions.contains(ChatColor.stripColor(event.getView().getTitle()));
                 }
-                catch (final IllegalStateException e) {
+                catch (IllegalStateException e) {
                     // Uhm... Can this ISE be fixed?
                     check = true; 
                 }
@@ -258,8 +255,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                         keepCancel = true;
                     }
                     // Then check for too fast inventory clicking
-                    if (!cancel && fastClick.check(player, now, event.getView(), slot, cursor, clicked, event.isShiftClick(), 
-                                                            inventoryAction, data, cc, pData)) {  
+                    if (!cancel && fastClick.check(player, now, event.getView(), slot, cursor, clicked, event.isShiftClick(), inventoryAction, data, cc, pData)) {  
                         cancel = true;
                     }
                 }
@@ -323,7 +319,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                 data.inventoryOpenTime = 0;
                 data.containerInteractTime = 0;
                 if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "*** Inventory is now closed: reset timing data.");
+                    debug(player, "InventoryCloseEvent: reset timing data.");
                 }
             }
         }
@@ -343,7 +339,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             if (BlockProperties.isContainer(event.getClickedBlock().getType())) {
                 data.containerInteractTime = System.currentTimeMillis();
                 if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "*** Interacted with a container: register the interaction time.");
+                    debug(player, "Interacted with a container: register the interaction time.");
                 }
             }
         } 
@@ -417,14 +413,14 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
                     event.setCancelled(true);
                     data.inventoryOpenTime = 0; // Just to be sure
                     if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                        debug(player, "Attempted to open a container during set back processing: reset timing data and prevent opening.");
+                        debug(player, "InventoryOpenEvent: attempted to open a container during set back processing; reset timing data and prevent opening.");
                     }
                 }
                 else if (data.inventoryOpenTime == 0) {
                     // Only set the inventory opening time, if a setback is not scheduled.
                     data.inventoryOpenTime = now;
                      if (pData.isDebugActive(CheckType.INVENTORY)) {
-                        debug(player, "*** Container is now open (InventoryOpenEvent): register time.");
+                        debug(player, "Fired an explicit InventoryOpenEvent; inventory is now open (no assumptions): register time.");
                     }
                 }
             }
@@ -463,7 +459,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Can't break blocks with inventory open.
         if (open.check(event.getPlayer())) {
             if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                debug(player, "Force-close inventory on breaking blocks.");
+                debug(player, "Force-close inventory on breaking blocks (cheat prevention).");
             }
         }
     }
@@ -474,7 +470,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Can't place blocks with inventory open.
         if (open.check(event.getPlayer())) {
             if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                debug(event.getPlayer(), "Force-close inventory on placing blocks.");
+                debug(event.getPlayer(), "Force-close inventory on placing blocks (cheat prevention).");
             }
         }
     }
@@ -509,7 +505,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             final Player player = (Player) entity;
             if (player != null) {
                 final IPlayerData pData = DataManager.getPlayerData(player);
-                pData.getGenericInstance(InventoryData.class);
                 if (open.check(player)) {
                     if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
                         debug(player, "Force-close inventory on death.");
@@ -565,7 +560,8 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
     }
     
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    /** Event priority must be set to priority used for moving checks due using moving data from there */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onPlayerMove(final PlayerMoveEvent event) {
         final Location from = event.getFrom();
         final Location to = event.getTo();
@@ -575,7 +571,6 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             // On 1.8 set back technique is different, as we do not cancel the event.
             return;
         }
-        //pData.getGenericInstance(InventoryData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
         final Inventory inv = event.getPlayer().getOpenInventory().getTopInventory();
@@ -596,7 +591,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
         // Determine if the inventory should be closed.
         if (cc.openCancelOnMove && !pData.hasBypass(CheckType.INVENTORY_OPEN, event.getPlayer())) {
-            if (InventoryUtil.hasAnyInventoryOpen(event.getPlayer()) && open.shouldCloseInventory(event.getPlayer(), pData)) {
+            if (InventoryUtil.hasAnyInventoryOpen(event.getPlayer()) && open.checkOnMove(event.getPlayer(), pData)) {
                 event.getPlayer().closeInventory(); // Do not call open.check() here.
                 if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
                     debug(event.getPlayer(), "Player is actively moving: force-close open inventory.");

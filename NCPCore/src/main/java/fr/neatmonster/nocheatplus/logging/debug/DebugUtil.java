@@ -103,10 +103,10 @@ public class DebugUtil {
      * @param builder
      */
     public static void addMove(final PlayerLocation from, final PlayerLocation to, final StringBuilder builder) {
-        builder.append("From: ");
+        builder.append("From loc: ");
         addLocation(from, builder);
         builder.append("\n");
-        builder.append("To: ");
+        builder.append("To loc: ");
         addLocation(to, builder);
     }
 
@@ -151,16 +151,16 @@ public class DebugUtil {
         if (messagePrefix != null && ! messagePrefix.isEmpty()) {
             builder.append(messagePrefix);
         }
-        builder.append(" id=");
+        builder.append(" id= ");
         final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(x, y, z, true);
         final Material id = node.getType();
         builder.append(id);
-        builder.append(" data=");
+        builder.append(" | data= ");
         builder.append(node.getData());
         final double[] bounds = node.getBounds();
         if (bounds != null) {
             final double minHeight = BlockProperties.getGroundMinHeight(blockCache, x, y, z, node, BlockFlags.getBlockFlags(id));
-            builder.append(" shape=[");
+            builder.append(" | shape= [");
             builder.append(bounds[0]);
             builder.append(", ");
             builder.append(bounds[1]);

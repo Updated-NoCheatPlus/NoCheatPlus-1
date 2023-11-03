@@ -60,6 +60,7 @@ public class Open extends Check implements IDisableListener {
 
     /**
      * Static access check, if there is a cancel-action flag the caller should have stored that locally already and use the result to know if to cancel or not.
+     * 
      * @param player
      * @return If cancelling some event is opportune (open inventory and cancel flag set).
      */
@@ -79,7 +80,7 @@ public class Open extends Check implements IDisableListener {
     }
 
     /**
-     * Enforce a closed inventory on this event/action, without checking for any specific condition. <br>
+     * Enforce a closed inventory on this generic event/action (without checking for any specific side condition) <br>
      * This check contains the isEnabled checking (!). Inventory is closed if set in the config. <br>
      * Also resets inventory opening time and interaction time.
      * 
@@ -117,15 +118,14 @@ public class Open extends Check implements IDisableListener {
     }
 
     /**
-     * To be called during PlayerMoveEvents: determine if the inventory should be allowed to stay open. <br>
+     * To be called on PlayerMoveEvents; pre-requsite is InventoryUtil.hasAnyInventoryOpen having returned true. <br>
      * (Against InventoryMove cheats and similar)<br>
      * 
      * @param player
      * @param pData
      * @return True, if the open inventory needs to be closed during this movement.
      */
-    public boolean shouldCloseInventory(final Player player, final IPlayerData pData) {
-        final MovingConfig mCC = pData.getGenericInstance(MovingConfig.class);
+    public boolean checkOnMove(final Player player, final IPlayerData pData) {
         final MovingData mData = pData.getGenericInstance(MovingData.class);
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
@@ -138,75 +138,30 @@ public class Open extends Check implements IDisableListener {
             // This check relies on data set in SurvivalFly.
             !pData.isCheckActive(CheckType.MOVING_SURVIVALFLY, player)
             // Ignore duplicate packets
-            || mData.lastMoveNoMove
-            // Player is not moving (or moving extremely little)
-            || TrigUtil.isSamePos(thisMove.from, thisMove.to)
-            // can't check vehicles
+            || thisMove.duplicateEvent
+            // Can't check vehicles
             || player.isInsideVehicle()
-            // Players are allowed to click in their inventory while moving with the elytra (but CANNOT look around)
-            // (If rotations don't match do close the inventory)
-            || Bridge1_9.isGlidingWithElytra(player) 
-            && (thisMove.from.getYaw() == thisMove.to.getYaw() || thisMove.from.getPitch() == thisMove.to.getPitch())
-            // Similar as above.
-            || Bridge1_13.isRiptiding(player)
-            // 1 second of leniency should be enough to rule out most false positives caused by friction
-            // (Plus the single click delay it takes to register the inventory status)
-            || InventoryUtil.hasOpenedInvRecently(player, 1000)
             // In creative or middle click
             || creative 
             // Ignore merchant inventories.
             || isMerchant 
             // Velocity is ignored altogether
-            || mData.isVelocityJumpPhase() && !thisMove.from.inLiquid // Survivalfly sets velocity jump phase when in liquid, but we still want to ensure that players are not pressing the space bar.
             || mData.getOrUseVerticalVelocity(thisMove.yDistance) != null
             || mData.useHorizontalVelocity(thisMove.hDistance - mData.getHorizontalFreedom()) >= thisMove.hDistance - mData.getHorizontalFreedom()
             // Ignore entity pushing.
-            || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && CollisionUtil.isCollidingWithEntities(player, true)) {
+            || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && CollisionUtil.isCollidingWithEntities(player, 0.5, 0.1, 0.5, true)) {
             return false;
         }
             
-        
         // Actual detection
-        final PlayerMoveData lastMove = mData.playerMoves.getFirstPastMove();
-        final PlayerMoveData secondLastMove = mData.playerMoves.getSecondPastMove();
-        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
-        if (
-            // Can't sprint while in an inventory
-            player.isSprinting() && !Bridge1_13.isSwimming(player) && !thisMove.from.inLiquid
-            // Can't use items as well.
-            || pData.isUsingItem()
-            // Can't possibly look around with an open inventory.
-            || (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())
-            // Can't swim also.
-            || Bridge1_13.isSwimming(player) 
-            && (
-                // For whatever reason, Mojang decided that players should be allowed to still swim if the player is touching ground
-                !thisMove.touchedGround && !lastMove.touchedGround 
-                || (thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001))
-            )
-            // Can't have an open inventory while sneaking
-            || player.isSneaking() 
-            && (
-                // 1.12 and below don't accessability settings to allow sneaking while also clicking in the inventory
-                pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)
-                || thisMove.hAllowedDistance >= lastMove.hAllowedDistance || MathUtil.almostEqual(thisMove.hAllowedDistance, lastMove.hAllowedDistance, 0.001)
-            )
-            // Jumping
-            || thisMove.canJump && thisMove.from.onGround && !thisMove.to.onGround
-            && thisMove.yDistance > mData.liftOffEnvelope.getJumpGain(mData.jumpAmplifier, mData.lastStuckInBlockVertical) - Magic.GRAVITY_SPAN
-            // Player has more horizontal speed than the liquid pushing speed (in other words, they are actively pressing a WASD key to move)
-            //|| thisMove.from.inLiquid && thisMove.hDistance > from.getLiquidPushingVector(player, to.getX()-from.getX(), to.getZ()-from.getZ()).length()
-            // Speed was maintained for two moves, assume actively moving.
-            || thisMove.hAllowedDistance >= lastMove.hAllowedDistance && !thisMove.from.inLiquid
-            ) {
-            
-            // Feed the improbable.
+        if (thisMove.hasImpulse || Bridge1_9.isGlidingWithElytra(player) && (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())) {
+            // Use SurvivalFly prediction handling to see if the player is actively moving.
+            // WASD keys presses are irrelevant when gliding but the telltale sign that let's you know that the player is moving in their inventory is if roations don't match
             if (cc.openImprobableWeight > 0.0) {
                 Improbable.feed(player, cc.openImprobableWeight, System.currentTimeMillis());
             }
             return true;
         }
-        // Player did slow-down on opening the inventory / is allowed to have the inventory open.
         return false;
     }
 }

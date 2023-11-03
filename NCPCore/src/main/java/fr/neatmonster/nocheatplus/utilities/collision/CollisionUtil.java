@@ -492,7 +492,7 @@ public class CollisionUtil {
         if (shouldFilter) {
             List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin); 
             // Minecarts, boats, armor stands, dead entities cannot push the player
-            entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity));
+            entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity)); //|| !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
             return !entities.isEmpty();
         }
         return !p.getNearbyEntities(xMargin, yMargin, zMargin).isEmpty();
@@ -513,6 +513,7 @@ public class CollisionUtil {
     /**
      * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
      * (Not Minecarts, Boats, dead entities (...)).
+     * Intended use is within checks.
      * 
      * @param p
      * @param xMargin
@@ -522,7 +523,22 @@ public class CollisionUtil {
      */
     public static List<Entity> getCollidingEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
         List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
-        entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity));
+        entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity) || !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
         return entities;
+    }
+    
+    /**
+     * Get the number of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
+     * (Not Minecarts, Boats, dead entities (...)).
+     * Intended use is within checks.
+     * 
+     * @param p
+     * @param xMargin
+     * @param yMargin
+     * @param zMargin
+     * @return The number of entities that can push the player.
+     */
+    public static int getNumberOfEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
+    	return getCollidingEntitiesThatCanPushThePlayer(p, xMargin, yMargin, zMargin).size();
     }
 }

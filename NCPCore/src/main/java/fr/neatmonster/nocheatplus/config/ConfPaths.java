@@ -479,9 +479,6 @@ public abstract class ConfPaths {
     
     private static final String FIGHT_CRITICAL                           = FIGHT + "critical.";
     public static final String  FIGHT_CRITICAL_CHECK                     = FIGHT_CRITICAL + SUB_ACTIVE;
-    // TODO: Deprecate or rename (->falldistancemin)?
-    public static final String  FIGHT_CRITICAL_FALLDISTANCE              = FIGHT_CRITICAL + "fall-distance";
-    public static final String  FIGHT_CRITICAL_FALLDISTLENIENCY          = FIGHT_CRITICAL + "fall-dist-leniency";
     public static final String  FIGHT_CRITICAL_ACTIONS                   = FIGHT_CRITICAL + "actions";
 
     private static final String FIGHT_DIRECTION                          = FIGHT + "direction.";
@@ -842,6 +839,11 @@ public abstract class ConfPaths {
     public static final String  MOVING_MOREPACKETSVEHICLE_ACTIONS        = "checks.moving.morepacketsvehicle.actions";
 
     // Deprecated paths (just removed).
+    // TODO: Deprecate or rename (->falldistancemin)?
+    @Deprecated
+    public static final String  FIGHT_CRITICAL_FALLDISTANCE              = FIGHT_CRITICAL + "fall-distance";
+    @Deprecated
+    public static final String  FIGHT_CRITICAL_FALLDISTLENIENCY          = FIGHT_CRITICAL + "fall-dist-leniency";
     @Deprecated
     public static final String  MOVING_SPRINTINGGRACE                       = MOVING + "sprinting-grace";
     @Deprecated
@@ -1038,7 +1040,7 @@ public abstract class ConfPaths {
         final List<ManyMoved> multiEntries = new LinkedList<ManyMoved>();
 
         // Add entries.
-        final List<String> cfModels = Arrays.asList("creative", "spectator", "survival", "adventure", "elytra", "levitation", "riptiding");
+        final List<String> cfModels = Arrays.asList("creative", "spectator", "survival", "adventure", "elytra");
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "horizontal-speed", SUB_HORIZONTAL_SPEED));
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "mod-sprint", SUB_HORIZONTAL_MODSPRINT));
         multiEntries.add(new ManyMoved(MOVING_CREATIVEFLY_MODEL, cfModels, "max-height", SUB_VERTICAL_MAXHEIGHT));

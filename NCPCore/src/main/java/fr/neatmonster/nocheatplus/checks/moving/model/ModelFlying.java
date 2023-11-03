@@ -58,12 +58,6 @@ public class ModelFlying {
     /** Default ground moving mechanics (jump, lost ground). */
     private boolean ground = true;
 
-     /**
-     * Allow an extra amount to ascend speed, scaling with the riptiding effect
-     * level.
-     */
-    private boolean scaleRiptidingEffect = false;
-
     // TODO: vertical ascend/descend, limit gain a/d/v, limit abs. distance a/d/v
     // TODO: possibly other friction based envelope constraints.
     // TODO: Check if needed: use fly/walk speed.
@@ -104,7 +98,6 @@ public class ModelFlying {
         applyModifiers(config.getBoolean(prefix + ConfPaths.SUB_MODIFIERS, defaults.getApplyModifiers()));
         gravity(config.getBoolean(prefix + ConfPaths.SUB_VERTICAL_GRAVITY, defaults.getGravity()));
         ground(config.getBoolean(prefix + ConfPaths.SUB_GROUND, defaults.getGround()));
-        scaleRiptidingEffect(defaults.getScaleRiptidingEffect());
     }
 
     /**
@@ -124,7 +117,6 @@ public class ModelFlying {
         applyModifiers(defaults.getApplyModifiers());
         gravity(defaults.getGravity());
         ground(defaults.getGround());
-        scaleRiptidingEffect(defaults.getScaleRiptidingEffect());
     }
 
     /**
@@ -189,10 +181,6 @@ public class ModelFlying {
         return ground;
     }
 
-    public boolean getScaleRiptidingEffect() {
-        return scaleRiptidingEffect;
-    }
-
 
     public ModelFlying horizontalModSpeed(double horizontalModSpeed) {
         checkLocked();
@@ -239,12 +227,6 @@ public class ModelFlying {
     public ModelFlying ground(boolean ground) {
         checkLocked();
         this.ground = ground;
-        return this;
-    }
-
-    public ModelFlying scaleRiptidingEffect(boolean scaleRiptidingEffect) {
-        checkLocked();
-        this.scaleRiptidingEffect = scaleRiptidingEffect;
         return this;
     }
 }

@@ -100,7 +100,7 @@ public class Magic {
     public static final double CraftBukkit_minMoveSqDist = 1f / 256;
     /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
     public static final float CraftBukkit_minLookChange = 10f;
-    /** The minimum squared root distance for clients to send flying packet to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
+    /** The minimum squared root distance for clients to send flying packets to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
     public static final double Minecraft_minMoveSqrtDistance = 0.03;
     
 
@@ -111,13 +111,15 @@ public class Magic {
     ///////////////////////////////////////////
     // *----------Misc.----------*
     public static final double PAPER_DIST = 0.01;
+    /** The margin of error tolerated by predictions */
     public static final double PREDICTION_EPSILON = 0.0001;
     /**
-     * Extreme move check threshold (Actual like 3.9 upwards with velocity,
-     * velocity downwards may be like -1.835 max., but falling will be near 3
-     * too.)
+     * Absolute vertical distance that players can cover with a single move
      */
-    public static final double EXTREME_MOVE_DIST_VERTICAL = 4.0;
+    public static final double EXTREME_MOVE_DIST_VERTICAL = 7.0;
+    /**
+     * Maximum horizontal distance that players can cover with a single move.
+     */
     public static final double EXTREME_MOVE_DIST_HORIZONTAL = 15.0;
     /** Minimal xz-margin for chunk load. */
     public static final double CHUNK_LOAD_MARGIN_MIN = 3.0;

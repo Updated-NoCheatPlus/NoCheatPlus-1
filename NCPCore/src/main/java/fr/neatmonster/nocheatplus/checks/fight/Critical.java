@@ -30,6 +30,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
+import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.penalties.IPenaltyList;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
@@ -60,7 +61,6 @@ public class Critical extends Check {
      * Checks a player.
      * 
      * @param player
-     *            the player
      * @param loc
      * @param data
      * @param cc
@@ -70,7 +70,6 @@ public class Critical extends Check {
      */
     public boolean check(final Player player, final Location loc, final FightData data, final FightConfig cc, 
                          final IPlayerData pData, final IPenaltyList penaltyList) {
-
         boolean cancel = false;
         boolean violation = false;
         final List<String> tags = new ArrayList<String>();
@@ -81,8 +80,10 @@ public class Critical extends Check {
         final double mcFallDistance = (double) player.getFallDistance();
         final double ncpFallDistance = mData.noFallFallDistance;
         final double realisticFallDistance = MovingUtil.getRealisticFallDistance(player, thisMove.from.getY(), thisMove.to.getY(), mData, pData);
+        final boolean yDirectionSwitch = lastMove.toIsValid && lastMove.yDistance != thisMove.yDistance && (thisMove.yDistance <= 0.0 && lastMove.yDistance >= 0.0 || thisMove.yDistance >= 0.0 && lastMove.yDistance <= 0.0); 
 
-        // Check if the hit was a critical hit (fall-distance, not on ladder, not in vehicle, and without blindness effect).
+
+        // Check if the hit was a critical hit (fall distance is present, player is not on a ladder, not in vehicle, and without blindness effect).
         if (mcFallDistance > 0.0 && !player.isInsideVehicle() && !player.hasPotionEffect(PotionEffectType.BLINDNESS)) {
 
             if (pData.isDebugActive(type)) {
@@ -92,55 +93,33 @@ public class Critical extends Check {
                     + "\nJumpPhase: " + mData.sfJumpPhase + " | NCP onGround: " + (thisMove.from.onGround ? "ground -> " : "--- -> ") + (thisMove.to.onGround ? "ground" : "---") + " | MC onGround: " + player.isOnGround()
                 ); // + ", packet onGround: " + packet.onGround); 
             }
-
-            // Check for fall distance with too little air time (this should catch all remaining cheats)
-            // TODO: Maybe check jump motion and setback y distance too
-            //  if (mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier)
-            //      && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
-            //      violation = true;
-            //      tags.add("fakejump");
-            //  }
-            if (Math.abs(ncpFallDistance - mcFallDistance) > cc.criticalFallDistLeniency 
-                && mcFallDistance <= cc.criticalFallDistance 
-                // A full jump from ground requires more than 6 phases/events.
-                && mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier)
-                && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
-               tags.add("fakejump");
-               violation = true;
-            }
-            // Always invalidate critical hits if the player is judged to be on ground with server-sided fall distance
-            // (Might want to skip the fall distance difference part. Just checking if the player has fall distance present while on ground should suffice.)
-            else if (Math.abs(ncpFallDistance - mcFallDistance) > 1e-5 && BlockProperties.isOnGround(player, loc, mCC.yOnGround) 
-                    && !BlockProperties.isResetCond(player, loc, mCC.yOnGround)) {
-                tags.add("fakefall");
-                violation = true;
-            }
-            // In such media, critical hits cannot be performed but they can be faked by cheaters. Invalidate them, always.
-            else if ((thisMove.from.inBerryBush || thisMove.from.inWeb 
-                    || thisMove.from.inPowderSnow) && mData.insideMediumCount > 1) { 
-                tags.add("fakecrit(" + (thisMove.from.inWeb ? "web" : thisMove.from.inBerryBush ? "berry bush" : "powder snow") + ")");
-                violation = true;
-                // (Cannot seem to fake in liquid)
-                // (mcFallDistance > 0.0 is checked above)
-            }  
-            // One cannot perform critical hits with slowfall, as Minecraft resets fall distance when it's present.
-            else if (!Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.hasSlowfall) {
-                tags.add("fakecrit(slowfall)");
-                violation = true;
-                // (Technically already detected by the methods above. Just to be sure)
-            }
-            // (Low-jumping is catched by vDistRel)
+            
+            boolean isIllegal =
+                       // 0: Don't allow players to perform critical hits in blocks where the game would reset fall distance (water, powder snow, bushes, webs, climbables)
+                       BlockProperties.isResetCond(player, loc, mCC.yOnGround)
+                       // 0: Same as above. The game resets fall distance with slowfall
+                       || !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))
+                       // 0: A full jump from ground requires more than 6 phases/events.
+                       || mData.sfJumpPhase > 0 && mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier) 
+                       && !lastMove.headObstructed 
+                       && (lastMove.verVelUsed == null || !lastMove.verVelUsed.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE))
+                       // 0: Always invalidate critical hits if we judge the player to be on ground (given enough fall distance)
+                       || Math.abs(ncpFallDistance - mcFallDistance) > 1e-5 && (BlockProperties.isOnGround(player, loc, mCC.yOnGround) || lastMove.touchedGroundWorkaround)
+                       // 0: Lastly, catch low jumps, despite being detected by vDistRel anyway
+                       // This is the old lowjump implementation, which catches lowjumps at the apex of the jump
+                       //|| data.lowJumpPhase
+                       //yDirectionSwitch && lastMove.yDistance > 0.0  && thisMove.yDistance <= 0.0 && thisMove.setBackYDistance > 0.0 
+                       // && thisMove.setBackYDistance < 1.15 && !thisMove.headObstructed && !lastMove.headObstructed
+            ;
 
             // Handle violations
-            if (violation) {
-
+            if (isIllegal) {
                 final PlayerMoveInfo moveInfo = auxMoving.usePlayerMoveInfo();
                 moveInfo.set(player, loc, null, mCC.yOnGround);
                 // False positives with medium counts reset all nofall data when nearby boat
                 // TODO: Fix isOnGroundDueToStandingOnAnEntity() to work on entity not nearby
                 if (MovingUtil.shouldCheckSurvivalFly(player, moveInfo.from, null, mData, mCC, pData) 
                     && !moveInfo.from.isOnGroundDueToStandingOnAnEntity()) {
-
                     moveInfo.from.collectBlockFlags(0.4);
                     if ((moveInfo.from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0 
                         && !thisMove.from.onGround && !thisMove.to.onGround) {
@@ -148,7 +127,6 @@ public class Critical extends Check {
                         // TODO: Remove (See TODO in Discord.)
                     }   
                     else {
-
                         data.criticalVL += 1.0;
                         // Execute whatever actions are associated with this check and 
                         //  the violation level and find out if we should cancel the event.

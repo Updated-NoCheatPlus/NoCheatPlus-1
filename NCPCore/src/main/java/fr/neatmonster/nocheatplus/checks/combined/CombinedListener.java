@@ -21,6 +21,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -30,6 +31,7 @@ import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
@@ -42,6 +44,7 @@ import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -85,6 +88,24 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     public CombinedListener(){
         super(CheckType.COMBINED);
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
+        if (Bridge1_9.hasEntityToggleGlideEvent()) {
+            queuedComponents.add(new Listener() {
+                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+                public void onToggleGlide(final EntityToggleGlideEvent event) {
+                    if (shouldDenyGliding(event.getEntity(), event.isGliding())) {
+                        event.setCancelled(true);
+                    }
+                }
+            });
+        }
+        /*else {
+            queuedComponents.add(new Listener() {
+                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+                public void onPlayerGliding(final PlayerMoveEvent event) {
+                    handleToggleGlideWithoutEvent(); 
+                }
+            });
+        }*/
         api.register(api.newRegistrationContext()
                 // CombinedConfig
                 .registerConfigWorld(CombinedConfig.class)
@@ -109,6 +130,31 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 .removeSubCheckData(CheckType.COMBINED, true)
                 .context() //
                 );
+    }
+
+    /** Judge if the player can effectively glide when toggling on */
+    private boolean shouldDenyGliding(final Entity entity, final boolean toggledOn) {
+        // Ignore non players.
+        if (!(entity instanceof Player)) {
+            return false;
+        }
+        final Player player = (Player) entity;
+        // Actual lift off (start gliding...)
+        if (toggledOn) {
+            final PlayerMoveInfo info = aux.usePlayerMoveInfo();
+            info.set(player, player.getLocation(info.useLoc), null, 0.0001); // Only restrict very near ground.
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            final MovingData data = pData.getGenericInstance(MovingData.class);
+            final boolean res = !MovingUtil.canLiftOffWithElytra(player, info.from, data);
+            info.cleanup();
+            aux.returnPlayerMoveInfo(info);
+            if (res && pData.isDebugActive(CheckType.MOVING)) {
+                debug(player, "Prevent toggle glide on (cheat prevention).");
+            }
+            // Cannot glide.
+            return res;
+        }
+        return false;
     }
     
     @Override
@@ -204,6 +250,12 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             pData.setSprinting(false);
             return;
         }
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14) && pData.isSneaking()) {
+            // In 1.14 and lower, players cannot sprint and sneak at the same time.
+            // Source: Minecraft Parkour wiki, sneaking section.
+            pData.setSprinting(false);
+            return;
+        }
         // Player toggled sprinting on: ensure that it is legit (Bukkit does not check).
         // TODO: This stuff might need to be latency compensated.
         if (event.getPlayer().getFoodLevel() <= 5) {
@@ -222,7 +274,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     }
     
     /** Cancelled events can still affect movement speed, since the mechanic we're checking is client-sided, so don't skip this listener */
-    @EventHandler(priority = EventPriority.LOWEST) 
+    @EventHandler(priority = EventPriority.MONITOR) 
     public void onAttackingEntities(final EntityDamageByEntityEvent event) {
         final Entity attacker = event.getDamager();
         final Entity damaged = event.getEntity();
@@ -293,7 +345,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     }
     
     /** We listen for player fishing for the VERY critical and super important munch hausen check */
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onFishing(final PlayerFishEvent event) {
         // Check also in case of cancelled events.
         final Player player = event.getPlayer();

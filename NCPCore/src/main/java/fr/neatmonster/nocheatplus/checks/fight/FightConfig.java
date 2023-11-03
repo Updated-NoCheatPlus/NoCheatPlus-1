@@ -41,8 +41,6 @@ public class FightConfig extends ACheckConfig {
 
     public final long toolChangeAttackPenalty;
 
-    public final double criticalFallDistance;
-    public final double criticalFallDistLeniency;
     public final ActionList criticalActions;
 
     public final boolean directionStrict;
@@ -102,8 +100,6 @@ public class FightConfig extends ACheckConfig {
 
         toolChangeAttackPenalty = config.getLong(ConfPaths.FIGHT_TOOLCHANGEPENALTY);
 
-        criticalFallDistance = config.getDouble(ConfPaths.FIGHT_CRITICAL_FALLDISTANCE);
-        criticalFallDistLeniency = config.getDouble(ConfPaths.FIGHT_CRITICAL_FALLDISTLENIENCY);
         criticalActions = config.getOptimizedActionList(ConfPaths.FIGHT_CRITICAL_ACTIONS, Permissions.FIGHT_CRITICAL);
 
         directionStrict = config.getBoolean(ConfPaths.FIGHT_DIRECTION_STRICT);
