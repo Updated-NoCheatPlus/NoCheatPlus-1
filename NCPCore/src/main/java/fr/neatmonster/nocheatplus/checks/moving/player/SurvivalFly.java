@@ -153,6 +153,10 @@ public class SurvivalFly extends Check {
                 }
             }
         }
+
+        if (player.getItemInUse() != null) {
+            player.sendMessage("Item in use: " + player.getItemInUse().toString());
+        }
         
         // Renew the "dirty"-flag (in-air phase affected by velocity).
         // (Reset is done after checks run.) 
@@ -754,7 +758,7 @@ public class SurvivalFly extends Check {
             }
         }
         // From LocalPlayer.java.aiStep()
-        if (pData.isUsingItem() || player.isBlocking()) {
+        if (BridgeMisc.isUsingItem(player)) {
             tags.add("usingitem");
             for (i = 0; i < 9; i++) {
                 inputs[i].calculateDir(Magic.USING_ITEM_MULTIPLIER, Magic.USING_ITEM_MULTIPLIER, 1);
@@ -1149,7 +1153,6 @@ public class SurvivalFly extends Check {
                 // 1.12 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
                 float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.nextFrictionHorizontal * data.nextFrictionHorizontal * data.nextFrictionHorizontal)) : Magic.AIR_ACCELERATION;
                 if (pData.isSprinting()) {
-                    // NOTE: (Apparently players can now sprint while sneaking !?)
                     // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                     acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
                 }
@@ -1158,8 +1161,8 @@ public class SurvivalFly extends Check {
         }
         else {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
-            // Technically, one could attempt to predict missed positions given the from and to locations... Just like for the 0.03 threshold, but what's the point? We are not paid to deal with this bullshit).
-            // Besides, there's no need in predicting speed when the movement has been slowed down to the point of being considered micro by Bukkit.
+            // Technically, one could attempt to interpolate the missed positions given the from and to locations... Just like for the 0.03 threshold, but what's the point? We are not paid to deal with this bullshit).
+            // Besides, there's no need in predicting speed when movement has been slowed down to the point of being considered micro by Bukkit.
             thisMove.xAllowedDistance = thisMove.to.getX() - thisMove.from.getX();
             thisMove.zAllowedDistance = thisMove.to.getZ() - thisMove.from.getZ();
             if (debug) {
@@ -1379,63 +1382,10 @@ public class SurvivalFly extends Check {
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         // 1: Attempt to force-release the item upon a NoSlow Violation, if set so in the configuration.
         //    This is less invasive than a direct set back as item-use is handled quite badly in this game.
-        // TODO: Move this to a service in PlayerData (i.e.: pData.requestItemUseResync())
-        if (cc.survivalFlyResetItem && hDistanceAboveLimit >= Magic.PREDICTION_EPSILON && (pData.isUsingItem() || player.isBlocking())) {
+        if (cc.survivalFlyResetItem && hDistanceAboveLimit >= Magic.PREDICTION_EPSILON && BridgeMisc.isUsingItem(player)) {
+            pData.requestItemUseResync();
             tags.add("itemreset");
-            // Handle through NMS
-            if (mcAccess.getHandle().resetActiveItem(player)) {
-                pData.setUsingItem(false);
-                cData.itemInUse = null;
-                pData.requestUpdateInventory();
-            }
-            // NMS service isn't available, fall-back to a manual method 
-            // Off hand
-            else if (Bridge1_9.hasGetItemInOffHand() && cData.offHandUse) {
-                ItemStack stack = Bridge1_9.getItemInOffHand(player);
-                if (stack != null) {
-                    if (ServerIsAtLeast1_13) {
-                        if (player.isHandRaised()) {
-                            // Does nothing
-                        }
-                        // False positive
-                        else {
-                        	pData.setUsingItem(false);
-                        	cData.itemInUse = null;
-                        }
-                    } 
-                    else {
-                        player.getInventory().setItemInOffHand(stack);
-                        pData.setUsingItem(false);
-                        cData.itemInUse = null;
-                    }
-                }
-            }
-            // Main hand
-            else if (!cData.offHandUse) {
-                ItemStack stack = Bridge1_9.getItemInMainHand(player);
-                if (ServerIsAtLeast1_13) {
-                    if (player.isHandRaised()) {
-                        //data.olditemslot = player.getInventory().getHeldItemSlot();
-                        //if (stack != null) player.setCooldown(stack.getType(), 10);
-                        //player.getInventory().setHeldItemSlot((data.olditemslot + 1) % 9);
-                        //data.changeslot = true;
-                        // Does nothing
-                    }
-                    // False positive
-                    else {
-                    	pData.setUsingItem(false);
-                    	cData.itemInUse = null;
-                    }
-                } 
-                else {
-                    if (stack != null) {
-                        Bridge1_9.setItemInMainHand(player, stack);
-                    }
-                }
-                pData.setUsingItem(false);
-                cData.itemInUse = null;
-            }
-            if (!pData.isUsingItem()) {
+            if (!BridgeMisc.isUsingItem(player)) {
                 double[] estimationRes = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
                                                   fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove);
                 hAllowedDistance = estimationRes[0];

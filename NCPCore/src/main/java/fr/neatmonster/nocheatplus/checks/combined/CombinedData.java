@@ -59,8 +59,6 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public long releaseItemTime = 0;
     /** Detection flag */
     public boolean isHackingRI = false;
-    /** Item currently in use that is slowing the player down */
-    public Material itemInUse = null;
     
     /**
      * Reduce Improbable's data by the given amount, capped at a minimum of 0.

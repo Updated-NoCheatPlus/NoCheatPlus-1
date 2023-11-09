@@ -41,7 +41,7 @@ public class PlayerMoveData extends MoveData {
 	/** Player action set on PlayerMoveEvents. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
 	public boolean isGliding;
 
-    /** Set with PlayerData.isUsingItem() on PlayerMoveEvents. */
+    /** Set with BridgeMisc.isUsingItem(player) on PlayerMoveEvents. */
     public boolean slowedByUsingAnItem;
 	
 	/** 

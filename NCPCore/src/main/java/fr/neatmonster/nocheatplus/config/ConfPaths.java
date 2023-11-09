@@ -635,7 +635,6 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_CHECK                     = MOVING_SURVIVALFLY + SUB_ACTIVE;
     public static final String MOVING_SURVIVALFLY_STEPHEIGHT                = MOVING_SURVIVALFLY + "stepheight";
     private static final String MOVING_SURVIVALFLY_EXTENDED                 = MOVING_SURVIVALFLY + "extended.";
-    public static final String MOVING_SURVIVALFLY_EXTENDED_NOSLOW           = MOVING_SURVIVALFLY_EXTENDED + "noslow";
     public static final String MOVING_SURVIVALFLY_EXTENDED_RESETITEM        = MOVING_SURVIVALFLY_EXTENDED + "reset-activeitem";
     private static final String MOVING_SURVIVALFLY_LENIENCY                 = MOVING_SURVIVALFLY + "leniency.";
     public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT      = MOVING_SURVIVALFLY_LENIENCY + "freeze-count";
@@ -840,6 +839,8 @@ public abstract class ConfPaths {
 
     // Deprecated paths (just removed).
     // TODO: Deprecate or rename (->falldistancemin)?
+    @Deprecated
+    public static final String MOVING_SURVIVALFLY_EXTENDED_NOSLOW           = MOVING_SURVIVALFLY_EXTENDED + "noslow";
     @Deprecated
     public static final String  FIGHT_CRITICAL_FALLDISTANCE              = FIGHT_CRITICAL + "fall-distance";
     @Deprecated

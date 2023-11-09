@@ -25,8 +25,14 @@ import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.inventory.InventoryData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -37,6 +43,8 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
  *
  */
 public class InventoryUtil {
+
+    private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
 
     /**
      * Collect non-block items by suffix of their Material name (case insensitive).
@@ -256,22 +264,31 @@ public class InventoryUtil {
 
     /**
      * Test if the given InventoryType can hold items.
-     * Intention of this method is to be used within checks' contexts, thus containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
+     * Meant for check-related contexts, thus containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
      *
      * @param stack
      *            May be null, would return false.
      * @return true, if is container
      */
     public static boolean isContainerInventory(final InventoryType type) {
-        return type != null && (type == InventoryType.CHEST
-                            || type == InventoryType.ENDER_CHEST
-                            || type == InventoryType.DISPENSER
-                            || type == InventoryType.DROPPER
-                            || type == InventoryType.HOPPER
-                            // For legacy servers... Ugly.
-                            || type.toString().equals("SHULKER_BOX")
-                            || type.toString().equals("BARREL"));
-        // TODO: Add enchanting table to nerf AutoEnchant cheats?
+        if (type == null) {
+            return false;
+        }
+        if (type.toString().equals("SHULKER_BOX")
+            || type.toString().equals("BARREL")
+            || type.toString().equals("CHISELED_BOOKSHELF")) {
+            return true;
+        }
+        switch (type) {
+            case CHEST:
+            case ENDER_CHEST:
+            case DISPENSER:
+            case DROPPER:
+            case HOPPER:
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -289,8 +306,7 @@ public class InventoryUtil {
      * Test for max durability, only makes sense with items that can be in
      * inventory once broken, such as elytra. This method does not (yet) provide
      * legacy support. This tests for ItemStack.getDurability() >=
-     * Material.getMaxDurability, so it only is suited for a context where this
-     * is what you want to check for.
+     * Material.getMaxDurability, so it only is suited for a context where this is what you want to check for.
      * 
      * @param stack
      *            May be null, would yield true.
@@ -319,5 +335,76 @@ public class InventoryUtil {
         }
         return i.contains(Material.ARROW);
     }
+    
+    /**
+     * Attempt to resync the player's item, by forcibily releasing it via NMS or refreshing it via a Bukkit method. <br>
+     * This is not context-aware. You'll need to check for preconditions yourself before calling this method.
+     * 
+     * @param player
+     * @param pData
+     */
+    public static void itemResyncTask(final Player player, final IPlayerData pData) {
+        final CombinedData data = pData.getGenericInstance(CombinedData.class);
+        final boolean ServerIsAtLeast1_13 = ServerVersion.compareMinecraftVersion("1.13") >= 0;
+        // Handle via NMS
+        if (mcAccess.getHandle().resetActiveItem(player)) {
+            // Released, reset all data and request an inventory update to the server, for good measure.
+            resetUsingItemStatus(pData);
+            pData.requestUpdateInventory();
+            return;
+        }
+        // NMS service isn't available, fall-back to a Bukkit-based method: attempt to get and set the item that is currently in hand.
+        if (Bridge1_9.hasGetItemInOffHand() && data.offHandUse) {
+            // Off hand
+            ItemStack stack = Bridge1_9.getItemInOffHand(player);
+            if (stack != null) {
+                if (ServerIsAtLeast1_13) {
+                    if (player.isHandRaised()) {
+                        // Does nothing
+                    }
+                    else {
+                        // False positive
+                    	resetUsingItemStatus(pData);
+                    }
+                } 
+                else {
+                    // Refresh.
+                    player.getInventory().setItemInOffHand(stack);
+                    resetUsingItemStatus(pData);
+                }
+            }
+            return;
+        }
+        if (!data.offHandUse) {
+            // Main hand
+            ItemStack stack = Bridge1_9.getItemInMainHand(player);
+            if (stack != null) {
+                if (ServerIsAtLeast1_13) {
+                    if (player.isHandRaised()) {
+                        //data.olditemslot = player.getInventory().getHeldItemSlot();
+                        //if (stack != null) player.setCooldown(stack.getType(), 10);
+                        //player.getInventory().setHeldItemSlot((data.olditemslot + 1) % 9);
+                        //data.changeslot = true;
+                        // Does nothing
+                    }
+                    // False positive
+                    else {
+                    	resetUsingItemStatus(pData);
+                    }
+                }
+                else {
+                    // Refresh.
+                    Bridge1_9.setItemInMainHand(player, stack);
+                    resetUsingItemStatus(pData);
+                }
+            } 
+        }
+    }
 
+    private static void resetUsingItemStatus(final IPlayerData pData) {
+        if (BridgeMisc.hasIsUsingItemMethod()) {
+            return;
+        }
+        pData.setItemInUse(null);
+    }
 }

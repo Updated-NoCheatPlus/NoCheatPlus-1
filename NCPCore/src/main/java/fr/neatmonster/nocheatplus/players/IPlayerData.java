@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.players;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
@@ -226,8 +227,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * @param worldData
      * @return
      */
-    public boolean isCheckActive(final CheckType checkType, final Player player,
-            final IWorldData worldData);
+    public boolean isCheckActive(final CheckType checkType, final Player player, final IWorldData worldData);
 
     /**
      * Bypass check including exemption and permission.
@@ -258,8 +258,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * @param overrideType
      * @param overrideChildren
      */
-    public void overrideDebug(final CheckType checkType, final AlmostBoolean active, 
-            final OverrideType overrideType, final boolean overrideChildren);
+    public void overrideDebug(final CheckType checkType, final AlmostBoolean active, final OverrideType overrideType, final boolean overrideChildren);
 
     @Override
     public <T> T getGenericInstance(Class<T> registeredFor);
@@ -285,9 +284,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * 
      * @param subCheckRemoval
      */
-    public void removeSubCheckData(
-            Collection<Class<? extends IDataOnRemoveSubCheckData>> subCheckRemoval,
-            Collection<CheckType> checkTypes);
+    public void removeSubCheckData(Collection<Class<? extends IDataOnRemoveSubCheckData>> subCheckRemoval, Collection<CheckType> checkTypes);
 
     /**
      * Check if notifications are turned off, this does not bypass permission
@@ -307,14 +304,14 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setNotifyOff(final boolean notifyOff);
     
     /**
-     * Check if player join via geysermc
+     * Check if the player joins via GeyserMC
      * 
-     * @return
+     * @return True, if so.
      */
     public boolean isBedrockPlayer();
 
     /**
-     * Set the state player connect through geysermc
+     * Mark this player as a Bedrock player.
      * 
      * @param bedrockPlayer
      */
@@ -326,6 +323,11 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void requestUpdateInventory();
 
     /**
+     * Attempt to update the player's item. This also calls requestUpdateInventory().
+     */
+    public void requestItemUseResync();
+
+    /**
      * Let the player be set back to the location stored in moving data (run in
      * TickTask). Only applies if it's set there.
      */
@@ -334,13 +336,11 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     /**
      * Test if it's set to process a player set back on tick. This does not
      * check MovingData.hasTeleported().
-     * 
-     * @return
      */
     public boolean isPlayerSetBackScheduled();
 
     /**
-     * Get the client's version protocol ID through ViaVersion or ProtocolSupport. <br>
+     * Get the client's protocol ID through ViaVersion or ProtocolSupport. <br>
      * Requires CompatNoCheatPlus (subject to change)
      * @see https://wiki.vg/Protocol_version_numbers
      * 
@@ -357,7 +357,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public ClientVersion getClientVersion();
 
     /**
-     * Set the client's version protocol ID as given by ProtocolSupport or ViaVersion.
+     * Set the client's protocol ID as given by ProtocolSupport or ViaVersion.
      * Currently done externally, through CompatNoCheatPlus (subject to change)
      * 
      * @param ID
@@ -374,7 +374,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setSneaking(final boolean sneaking);
 
     /**
-     * Gets the sneaking state of the client, as set by us.
+     * Gets the sneaking state of the client, as set by PlayerData#setSneaking().
      * @return True, if sneaking.
      */
     public boolean isSneaking();
@@ -389,22 +389,25 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setSprinting(final boolean sprinting);
     
     /**
+     * Gets the sprinting state of the client, as set by PlayerData#setSprinting().<br>
      * This ensures that sprinting is actually possible (i.e.: not with low food level)
-     * @return True, if sprinting
+     * 
+     * @return True, if sprinting.
      */
     public boolean isSprinting();
 
     /**
-     * Set the using item state of the client.<br>
-     * Needed because Minecraft nor Bukkit provides us with a method (except for player#isBlocking())
+     * Set the item currently in use by the player (eating, blocking etc...).<br>
+     * This is set only if the server doesn't provide the HumanEntity#getItemInUse() method.
      * 
-     * @param usingItem
+     * @param itemInUse
      */
-    public void setUsingItem(final boolean usingItem);
+    public void setItemInUse(final Material itemInUse);
     
     /**
-     * Gets the using item state of the client, as set by us.
-     * @return True, if using an item
+     * Gets the item currently in use, as set by PlayerData#setItemInUse
+     * 
+     * @return The enum Material of the item in use.
      */
-    public boolean isUsingItem();
+    public Material getItemInUse();
 }

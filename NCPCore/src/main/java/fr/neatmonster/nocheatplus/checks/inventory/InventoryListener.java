@@ -60,6 +60,7 @@ import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -335,7 +336,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         // Set the container opening time.
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
             // Sneaking and right clicking with a block in hand will cause the player to place the block down, not to open the container.
-            && !(pData.isUsingItem() || player.isSneaking() && event.isBlockInHand())) {
+            && !(BridgeMisc.isUsingItem(player) || player.isSneaking() && event.isBlockInHand())) {
             if (BlockProperties.isContainer(event.getClickedBlock().getType())) {
                 data.containerInteractTime = System.currentTimeMillis();
                 if (pData.isDebugActive(CheckType.INVENTORY)) {

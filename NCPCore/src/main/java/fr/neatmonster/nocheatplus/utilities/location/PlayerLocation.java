@@ -17,11 +17,17 @@ package fr.neatmonster.nocheatplus.utilities.location;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 // TODO: Auto-generated Javadoc
@@ -75,6 +81,87 @@ public class PlayerLocation extends RichEntityLocation {
             return onGround;
         }   
         return super.isOnGround();
+    }
+
+    /**
+     * Straw-man method to account for this specific bug: https://bugs.mojang.com/browse/MC-2404
+     * Should not be used outside of its intended context (sneaking on edges), or if vanilla uses it.
+     */
+    public boolean isAboveGround() {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        double[] aaBBCopy = getAABBCopy();
+        double yBelow = player.getFallDistance() - cc.sfStepHeight;
+        return  isOnGround() 
+                || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16_2) 
+                && (
+                    player.getFallDistance() < cc.sfStepHeight 
+                    && BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND)
+                )
+            ;
+    }
+    
+    /**
+     * From EntityHuman.java <br>
+     * Set the speed needed to back the player off from edges in the given vector.
+     * This assumes that you have checked for preconditions already (!) <br>
+     * [Pre-requisites are: the player must be _shifting_(not sneaking); must be above ground; must have negative or 0 y-distance; must not be flying]
+     * 
+     * @param Vector
+     * @return the modified vector
+     */
+    public Vector maybeBackOffFromEdge(Vector vector) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        double xDistance = vector.getX();
+        double zDistance = vector.getZ();
+        /** Parameter for searching for collisions below */
+        double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1;
+        double[] aaBBCopy = getAABBCopy();
+
+        // Move AABB alongisde the X axis.
+        boolean collidesX = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND);
+        while (xDistance != 0.0 && !collidesX) {
+            if (xDistance < 0.05 && xDistance >= -0.05) {
+                xDistance = 0.0;
+            } 
+            else if (xDistance > 0.0) {
+                xDistance -= 0.05;
+            } 
+            else xDistance += 0.05;
+        }
+        // Move AABB alongside the Z axis.
+        boolean collidesZ = BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
+        while (zDistance != 0.0 && !collidesZ) {
+            if (zDistance < 0.05 && zDistance >= -0.05) {
+                zDistance = 0.0;
+            } 
+            else if (zDistance > 0.0) {
+                zDistance -= 0.05;
+            } 
+            else zDistance += 0.05;
+        }
+        // Move AABB alongside both (diagonally)
+        boolean collidesXZ = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
+        while (xDistance != 0.0 && zDistance != 0.0 && !collidesXZ) {
+            if (xDistance < 0.05 && xDistance >= -0.05) {
+                xDistance = 0.0;
+            } 
+            else if (xDistance > 0.0) {
+                xDistance -= 0.05;
+            } 
+            else xDistance += 0.05;
+
+            if (zDistance < 0.05 && zDistance >= -0.05) {
+                zDistance = 0.0;
+            } 
+            else if (zDistance > 0.0) {
+                zDistance -= 0.05;
+            } 
+            else zDistance += 0.05;
+        }
+        vector = new Vector(xDistance, 0.0, zDistance);
+        return vector;
     }
 
     /**

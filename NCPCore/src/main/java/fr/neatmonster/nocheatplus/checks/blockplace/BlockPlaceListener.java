@@ -345,6 +345,8 @@ public class BlockPlaceListener extends CheckListener {
         // If one of the checks requested to cancel the event, do so.
         if (cancelled) {
             event.setCancelled(true);
+            // We need to do this because block-place cancelling can easily desync the player.
+            pData.requestUpdateInventory();
         }
         if (pData.isDebugActive(CheckType.BLOCKPLACE)) {
             debugBlockPlace(player, placedMat, block, blockAgainst, skippedRedundantChecks, flyingHandle, pData);

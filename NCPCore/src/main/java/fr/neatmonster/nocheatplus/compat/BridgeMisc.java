@@ -22,6 +22,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -31,6 +32,9 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 
 
@@ -56,6 +60,29 @@ public class BridgeMisc {
     private static final boolean hasIsFrozen = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "isFrozen", boolean.class) != null;
 
     private static final boolean hasGravityMethod = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "hasGravity", boolean.class) != null;
+
+    private static final boolean hasIsUsingItemMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "getItemInUse", ItemStack.class) != null;
+
+    public static boolean hasIsUsingItemMethod() {
+        return hasIsUsingItemMethod;
+    }
+    
+    /**
+     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method, fallback to PlayerData.isUsingItem()
+     * Also checks for blocking.
+     */
+    public static boolean isUsingItem(final Player player) {
+    	if (player.isBlocking()) {
+    		return true;
+    	}
+    	final IPlayerData pData = DataManager.getPlayerData(player);
+        return hasIsUsingItemMethod() ? player.getItemInUse() != null : pData.getItemInUse() != null;
+    }
+
+    public static Material getItemInUse(final Player player) {
+    	final IPlayerData pData = DataManager.getPlayerData(player);
+        return hasIsUsingItemMethod() ? player.getItemInUse().getType() : pData.getItemInUse();
+    } 
 
     public static boolean hasGravity(final LivingEntity entity) {
         return hasGravityMethod ? entity.hasGravity() : true;

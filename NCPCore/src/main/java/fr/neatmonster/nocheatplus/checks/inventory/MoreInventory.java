@@ -22,6 +22,7 @@ import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
 /**
@@ -52,7 +53,7 @@ public class MoreInventory extends Check {
         
         // TODO: bring in the moving subcheck in invMove.
         if (type == InventoryType.CRAFTING 
-            && (player.isSprinting() || PoYdiff || player.isBlocking() || player.isSneaking() || pData.isUsingItem())) {
+            && (player.isSprinting() || PoYdiff || player.isSneaking() || BridgeMisc.isUsingItem(player))) {
             return true;
         }
         return false;

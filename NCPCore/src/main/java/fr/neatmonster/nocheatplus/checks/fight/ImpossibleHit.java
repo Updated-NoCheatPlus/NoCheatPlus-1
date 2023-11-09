@@ -27,6 +27,7 @@ import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
@@ -81,7 +82,7 @@ public class ImpossibleHit extends Check {
             tags.add("inventoryopen");
         }
         // Blocking/Using item and attacking
-        else if ((pData.isUsingItem() || player.isBlocking()) && !resetActiveItem) {
+        else if (BridgeMisc.isUsingItem(player) && !resetActiveItem) {
             violation = true;
             tags.add("using/blocking");
         }

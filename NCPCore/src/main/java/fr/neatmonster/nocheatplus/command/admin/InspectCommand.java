@@ -36,6 +36,7 @@ import fr.neatmonster.nocheatplus.command.BaseCommand;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
@@ -150,8 +151,8 @@ public class InspectCommand extends BaseCommand {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is sprinting (NCP).");
         }
 
-        if (pData.isUsingItem()) {
-            builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is using an item (NCP)."); // TODO: Which item?
+        if (BridgeMisc.isUsingItem(player)) {
+            builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is using " + BridgeMisc.getItemInUse(player) + ".");
         }
 
         if (player.isInsideVehicle()) {

@@ -38,6 +38,7 @@ import com.comphenix.protocol.events.PacketAdapter;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.compat.activation.ActivationUtil;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
@@ -65,7 +66,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
 
     // TODO: Static reference is problematic (needs a static and accessible Counters instance?). 
     public static final int idNullPlayer = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class).registerKey("packet.nullplayer");
-    /** Likely does not happen, TODO: Code review protocol plugin. */
+    /** Likely does not happen */
     public static final int idInconsistentIsAsync = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Counters.class).registerKey("packet.inconsistent.isasync");
 
     /**
@@ -94,7 +95,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
     public ProtocolLibComponent(Plugin plugin) {
         register(plugin);
         /*
-         * TODO: Register listeners iff any check is enabled - unregister from
+         * TODO: Register listeners if any check is enabled - unregister from
          * EventRegistry with unregister.
          */
     }
@@ -124,6 +125,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             || worldMan.isActiveAnywhere(CheckType.NET_MOVING)
             || worldMan.isActiveAnywhere(CheckType.NET_WRONGTURN)) {
             // (Also sets lastKeepAliveTime, if enabled.)
+            // If any check that uses flying packets is enabled, register all 
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.MovingFlying", plugin);
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.OutgoingPosition", plugin);
         }
@@ -140,10 +142,14 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
             }
         }
         if (ServerVersion.compareMinecraftVersion("1.8") >= 0) {
-            if (ConfigManager.isTrueForAnyConfig(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_NOSLOW)) {
+        	// if (!BridgeMisc.hasIsUsingItemMethod()) {
         	    register("fr.neatmonster.nocheatplus.checks.net.protocollib.UseItemAdapter", plugin);
-                register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
-            }
+        	// }
+            register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
+        }
+        else {
+            // Fuck 1.7.
+            NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.STATUS, "Disable UseItemAdapter due to incompatibilities. Using-item status won't be monitored.");
         }
         if (worldMan.isActiveAnywhere(CheckType.NET_TOGGLEFREQUENCY)) {
             register("fr.neatmonster.nocheatplus.checks.net.protocollib.EntityActionAdapter", plugin);

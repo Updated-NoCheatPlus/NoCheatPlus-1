@@ -186,6 +186,9 @@ public class MaterialUtil {
     public static final Set<Material> ALL_STAIRS = Collections.unmodifiableSet(
             BridgeMaterial.getBySuffix("_stairs", AlmostBoolean.YES, "legacy"));
 
+    public static final Set<Material> ALL_SWORDS = Collections.unmodifiableSet(
+            BridgeMaterial.getBySuffix("_sword", AlmostBoolean.YES, "legacy"));
+
     public static final Set<Material> ALL_TRAP_DOORS = Collections.unmodifiableSet(
             BridgeMaterial.getByPrefixAndSuffix(
                     null, Arrays.asList("trapdoor", "trap_door"), AlmostBoolean.YES,
@@ -628,6 +631,16 @@ public class MaterialUtil {
     ////////////////////
     // Access methods.
     ////////////////////
+    
+    /**
+     * Test if the material is a sword
+     * 
+     * @param mat
+     * @return
+     */
+    public static boolean isSword(final Material mat) {
+        return ALL_SWORDS.contains(mat);
+    }
 
     /**
      * Test if the material is a boat.

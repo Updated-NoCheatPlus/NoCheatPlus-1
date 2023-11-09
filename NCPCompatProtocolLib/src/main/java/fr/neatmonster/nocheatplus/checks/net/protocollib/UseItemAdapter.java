@@ -32,7 +32,6 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerRiptideEvent;
-import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -53,6 +52,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
@@ -64,20 +64,22 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
-
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 /**
- * Adapter for listening to packets and events relevant for item use.
- * (Minecraft nor Bukkit provide a method to know if the player is using an item, so we have to do it ourselves)
+ * Adapter for listening to packets and events relevant for item-use.
+ * <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/commits/20d3e57c4ecff68c558a16f9341123378819edbc#src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java">
+ * Bukkit does provide a method starting from 1.17 or so. </a> <br> 
+ * Thus, the item-use status will only be set, if the Bukkit method isn't avaialble.<br>
+ * The adapter will still be registered however, because we want to detect a very specific kind of item-use abuse via packets.
  */
 public class UseItemAdapter extends BaseAdapter {
 
     private final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
     
     private final static String dftag = "system.nocheatplus.useitemadapter";
-    
-    private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
-
+        
+    // All relevant Bukkit events.
     private final static MiniListener<?>[] miniListeners = new MiniListener<?>[] {
         new MiniListener<PlayerItemConsumeEvent>() {
             @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -119,27 +121,12 @@ public class UseItemAdapter extends BaseAdapter {
                 onChangeSlot(event);
             }
         },
-        //        new MiniListener<WeatherChangeEvent>() {
-        //            @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-        //            @RegisterMethodWithOrder(tag = dftag)
-        //            @Override
-        //            public void onEvent(final WeatherChangeEvent event) {
-        //                onWeatherChangeEvent(event);
-        //            }
-        //        },
-         new MiniListener<PlayerRespawnEvent>() {
-            @EventHandler(priority = EventPriority.MONITOR)
-            @RegisterMethodWithOrder(tag = dftag)
-            @Override
-            public void onEvent(final PlayerRespawnEvent event) {
-                onRespawning(event);
-            }
-        }
     };
 
     private static int timeBetweenRL = 70;
 
     private static PacketType[] initPacketTypes() {
+        // Only interested in these two packets.
         final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(PacketType.Play.Client.BLOCK_DIG, PacketType.Play.Client.BLOCK_PLACE));
         return types.toArray(new PacketType[types.size()]);
     }
@@ -147,21 +134,35 @@ public class UseItemAdapter extends BaseAdapter {
     public UseItemAdapter(Plugin plugin) {
         super(plugin, ListenerPriority.MONITOR, initPacketTypes());
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
-        if (Bridge1_13.hasPlayerRiptideEvent()) {
-        	// Do register this event as well, provided it is available
-            final MiniListener<?> riptideListener = new MiniListener<PlayerRiptideEvent>() {
-                @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-                @RegisterMethodWithOrder(tag = dftag)
-                @Override
-                public void onEvent(final PlayerRiptideEvent event) {
-                   onTridentRelease(event);
-               }
-            };
-            api.addComponent(riptideListener, false);
+        // Only actually register all listeners, it the method is not available.
+        if (!BridgeMisc.hasIsUsingItemMethod()) {
+            if (Bridge1_13.hasPlayerRiptideEvent()) {
+                // Only register this event if available.
+                final MiniListener<?> riptideListener = new MiniListener<PlayerRiptideEvent>() {
+                    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+                    @RegisterMethodWithOrder(tag = dftag)
+                    @Override
+                    public void onEvent(final PlayerRiptideEvent event) {
+                        onTridentRelease(event);
+                   }
+                };
+                api.addComponent(riptideListener, false);
+            }
+            // All the other listeners
+            for (final MiniListener<?> listener : miniListeners) {
+                api.addComponent(listener, false);
+            }
         }
-        for (final MiniListener<?> listener : miniListeners) {
-            api.addComponent(listener, false);
-        }
+        // Always register this event, because it is used to fix a MC/Bukkit glitch, not for item-use setting.
+        final MiniListener<?> respawningListener = new MiniListener<PlayerRespawnEvent>() {
+            @EventHandler(priority = EventPriority.MONITOR)
+            @RegisterMethodWithOrder(tag = dftag)
+            @Override
+            public void onEvent(final PlayerRespawnEvent event) {
+                onRespawning(event);
+            }
+        };
+        api.addComponent(respawningListener, false);
     }
 
     @Override
@@ -179,21 +180,26 @@ public class UseItemAdapter extends BaseAdapter {
                 return;
             }
         }
+        if (BridgeMisc.hasIsUsingItemMethod()) {
+            if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
+                // Only handle the block-place digging packet, because we still want to prevent a very specific kind of use-item abuse/cheating.
+                handleDiggingPacket(event);
+            }
+            return;
+        }
         if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
             handleDiggingPacket(event);
-        } 
-        else {
-            handleBlockPlacePacket(event);
         }
+        else handleBlockPlacePacket(event);
     }
-
+    
+    /** Attempt to fix server-side-only blocking after respawn. */
     private static void onRespawning(final PlayerRespawnEvent e) {
         final IPlayerData pData = DataManager.getPlayerData(e.getPlayer());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        data.itemInUse = null;
-        // Patch up issues on Bukkit's (Minecraft's ?) side (item has been reset already).
+        // Patch up issues on Bukkit's (Minecraft's ?) side (item has been reset already on death).
         if (Bridge1_9.hasGetItemInOffHand() && e.getPlayer().isBlocking()) {
-            redoShield(e.getPlayer());
+            pData.requestItemUseResync();
         }
     }
 
@@ -201,8 +207,7 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(e.getPlayer());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // This event is called on releasing the trident (See ItemTrident.java), so the item is not in use anymore.
-        pData.setUsingItem(false);
-        data.itemInUse = null;
+        pData.setItemInUse(null);
     }
 
     private static void onItemConsume(final PlayerItemConsumeEvent e) {
@@ -210,8 +215,7 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Consume(d) (!!), so the player isn't using the item anymore
-        pData.setUsingItem(false);   
-        data.itemInUse = null;    
+        pData.setItemInUse(null);   
     }
 
     private static void onInventoryOpen(final InventoryOpenEvent e) {
@@ -220,16 +224,14 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item with an inventory open.
-        pData.setUsingItem(false);
-        data.itemInUse = null;         
+        pData.setItemInUse(null);
     }
 
     private static void onDeath(final PlayerDeathEvent e) {
         final IPlayerData pData = DataManager.getPlayerData((Player) e.getEntity());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item if dead
-        pData.setUsingItem(false);  
-        data.itemInUse = null;  
+        pData.setItemInUse(null);  
     }
 
     @SuppressWarnings("deprecation")
@@ -246,6 +248,7 @@ public class UseItemAdapter extends BaseAdapter {
             // Player did not send the block-placement packet, so they are for sure not using anything, return.
             return;
         }
+        // Do reset the flag at the start (!)
         data.mightUseItem = false;
 
         if (e.useItemInHand().equals(Event.Result.DENY)) {
@@ -254,9 +257,8 @@ public class UseItemAdapter extends BaseAdapter {
         }
 
         if (p.getGameMode() == GameMode.CREATIVE) {
-            // TODO: If merging SurvivalFly with CreativeFly, this needs to be removed.
-            pData.setUsingItem(false);
-            data.itemInUse = null;
+            // TODO: If merging SurvivalFly with CreativeFly, creative mode needs to be taken into consideration as well.
+            pData.setItemInUse(null);
             return;
         }
         
@@ -276,74 +278,95 @@ public class UseItemAdapter extends BaseAdapter {
                     return;
                 }
                 if (m == Material.POTION || m == Material.MILK_BUCKET || m.toString().endsWith("_APPLE") || m.name().startsWith("HONEY_BOTTLE")) {
-                    pData.setUsingItem(true);
+                    pData.setItemInUse(m);
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
-                    data.itemInUse = m;
                     return;
                 }
                 if (item.getType().isEdible() && p.getFoodLevel() < 20) {
-                    pData.setUsingItem(true); 
+                    pData.setItemInUse(m); 
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
-                    data.itemInUse = m;
                     return;
                 }
             }
             // Bows...
             if (m == Material.BOW && InventoryUtil.hasArrow(p.getInventory(), false)) {
-                pData.setUsingItem(true);
+                pData.setItemInUse(m);
                 data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
-                data.itemInUse = m;
                 return;
             }
-            // Shields... Bukkit takes care here, no need to set the flag.
-            if (Bridge1_9.hasElytra() && m == Material.SHIELD) {
-                //data.isUsingItem = true;
-                data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
-                data.itemInUse = m;
-                return;
+            // Shields and swords (legacy)... Bukkit takes care here, but set anyway.
+            if (Bridge1_9.hasElytra()) {
+            	if (m == Material.SHIELD) {
+            	    pData.setItemInUse(m);
+                    data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
+                    return;
+            	}
             }
+            else if (MaterialUtil.isSword(m)) {
+            	// Legacy server. Blocking is done with swords.
+            	pData.setItemInUse(m);
+            	// (Off hand doesn't exist)
+            	// TODO: Account for cross-version compatibility?
+            	return;
+            }
+            
             // Crosswbows...
             if (m.toString().equals("CROSSBOW")) {
                 if (!((CrossbowMeta) item.getItemMeta()).hasChargedProjectiles() && InventoryUtil.hasArrow(p.getInventory(), true)) {
-                    pData.setUsingItem(true);
+                    pData.setItemInUse(m);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
-                    data.itemInUse = m;
                 }
             }
-            // Tridents... Only if the player is in water or exposed to rain.
-            if (Bridge1_13.hasIsRiptiding() && m == Material.TRIDENT && BridgeEnchant.getRiptideLevel(p) > 0.0
-                && (
-                    BlockProperties.isInWater(p, p.getLocation(), mCC.yOnGround)
-                    // Always check raining first, since canSeeSky is a much more expensive call. Needs optimiziation.
-                    || p.getLocation().getWorld().hasStorm() && BlockProperties.canSeeSky(p, p.getLocation(), mCC.yOnGround) 
-                )) {
-                pData.setUsingItem(true);
+            // Tridents (1.13)... 
+            if (Bridge1_13.hasIsRiptiding() && m == Material.TRIDENT 
+            	// 0: If the trident has riptide enchant, the item can only be used in rain or water 
+            	&& (
+                    // 1: Has riptide enchant
+            		BridgeEnchant.getRiptideLevel(p) > 0.0
+                    && (
+                        // 2: In water
+                        BlockProperties.isInWater(p, p.getLocation(), mCC.yOnGround)
+                        // 2: Always check raining first, since canSeeSky is a much more expensive call. Needs optimiziation.
+                        || p.getLocation().getWorld().hasStorm() && BlockProperties.canSeeSky(p, p.getLocation(), mCC.yOnGround) 
+                    ) 
+                )
+            	// 0: Otherwise, the trident can be used and thrown anywhere
+                || BridgeEnchant.getRiptideLevel(p) <= 0.0) {
+                pData.setItemInUse(m);
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
-                data.itemInUse = m;
                 return;
             }
-            // TODO: Goat horns... Those exist, apparently.
+            // Spyglass (1.17)...
+            if (BridgeMisc.hasIsFrozen() && m == Material.SPYGLASS) {
+                pData.setItemInUse(m);
+                data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
+                return;
+            }
+            // Lastly, goat horns (1.19)...
+            if (m.toString().equals("GOAT_HORN")) {
+                pData.setItemInUse(m);
+                data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
+                return;
+            }
         } 
-        // No item in hands, no deal.
         else {
-            pData.setUsingItem(false);  
-            data.itemInUse = null;     
+            // No item in hands, no deal.
+            pData.setItemInUse(null);  
         }
     }
-
+    
+    // NOTE: Bukkit takes care of invalid slot values (< 0 or > 8. PlayerConnection.java), so we don't need to check for this as well.
     private static void onChangeSlot(final PlayerItemHeldEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         //if (data.changeslot) {
         //    p.getInventory().setHeldItemSlot(data.olditemslot);
         //    data.changeslot = false;
         //}
         // Switching a slot, so the item use status is reset. 
-        // TODO: Check for abuses.
         if (e.getPreviousSlot() != e.getNewSlot()) {
-            pData.setUsingItem(false);
-            data.itemInUse = null;
+            // To avoid potential bypasses, let Minecraft forcibly release the item.
+            pData.requestItemUseResync();
         }
     }
 
@@ -358,7 +381,6 @@ public class UseItemAdapter extends BaseAdapter {
             final int faceIndex = ints.read(0); // arg 3 if 1.7.10 below
             if (faceIndex <= 5) {
                 data.mightUseItem = false;
-                data.itemInUse = null;
                 return;
             }
         }
@@ -370,18 +392,17 @@ public class UseItemAdapter extends BaseAdapter {
         Player p = event.getPlayer();       
         final IPlayerData pData = DataManager.getPlayerDataSafe(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        final MovingData mData = pData.getGenericInstance(MovingData.class);
         PlayerDigType digtype = event.getPacket().getPlayerDigTypes().read(0);
-        // DROP_ALL_ITEMS when dead?
-        if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
-            pData.setUsingItem(false);
-            data.itemInUse = null;
+        if (!BridgeMisc.hasIsUsingItemMethod()) {
+            // DROP_ALL_ITEMS when dead?
+            if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
+                pData.setItemInUse(null);
+            }
         }
         
-        //Advanced check
+        //Advanced check: do handle this one
         if (digtype == PlayerDigType.RELEASE_USE_ITEM) {
-            pData.setUsingItem(false);
-            data.itemInUse = null;
+            pData.setItemInUse(null);
             long now = System.currentTimeMillis();
             if (data.releaseItemTime != 0) {
                 if (now < data.releaseItemTime) {
@@ -393,33 +414,6 @@ public class UseItemAdapter extends BaseAdapter {
                 }
             }
             data.releaseItemTime = now;
-        }
-    }
-
-    /**
-     * Attempt to fix server-side-only blocking after respawn.
-     * 
-     * @param player
-     */
-    private static void redoShield(final Player player) {
-        if (mcAccess.getHandle().resetActiveItem(player)) {
-            // Handle via NMS: force-release the item.
-            return;
-        }
-        // Handle via Bukkit: attempt to refresh the item
-        // Does not work: DataManager.getPlayerData(player).requestUpdateInventory();
-        final PlayerInventory inv = player.getInventory();
-        ItemStack stack = inv.getItemInOffHand();
-        if (stack != null && stack.getType() == Material.SHIELD) {
-            // Shield in off-hand.
-            inv.setItemInOffHand(stack);
-            return;
-        }
-        stack = inv.getItemInMainHand();
-        if (stack != null && stack.getType() == Material.SHIELD) {
-            // Shield in main-hand.
-            inv.setItemInMainHand(stack);
-            return;
         }
     }
 
