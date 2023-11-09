@@ -43,8 +43,6 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
     public void setupBlockProperties(WorldConfigProvider<?> worldConfigProvider) {
         // Flag for anvil
         BlockFlags.setBlockFlags("ANVIL", BlockFlags.SOLID_GROUND);
-        // Workaround for ladder
-        // BlockFlags.addFlags(Material.LADDER, BlockFlags.F_GROUND_HEIGHT);
         // Void air.
         BlockInit.setAs("VOID_AIR", Material.AIR);
         // Cave air.

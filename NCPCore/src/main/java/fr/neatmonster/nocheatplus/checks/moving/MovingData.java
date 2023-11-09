@@ -246,8 +246,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public final WorkaroundSet ws;
     /** Will be set to true on BedEnterEvent, then checked for on BedLeaveEvent. */
     public boolean wasInBed = false;
-    /** Tick counter for horizontal speed uncertainty (cannot predict reliably) */
-    public int uncertaintyTick = 0;
 
     // *----------Data of the vehicles checks----------*
     /** Default value for the VehicleMP buffer. */

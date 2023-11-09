@@ -165,10 +165,6 @@ public class SurvivalFly extends Check {
             data.bunnyhopDelay--; 
         }
         
-        if (data.uncertaintyTick > 0) {
-            data.uncertaintyTick--;
-        }
-
 
         /////////////////////////////////////
         // Horizontal move                ///
@@ -734,7 +730,7 @@ public class SurvivalFly extends Check {
          * From the order above, we will start from horizontalCollision, essentially reversing the calculations the client is doing: first all stuff that is done in the next tick by the client, then all the stuff done in the current tick.
          */
 
-        // Because Minecraft does not offer any way to listen to player's inputs, we brute force through all combinations of movement and see which one matches the current speed of the player.
+        // Because Minecraft does not offer any way to listen to player's inputs, we brute force through all combinations and see which input combo matches the current speed of the player.
         ///////////////////////////////
         // Setup theoretical inputs  //
         ///////////////////////////////
@@ -780,10 +776,10 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
         }
         // Slime speed
-        // From BlockSlime.java
         // (Ground check is already included)
         if (from.isOnSlimeBlock()) {
-            if (Math.abs(thisMove.yDistance) < 0.1 && !player.isSneaking()) { // -0.0784000015258789
+            // Use pData#isSneaking() because swimming on slime blocks is a thing.
+            if (Math.abs(thisMove.yDistance) < 0.1 && !pData.isSneaking()) { // -0.0784000015258789
                 thisMove.xAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
                 thisMove.zAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
             }
@@ -886,7 +882,7 @@ public class SurvivalFly extends Check {
             // Each slot in the array is initialized with the same momentum.
             xTheoreticalDistance[i] = thisMove.xAllowedDistance;
             zTheoreticalDistance[i] = thisMove.zAllowedDistance;
-            // Then we proceed to compute all possible accelerations with all theoretical input combinations.
+            // Then we proceed to compute all possible accelerations with all theoretical inputs.
             double inputSq = MathUtil.square((double)inputs[i].getStrafe()) + MathUtil.square((double)inputs[i].getForward()); // Cast to a double because the client does it
             if (inputSq >= 1.0E-7) {
                 if (inputSq > 1.0) {
@@ -959,8 +955,8 @@ public class SurvivalFly extends Check {
         boolean found = false;
         /** 
          * True will check if BOTH axis have an offset smaller than 0.0001 (against strafe-like cheats and anything of that sort that relies on the specific direction of the move).
-         * Will also perform some auxiliary checks.
-         * Otherwise, check using the combined horizontal distance.
+         * Will also perform some auxiliary checks.<br>
+         * Otherwise, only the combined horizontal distance will be checked against the offset.
          */
         boolean strict = true; 
         /**
@@ -1012,9 +1008,7 @@ public class SurvivalFly extends Check {
 
 
     /**
-     * Finish the current speed processing, whether we could actually predict the movement or not.<br>
-     * If not, do resort to a more crude estimation / workaround.<br>
-     * Most of the stuff in here _should_ be treated as a band-aid solution, until we can come up with an actual prediction or something more elegant.
+     * Finalize this speed processing: check if we should apply a workaround. Otherwise, just throw a violation if needed.
      * (See AirWorkarounds class desc)
      * 
      * @param data
@@ -1030,7 +1024,7 @@ public class SurvivalFly extends Check {
                                           double[] xTheoreticalDistance, double[] zTheoreticalDistance, final PlayerLocation from, final PlayerLocation to,
                                           int inputsIdx, final boolean debug, InputDirection[] inputs, final boolean forceViolation) {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        /** All moves are assumed to be predictable, unless we explicitly state in otherwise. */
+        /** All moves are assumed to be predictable, unless we explicitly state in here otherwise. */
         boolean isPredictable = true;
         int x_idx = -1;
         int z_idx = -1;
@@ -1039,16 +1033,14 @@ public class SurvivalFly extends Check {
             // To prevent an IndexOutOfBounds, set the input index back to 4, which corresponds to the index of the input of NONE/NONE.
             // (This is the one that will be set IF the player is actually cheating)
             inputsIdx = 4;   
-            // Avoid checking all of this if the move has been judged to be illegal already.
+            // Check for workarounds, unless the move has been judged to be illegal already.
             if (!forceViolation) {
                 // Get the indeces of the theoretical x/z speeds that are closest to the actual speed.
                 x_idx = MathUtil.closestIndex(xTheoreticalDistance, to.getX() - from.getX());
                 z_idx = MathUtil.closestIndex(zTheoreticalDistance, to.getZ() - from.getZ());
-                // Handle horizontal collisions
-                if (HorizontalUncertainty.tryDoWallCollisionX(from, to, xTheoreticalDistance, x_idx)
-                    || HorizontalUncertainty.tryDoWallCollisionZ(from, to, zTheoreticalDistance, z_idx)
-                    // Handle horizontal pushing.
-                    || HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)) {
+                if (HorizontalUncertainty.tryDoWallCollisionX(from, to, xTheoreticalDistance, x_idx) ||
+                    HorizontalUncertainty.tryDoWallCollisionZ(from, to, zTheoreticalDistance, z_idx) ||
+                    HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)) {
                     isPredictable = false;
                 }
             } 
@@ -1210,12 +1202,10 @@ public class SurvivalFly extends Check {
          * Stuff to fix / take care of:
          *  - In water/lava -> in air transitions
          *  - Jumping in waterlogged blocks
-         *  - Implement the correct collision logic for 1.20 players (richentitylocation).
          *  - Fix insidePowderSnow checking (see notes in RichBoundsLoc)
-         *  - Fix split move messing up when jumping in honey blocks.
          *  - Wobbling up on slime blocks/beds (still need some adaptations to it. Getting sporadic false positives)
-         *  - Breaking blocks below
-         * 
+         *  - Breaking blocks below -> On the server side, we receive a move with negative motion, but the player will fall with friction based on a
+         * After touching the ground, the player will f
          */
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
@@ -1265,7 +1255,6 @@ public class SurvivalFly extends Check {
             }
             if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
                 // Levitation forces players to ascend and does not work in liquids, so thankfully we don't have to account for that, other than stuck-speed.
-                // TODO: This estimate tends to break with higher levitation levels for whatever reason.
                 thisMove.vAllowedDistance += (0.05 * (Bridge1_9.getLevitationAmplifier(player) + 1) - lastMove.yDistance) * 0.2;
             }
             else if (BridgeMisc.hasGravity(player)) {
@@ -1273,7 +1262,7 @@ public class SurvivalFly extends Check {
                 thisMove.vAllowedDistance -= !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
             }
             // Friction.
-            // NOTE: Unlike horizontal friction, vertical friction is not assigned to the "f" variable (at the beginning of the travel() method in EntityLiving)
+            // NOTE: Unlike horizontal friction, vertical friction is not assigned to the "f" variable (at the beginning of the travel() function in EntityLiving)
             thisMove.vAllowedDistance *= data.lastFrictionVertical;
             // Stuck-speed with the updated multiplier
             thisMove.vAllowedDistance *= (double) data.nextStuckInBlockVertical;
@@ -1390,6 +1379,7 @@ public class SurvivalFly extends Check {
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         // 1: Attempt to force-release the item upon a NoSlow Violation, if set so in the configuration.
         //    This is less invasive than a direct set back as item-use is handled quite badly in this game.
+        // TODO: Move this to a service in PlayerData (i.e.: pData.requestItemUseResync())
         if (cc.survivalFlyResetItem && hDistanceAboveLimit >= Magic.PREDICTION_EPSILON && (pData.isUsingItem() || player.isBlocking())) {
             tags.add("itemreset");
             // Handle through NMS

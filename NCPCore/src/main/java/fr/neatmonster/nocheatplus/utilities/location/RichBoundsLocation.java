@@ -16,6 +16,7 @@ package fr.neatmonster.nocheatplus.utilities.location;
 
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -661,6 +662,27 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         }
         return BlockProperties.collides(blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, flags);
     }
+    
+    /**
+     * This is similar to standsOnBlock, but checks for the closest block-position to the player's position, 
+     * to solve conflicts where the player may stand on more than a single block that has motion properties (i.e.: standing half on ice and half on slime)
+     * Does not use the yOnGround parameter for collision (!).
+     * 
+     * @param flag
+     * @return False, if the player is not on ground by NCP's definition, or the supporting block couldn't be found.
+     *         True, if the supporting block has the given flag and the player collides with it.
+     */
+    public boolean isSupportedBy(final long flag) {
+        final Material supportingMat = BlockProperties.getMainSupportingBlock(world, blockCache, minX, minY, minZ, maxX, maxY, maxZ, getLocation());
+        if (supportingMat == Material.AIR) {
+            return false;
+        }
+        if (!isOnGround()) {
+            return false;
+        }
+        final long thisFlags = BlockFlags.getBlockFlags(supportingMat);
+        return (thisFlags & flag) != 0;
+    }
 
     /**
      * @return true, if is above stairs
@@ -696,11 +718,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
             // NMS collision method, tweaked it AGAIN in 1.16... (See RichEntityLocation)
-            for (int iX = iMinX; iX < iMaxX; iX++) {
-                for (int iY = iMinY; iY < iMaxY; iY++) {
-                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_LAVA);
-                        double liquidHeightToWorld = iY + liquidHeight;
+            for (int x = iMinX; x < iMaxX; x++) {
+                for (int y = iMinY; y < iMaxY; y++) {
+                    for (int z = iMinZ; z < iMaxZ; z++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, BlockFlags.F_LAVA);
+                        double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld > minY && liquidHeight != 0.0) {
                             // Collided.
                             inLava = true;
@@ -726,7 +748,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 return false;
             }
             inWater = isInWaterLogged();
-            if (inWater) return true;
+            if (inWater) {
+                return true;
+            }
             final int iMinX = MathUtil.floor(minX + 0.001);
             final int iMaxX = MathUtil.ceil(maxX - 0.001);
             final int iMinY = MathUtil.floor(minY + 0.001); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
@@ -734,11 +758,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
             // NMS collision method
-            for (int iX = iMinX; iX < iMaxX; iX++) {
-                for (int iY = iMinY; iY < iMaxY; iY++) {
-                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_WATER);
-                        double liquidHeightToWorld = iY + liquidHeight;
+            for (int x = iMinX; x < iMaxX; x++) {
+                for (int y = iMinY; y < iMaxY; y++) {
+                    for (int z = iMinZ; z < iMaxZ; z++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, BlockFlags.F_WATER);
+                        double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
                             // Collided.
                             inWater = true;
@@ -830,18 +854,16 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInWeb() {
         if (inWeb == null) {
-            if (blockFlags == null || (blockFlags & BlockFlags.F_COBWEB) != 0L) {
-                inWeb = isInsideBlock(BlockFlags.F_COBWEB);
-            }
-            else {
+            if (blockFlags != null && (blockFlags & BlockFlags.F_COBWEB) == 0) {
                 inWeb = false;
             }
+            else inWeb = isInsideBlock(BlockFlags.F_COBWEB);
         }
         return inWeb;
     }
     
     /**
-     * Further conditions can be found in RichEntityLocation.
+     * Cross-version checking is done in RichEntityLocation.
      * @return true, if is in powder snow.
      */
     public boolean isInPowderSnow() {
@@ -857,9 +879,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                                // This fixes an edge case with player jumping with powder snow above (in which case, they are not considered "inside", the game applies the ordinary gravity motion)
                                && BlockProperties.isGround(getTypeId(getBlockX(), Location.locToBlock(getY() - 0.01), getBlockZ()));
             }
-            else {
-                inPowderSnow = false;
-            }
+            else inPowderSnow = false;
         }
         return inPowderSnow;
     }
@@ -870,12 +890,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInBerryBush() {
         if (inBerryBush == null) {
-            if (blockFlags == null || (blockFlags & BlockFlags.F_BERRY_BUSH) != 0L) {
-                inBerryBush = isInsideBlock(BlockFlags.F_BERRY_BUSH);
-            }
-            else {
+            if (blockFlags != null && (blockFlags & BlockFlags.F_BERRY_BUSH) == 0) {
                 inBerryBush = false;
             }
+            else inBerryBush = isInsideBlock(BlockFlags.F_BERRY_BUSH);
         }
         return inBerryBush;
     }
@@ -888,16 +906,13 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             if (blockFlags != null && (blockFlags & BlockFlags.F_ICE) == 0) {
                 onIce = false;
             } 
-            else {
-                onIce = standsOnBlock(BlockFlags.F_ICE);
-            }
+            else onIce = isSupportedBy(BlockFlags.F_ICE);
         }
         return onIce;
     }
 
     /**
-     * Check the location is on blue ice, only regarding the center. Currently
-     * demands to be on ground as well.
+     * Cross-version checking is done in RichEntityLocation.
      *
      * @return true, if is on blue ice
      */
@@ -906,15 +921,14 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             if (blockFlags != null && (blockFlags & BlockFlags.F_BLUE_ICE) == 0) {
                 onBlueIce = false;
             } 
-            else {
-                onBlueIce = standsOnBlock(BlockFlags.F_BLUE_ICE);
-            }
+            else onBlueIce = isSupportedBy(BlockFlags.F_BLUE_ICE);
         }
         return onBlueIce;
     }
 
     /**
-     * Further conditions can be found in RichEntityLocation.
+     * Cross-version checking is done in RichEntityLocation.
+     * 
      * @return true, if is in soul sand
      */
     public boolean isInSoulSand() {
@@ -922,16 +936,13 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             if (blockFlags != null && (blockFlags & BlockFlags.F_SOULSAND) == 0) {
                 inSoulSand = false;
             } 
-            else {
-                inSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
-            }
+            else inSoulSand = isSupportedBy(BlockFlags.F_SOULSAND);
         }
         return inSoulSand;
     }
 
     /**
-     * Check if the location is on slime only regarding the center. Currently
-     * demands to be on ground as well.
+     * Cross-version checking is done in RichEntityLocation.
      *
      * @return true, if is on slime block
      */
@@ -940,11 +951,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             if (blockFlags != null && (blockFlags & BlockFlags.F_SLIME) == 0) {
                 onSlimeBlock = false;
             } 
-            else { 
-                final Material typeId = getTypeIdBelow();
-                final long thisFlags = BlockFlags.getBlockFlags(typeId);
-                onSlimeBlock = isOnGround() && (thisFlags & BlockFlags.F_SLIME) != 0;  
-            }
+            else onSlimeBlock = isSupportedBy(BlockFlags.F_SLIME);
         }
         return onSlimeBlock;
     }
@@ -969,7 +976,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check if the location is on honey block.
+     * Cross-version checking is done in RichEntityLocation.
      *
      * @return true, if is on honey block
      */
@@ -978,11 +985,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             if (blockFlags != null && (blockFlags & BlockFlags.F_STICKY) == 0) {
                 onHoneyBlock = false;
             } 
-            else {
-                // Only count in actually being in the honeyblock, players can jump normally on the very edge.
-                // TODO: ^ No longer true with 1.20. Fix in RichEntityLocation.
-                onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
-            }
+            else onHoneyBlock = isSupportedBy(BlockFlags.F_STICKY);
         }
         return onHoneyBlock;
     }
@@ -994,19 +997,17 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInBubbleStream() {
         if (inBubblestream == null) {
-            if (blockFlags == null || (blockFlags & BlockFlags.F_BUBBLECOLUMN) != 0L) {
-               inBubblestream = isInsideBlock(BlockFlags.F_BUBBLECOLUMN) && !isDraggedByBubbleStream();
-            }
-            else {
+            if (blockFlags != null && (blockFlags & BlockFlags.F_BUBBLECOLUMN) == 0) {
                 inBubblestream = false;
             }
+            else inBubblestream = isInsideBlock(BlockFlags.F_BUBBLECOLUMN) && !isDraggedByBubbleStream();
         }
         return inBubblestream;
      
     }
 
     /**
-     * Check the if the location is in a bubblestream with drag value
+     * Delegate: check the if the location is in a bubblestream with drag value
      *
      * @return true, if is dragged by a bubble stream.
      */

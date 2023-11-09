@@ -28,7 +28,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
  * Magic workarounds for moving in liquid (SurvivalFly.vDistLiquid).
- * (See AirEnvelopes)
+ * (See AirWorkarounds)
  * 
  * @author asofold
  *

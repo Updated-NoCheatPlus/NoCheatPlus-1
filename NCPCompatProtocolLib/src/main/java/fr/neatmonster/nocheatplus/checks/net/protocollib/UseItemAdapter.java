@@ -205,13 +205,6 @@ public class UseItemAdapter extends BaseAdapter {
         data.itemInUse = null;
     }
 
-    //    private static void onWeatherChangeEvent(final WeatherChangeEvent e) {
-    //    	// TODO: Latency compensation?
-    //    	// TODO: Need to also check for _client_ weather. Essentials provides a command for client-sided weather setting.
-    //    	// Since riptiding is client-sided, they'll be able to propel themselves in air, despite not actually raining on the server.
-    //        // data.mightPropelWithTrident = e.toWeatherState(); // (Read as: to a raining state... Naming convention isn't that clear)
-    //    }
-
     private static void onItemConsume(final PlayerItemConsumeEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
@@ -409,10 +402,12 @@ public class UseItemAdapter extends BaseAdapter {
      * @param player
      */
     private static void redoShield(final Player player) {
-        // Does not work: DataManager.getPlayerData(player).requestUpdateInventory();
         if (mcAccess.getHandle().resetActiveItem(player)) {
+            // Handle via NMS: force-release the item.
             return;
         }
+        // Handle via Bukkit: attempt to refresh the item
+        // Does not work: DataManager.getPlayerData(player).requestUpdateInventory();
         final PlayerInventory inv = player.getInventory();
         ItemStack stack = inv.getItemInOffHand();
         if (stack != null && stack.getType() == Material.SHIELD) {
@@ -422,7 +417,7 @@ public class UseItemAdapter extends BaseAdapter {
         }
         stack = inv.getItemInMainHand();
         if (stack != null && stack.getType() == Material.SHIELD) {
-            // Shield in off-hand.
+            // Shield in main-hand.
             inv.setItemInMainHand(stack);
             return;
         }

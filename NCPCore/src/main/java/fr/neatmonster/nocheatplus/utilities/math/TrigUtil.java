@@ -219,6 +219,52 @@ public class TrigUtil {
     {
         return Math.sqrt(x*x + y*y + z*z);
     }
+    
+    /**
+     * Compare two block Location.
+     * 
+     * @param closestBlockLoc
+     * @param bLoc
+     * @return
+     */
+    public static int compareTo(Location closestBlockLoc, Location bLoc) 
+    {
+        if (closestBlockLoc.getBlockY() == bLoc.getBlockY()) {
+            return closestBlockLoc.getBlockZ() == bLoc.getBlockZ() ? closestBlockLoc.getBlockX() - bLoc.getBlockX() : closestBlockLoc.getBlockZ() - bLoc.getBlockZ();
+        } 
+        return closestBlockLoc.getBlockY() - bLoc.getBlockY();
+    }
+    
+    /**
+     * Distance from the given coordinates / position to the center of a block.
+     * 
+     * @param bX Block position...
+     * @param bY
+     * @param bZ
+     * @param pX Entity / Player position...
+     * @param pY
+     * @param pZ
+     * @return The distance to block's center squared.
+     */
+    public static double distanceToCenterSqr(int bX, int bY, int bZ, double pX, double pY, double pZ) 
+    {
+       double dX = (double)bX + 0.5D - pX;
+       double dY = (double)bY + 0.5D - pY;
+       double dZ = (double)bZ + 0.5D - pZ;
+       return lengthSquared(dX, dY, dZ);
+    }
+    
+    /**
+     * Distance from the given coordinates / position to the center of a block.
+     * 
+     * @param bLoc Block location.
+     * @param loc Player's location.
+     * @return The distance to block's center squared.
+     */
+    public static double distanceToCenterSqr(final Location bLoc, final Location loc) 
+    {
+    	return distanceToCenterSqr(bLoc.getBlockX(), bLoc.getBlockY(), bLoc.getBlockZ(), loc.getX(), loc.getY(), loc.getZ());
+    }
 
     /**
      * Obsolete method to calculate the 3D-distance of two locations.

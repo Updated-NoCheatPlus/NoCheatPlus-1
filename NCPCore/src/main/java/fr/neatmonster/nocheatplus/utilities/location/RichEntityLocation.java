@@ -169,29 +169,112 @@ public class RichEntityLocation extends RichBoundsLocation {
         return mcAccess;
     }
     
+    
     /**
-     * @return true, if is in a water logged block.
+     * Legacy collision method.
+     * 
+     * @return Whether the entity is on a slime block; always false for 1.7 and below
      */
-    public boolean isInWaterLogged() {
+    public boolean isOnSlimeBlock() {
+    	if (onSlimeBlock != null) {
+    		return onSlimeBlock;
+    	}
     	final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        boolean res = super.isInWaterLogged();
-        if (p != null && res && pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-        	// Waterlogged blocks don't exist for older clients.
-            res = inWaterLogged = false;
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_8)) {
+            // Does not exist.
+            onSlimeBlock = false;
+            return onSlimeBlock;
         }
-        return res;
+        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+        	final Material typeId = getTypeIdBelow();
+            final long thisFlags = BlockFlags.getBlockFlags(typeId);
+            onSlimeBlock = isOnGround() && (thisFlags & BlockFlags.F_SLIME) != 0;
+        	return onSlimeBlock;
+        }
+        // Not a legacy client.
+        return super.isOnSlimeBlock();
+    	
+    }
+    
+    /**
+     * Legacy collision method.
+     * 
+     * @return Whether the entity is on a ice-like block.
+     */
+    public boolean isOnIce() {
+    	if (onIce != null) {
+    		return onIce;
+    	}
+    	final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+        	// MC applies ice properties only with at least half the box on the block
+            final double xzMargin = getBoxMarginHorizontal();
+            onIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_ICE);
+        	return onIce;
+        }
+        // Not a legacy client.
+        return super.isOnIce();
+    }
+    
+    /**
+     * Legacy collision method.
+     * 
+     * @return Whether the entity is on blue ice. Always false for 1.12 and below (in which case, the onIce field is changed instead).
+     */
+    public boolean isOnBlueIce() {
+    	if (onBlueIce != null) {
+    		return onBlueIce;
+    	}
+    	final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+            // Does not exist.
+            onBlueIce = false;
+            // However, do assume multi-protocol plugins to map this block to normal ice/packed ice (most logical)
+            onIce = true;
+            return onIce;
+        }
+        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+        	// MC applies ice properties only with at least half the box on the block
+            final double xzMargin = getBoxMarginHorizontal();
+            onBlueIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_BLUE_ICE);
+            return onBlueIce;
+        }
+        // Not a legacy client.
+        return super.isOnBlueIce();
+    }
+    
+    /** 
+     * @return Always false for 1.12 and below clients.
+     */
+    public boolean isInWaterLogged() {
+    	if (inWaterLogged != null) {
+    		return inWaterLogged;
+    	}
+    	final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+        	// Waterlogged blocks don't exist for older clients.
+            inWaterLogged = false;
+            return inWaterLogged;
+        }
+        return super.isInWaterLogged();
     }
 
     /**
-     * Check if the location is in lava, accounting for version-dependant subtleties.
+     * Legacy collision method(s)
      * 
      * @return true, if the player is in lava
      */
     public boolean isInLava() {
+    	if (inLava != null) {
+    		return inLava;
+    	}
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        // 1.13 and below clients use this no-sense method to check for lava collision... 
+        // 1.13 and below clients use this no-sense method to check if the player is in lava
         // 1.8 client, Entity.java -> handleLavaMovement() -> isMaterialInBB in World.java
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
             // Force-override the inLava result from RichBoundsLocation.
@@ -231,11 +314,14 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Checks if the location is in water using Minecraft collision logic.
+     * Legacy collision method(s)
      * 
      * @return true, if is in water
      */
     public boolean isInWater() {
+    	if (inWater != null) {
+    		return inWater;
+    	}
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
@@ -249,11 +335,11 @@ public class RichEntityLocation extends RichBoundsLocation {
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
             // NMS collision method
-            for (int iX = iMinX; iX < iMaxX; iX++) {
-                for (int iY = iMinY; iY < iMaxY; iY++) {
-                    for (int iZ = iMinZ; iZ < iMaxZ; iZ++) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, iX, iY, iZ, BlockFlags.F_WATER);
-                        double liquidHeightToWorld = iY + liquidHeight;
+            for (int x = iMinX; x < iMaxX; x++) {
+                for (int y = iMinY; y < iMaxY; y++) {
+                    for (int z = iMinZ; z < iMaxZ; z++) {
+                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, BlockFlags.F_WATER);
+                        double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
                             // Collided.
                             inWater = true;
@@ -270,80 +356,69 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * Check if the entity is on a honey block including: cross-version checking and Mojang's 1.20 block-collision fix.
-     * @return Whether the entity is on a honey block.
+     * Legacy collision method.
+     * 
+     * @return Whether the entity is on a honey block; always false for 1.14 and below.
      */
     public boolean isOnHoneyBlock() {
-        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
-        if (onHoneyBlock != null) {
-            return onHoneyBlock;
-        }
-        boolean res = super.isOnHoneyBlock();
+    	if (onHoneyBlock != null) {
+    		return onHoneyBlock;
+    	}
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        if (res) {
-            // Is the player actually in the block?
-            if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
-                // Legacy clients don't have such block.
-                // This will allow "jumping" on it but won't solve legacy players "floating" mid air due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
-                // We'd need per-player blocks for such.
-                res = onHoneyBlock = false;
-            }
+        // Is the player actually in the block?
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
+            // Legacy clients don't have such block.
+            // This will allow "jumping" on it but won't solve legacy players "floating" mid air due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
+            // We'd need per-player blocks for such.
+            onHoneyBlock = false;
+            return onHoneyBlock;
         }
-        // TODO: 1.20 block collision fix.
-        return res;
+        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+            // Only if in the block and at the center.
+        	onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
+        	return onHoneyBlock;
+        }
+        // Not a legacy client.
+        return super.isOnHoneyBlock();
     }
     
     /**
-     * Check if the entity is in soul sand including Mojang's 1.20 block-collision fix.
+     * Legacy collision method.
+     * 
      * @return Whether the entity is in a soul sand block.
      */
     public boolean isInSoulSand() {
-        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
-        if (inSoulSand != null) {
-            return inSoulSand;
-        }
-        boolean res = super.isInSoulSand();
+    	if (inSoulSand != null) {
+    		return inSoulSand;
+    	}
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        // TODO: 1.20 block collision fix.
-        return res;
+        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+            // Only if in the block and at the center.
+            inSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
+            return inSoulSand;
+        }
+        // Not a legacy client
+        return super.isInSoulSand();
     }
 
-    /**
-     * Check if the entity is in a berry bush, including cross-version checking.
-     * @return Whether the entity is in a berry bush.
+    /** 
+     * @return Always false for 1.13 and below
      */
     public boolean isInBerryBush() {
-        if (inBerryBush != null) {
+    	if (inBerryBush != null) {
+    		return inBerryBush;
+    	}
+        final Player p = (Player) entity;
+        final IPlayerData pData = DataManager.getPlayerData(p);
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+            // (Mapped to grass with viaver)
+            inBerryBush = false;
             return inBerryBush;
         }
-        boolean res = super.isInBerryBush();
-        final Player p = (Player) entity;
-        if (res && p != null) {
-            // Is the player actually in the block?
-            final IPlayerData pData = DataManager.getPlayerData(p);
-            if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
-                // (Mapped to grass with viaver)
-                res = inBerryBush = false;
-            }
-        }
-        return res;
-    }
-    
-    /**
-     * Check if the entity is in powder snow, including NMS fall-distance checking.
-     * @return Whether the entity is in powder snow.
-     */
-    public boolean isInPowderSnow() {
-        // NOTE: 0.001 is a magic value from NMS (Entity.java, checkInsideBlocks())
-        if (inPowderSnow != null) {
-            return inPowderSnow;
-        }
-        boolean res = super.isInPowderSnow();
-        final Player p = (Player) entity;
-        // TODO: Handle powder snow bb contraction if falling with fall distance >2.5
-        return res;
+        // Not a legacy client.
+        return super.isInBerryBush();
     }
 
     /**
@@ -422,39 +497,23 @@ public class RichEntityLocation extends RichBoundsLocation {
     // }
 
     /**
-     * Checks if the entity is on ground incluing special cases/properties such as powder snow and entities.
+     * Checks if the player may be on ground due to an entity.
      * 
      * @return true, if the player is on ground
      */
-    public boolean isOnGround() {
+    public boolean isOnGround() { 
         if (onGround != null) {
             return onGround;
         }
-        boolean res = super.isOnGround();
-        Player p = (Player) entity;
-        if (res) {
-            // Is the player really on ground?
-            if (p != null) {
-                if (BlockProperties.isPowderSnow(getTypeId(blockX, Location.locToBlock(y - 0.01), blockZ))
-                    && !BridgeMisc.hasLeatherBootsOn(p)) { 
-                    res = onGround = false;
-                    // Powder snow below without boots: no candidate for ground.
-                    // Standing in between max and min isn't possible with or without boots.
-                    // Standing on a block different than powder snow will fallback to the usual onGround logic (will return true).
-                }
-            }
-        }   
-        if (!res) {
-            // Is the player actually off ground? 
-            final double d1 = 0.25;
-            if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, maxX + d1, minY, maxZ + d1)) {
-                // On ground due to an entity
-                // TODO: Again, this check needs to be refined to be as close as possible to vanilla. With prediction, we cannot use a leniency magic value.
-                res = onGround = standsOnEntity = true;
-            }
-            // TODO: Perhaps move all lostground stuff in here?
+        final double d1 = 0.25;
+        if (blockCache.standsOnEntity(entity, minX - d1, minY - yOnGround, minZ - d1, maxX + d1, minY, maxZ + d1)) {
+            // On ground due to an entity
+            // TODO: Again, this check needs to be refined to be as close as possible to vanilla. With prediction, we cannot use a leniency magic value.
+            onGround = standsOnEntity = true;
+            return onGround;
         }
-        return res;
+        // TODO: Perhaps move all lostground stuff in here?
+        return super.isOnGround();
     }
 
     /**

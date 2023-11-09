@@ -107,10 +107,11 @@ public class HorizontalUncertainty {
         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
             collidingEntities = CollisionUtil.getNumberOfEntitiesThatCanPushThePlayer(player, 0.5, 0.0, 0.5);
             // If the player has collided with an entity and is moving backwards, assume the got pushed by the entity.
-            if (collidingEntities > 0 && TrigUtil.isMovingBackwards(xTheoreticalDistance[x_idx], zTheoreticalDistance[z_idx], to.getYaw())) {
+            if (collidingEntities > 0) {
                 // Cap the multiplier at 4.0
-                xTheoreticalDistance[x_idx] *= Math.min(4.0, (1.0 + (collidingEntities * 0.099)));
-                zTheoreticalDistance[z_idx] *= Math.min(4.0, (1.0 + (collidingEntities * 0.099)));
+                // TODO: STILL NOT ENOUGH
+                xTheoreticalDistance[x_idx] *= Math.min(4.0, (1.0 + (collidingEntities * 0.0999)));
+                zTheoreticalDistance[z_idx] *= Math.min(4.0, (1.0 + (collidingEntities * 0.0999)));
                 player.sendMessage("pushed");
                 return true;
             }

@@ -79,7 +79,7 @@ public enum ClientVersion {
 
 
     LOWER_THAN_KNOWN_VERSIONS(V_1_7_2.protocolID - 1, false),
-    HIGHER_THAN_KNOWN_VERSIONS(V_1_20.protocolID + 1, false),
+    HIGHER_THAN_KNOWN_VERSIONS(V_1_20_2.protocolID + 1, false),
     UNKNOWN(-1, false);
 
     private final int protocolID;

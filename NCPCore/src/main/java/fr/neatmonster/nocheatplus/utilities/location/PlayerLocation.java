@@ -18,9 +18,11 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -54,6 +56,25 @@ public class PlayerLocation extends RichEntityLocation {
      */
     public Player getPlayer() {
         return player;
+    }
+    
+    /**
+     * Set the ground false, in case the player is on powder snow without boots.
+     * This only concerns players, not entities.
+     * 
+     * @return True, for the ordinary case.
+     */
+    public boolean isOnGround() {
+        // Always override the result with powder snow, even if the value is cached already.
+        if (BlockProperties.isPowderSnow(getTypeId(Location.locToBlock(x), Location.locToBlock(y - 0.01), Location.locToBlock(z)))
+            && !BridgeMisc.hasLeatherBootsOn(player)) { 
+            onGround = false;
+            // Powder snow below without boots: no candidate for ground.
+            // Standing in between max and min isn't possible with or without boots.
+            // Standing on a block different than powder snow will fallback to the usual onGround logic (will return true).
+            return onGround;
+        }   
+        return super.isOnGround();
     }
 
     /**

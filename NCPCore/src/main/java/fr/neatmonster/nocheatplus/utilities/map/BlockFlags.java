@@ -151,7 +151,7 @@ public class BlockFlags {
     /** Thin fences: iron bars and glass panes. */
     public static final long F_THIN_FENCE                   = f_flag();
 
-    /** Meta-flag to indicate that the (max.-) edges should mean a collision, can be passed to collidesBlock. */
+    /** Meta-flag to indicate that the maxXZ edges of an AABB should mean a collision, can be passed to collidesBlock. */
     public static final long F_COLLIDE_EDGES                = f_flag();
 
     /** Thick fences: actual fences. */
