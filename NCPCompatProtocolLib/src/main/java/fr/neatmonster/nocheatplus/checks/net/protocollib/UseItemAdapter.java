@@ -329,9 +329,9 @@ public class UseItemAdapter extends BaseAdapter {
                         // 2: Always check raining first, since canSeeSky is a much more expensive call. Needs optimiziation.
                         || p.getLocation().getWorld().hasStorm() && BlockProperties.canSeeSky(p, p.getLocation(), mCC.yOnGround) 
                     ) 
-                )
-            	// 0: Otherwise, the trident can be used and thrown anywhere
-                || BridgeEnchant.getRiptideLevel(p) <= 0.0) {
+                    // 1: Otherwise, the trident can be used and thrown anywhere
+                    || BridgeEnchant.getRiptideLevel(p) <= 0.0
+                )) {
                 pData.setItemInUse(m);
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
