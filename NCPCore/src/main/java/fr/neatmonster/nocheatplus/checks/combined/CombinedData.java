@@ -16,8 +16,6 @@ package fr.neatmonster.nocheatplus.checks.combined;
 
 import java.util.Collection;
 
-import org.bukkit.Material;
-
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.access.ACheckData;
 import fr.neatmonster.nocheatplus.components.data.IDataOnRemoveSubCheckData;

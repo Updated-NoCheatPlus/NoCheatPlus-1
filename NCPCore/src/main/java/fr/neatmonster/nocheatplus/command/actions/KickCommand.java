@@ -14,9 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.command.actions;
 
-import com.google.common.collect.Lists;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -24,11 +22,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
+import com.google.common.collect.Lists;
+
 import fr.neatmonster.nocheatplus.command.AbstractCommand;
 import fr.neatmonster.nocheatplus.command.BaseCommand;
+import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
-import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.permissions.Permissions;
 import fr.neatmonster.nocheatplus.players.DataManager;
 

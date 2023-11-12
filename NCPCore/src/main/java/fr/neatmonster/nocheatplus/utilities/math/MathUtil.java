@@ -14,15 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.math;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-
-import org.bukkit.util.Vector;
-
 /**
  * Auxiliary static methods for dealing with mathematical operations.
  */

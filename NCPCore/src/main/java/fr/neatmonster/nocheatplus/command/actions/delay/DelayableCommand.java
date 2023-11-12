@@ -22,7 +22,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import fr.neatmonster.nocheatplus.command.BaseCommand;
 import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
-import fr.neatmonster.nocheatplus.permissions.RegisteredPermission;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.permissions.RegisteredPermission;
 

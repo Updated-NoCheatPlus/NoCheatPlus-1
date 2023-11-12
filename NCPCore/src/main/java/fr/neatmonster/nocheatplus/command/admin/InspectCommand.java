@@ -14,7 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.command.admin;
 
-import com.google.common.collect.Lists;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +27,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 
-import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
+import com.google.common.collect.Lists;
+
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;

@@ -22,12 +22,11 @@ import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.entity.Entity;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.plugin.Plugin;
 
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
-
-import org.bukkit.entity.Entity;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 /**
  * Utility class to provide compatibility with Paper's regionized multi-threaded server implementation (a.k.a.: Folia), using reflection.

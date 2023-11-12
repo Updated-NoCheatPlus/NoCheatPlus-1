@@ -14,9 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.ds.count;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 
 /**

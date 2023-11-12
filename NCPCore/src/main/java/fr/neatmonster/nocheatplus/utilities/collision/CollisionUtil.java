@@ -14,7 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.collision;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Location;

@@ -14,16 +14,17 @@
  */
 package fr.neatmonster.nocheatplus.command.admin;
 
-import com.google.common.collect.Lists;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.ChatColor;
+
+import com.google.common.collect.Lists;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationHistory;

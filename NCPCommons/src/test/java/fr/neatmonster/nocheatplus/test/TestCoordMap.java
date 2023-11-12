@@ -30,8 +30,8 @@ import fr.neatmonster.nocheatplus.utilities.build.BuildParameters;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordHashMap;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordMap;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordMap.Entry;
-import fr.neatmonster.nocheatplus.utilities.ds.map.LinkedCoordHashMap.MoveOrder;
 import fr.neatmonster.nocheatplus.utilities.ds.map.LinkedCoordHashMap;
+import fr.neatmonster.nocheatplus.utilities.ds.map.LinkedCoordHashMap.MoveOrder;
 
 public class TestCoordMap {
 

@@ -23,6 +23,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.MultipleFacing;
 import org.bukkit.block.data.type.Wall;
+
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
 public class BukkitWall implements BukkitShapeModel {

@@ -14,7 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.ds.prefixtree;
 
-import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.PrefixTree.LookupEntry;
 import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.PrefixTree.SimpleNode;
 import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.SimplePrefixTree.SimpleLookupEntry;
 

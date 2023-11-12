@@ -19,7 +19,6 @@ import java.util.LinkedList;
 
 import org.bukkit.Material;
 
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;

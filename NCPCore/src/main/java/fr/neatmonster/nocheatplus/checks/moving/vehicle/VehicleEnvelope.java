@@ -18,7 +18,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.bukkit.Material;
-import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -47,11 +46,10 @@ import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.entity.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
+import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MagicVehicle;
-import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 /**
  * Vehicle moving envelope check, for Minecraft 1.9 and higher.

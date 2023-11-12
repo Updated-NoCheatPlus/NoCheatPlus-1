@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.compat.bukkit.model;
 
 import org.bukkit.World;
+
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
 public class BukkitBamboo implements BukkitShapeModel {

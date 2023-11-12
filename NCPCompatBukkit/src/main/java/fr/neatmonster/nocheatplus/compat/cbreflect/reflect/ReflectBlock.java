@@ -17,10 +17,11 @@ package fr.neatmonster.nocheatplus.compat.cbreflect.reflect;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.bukkit.Material;
+
 import fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectHelper.ReflectFailureException;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
-import org.bukkit.Material;
 
 /**
  * Reflection for block shape getting (latest).
