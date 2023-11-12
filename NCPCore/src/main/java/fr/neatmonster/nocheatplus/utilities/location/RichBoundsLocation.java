@@ -1603,11 +1603,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         pitch = location.getPitch();
 
         // Set bounding box.
-        /*
-         * For future reference, uhm...
-         *  maxY (+ = Grow bounding box above head | - = Shrink bounding box below head)
-         *  minY (- = Grow bounding box below feet | + = Shrink bounding box above feet)
-         */
         // final double dxz = Math.round(fullWidth * 500.0) / 1000.0; // this.width / 2; // 0.3;
         final double dxz = Math.round(fullWidth * 500.0) / 1000.0; // fullWidth / 2f; <---- This -for some reasons- yields thisMove.headObstructed = true when moving against walls!
         minX = x - dxz;

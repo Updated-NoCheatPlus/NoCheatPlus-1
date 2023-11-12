@@ -1,11 +1,14 @@
 package fr.neatmonster.nocheatplus.checks.moving.envelope;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
@@ -16,7 +19,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 /**
- * Auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
+ * Various auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
  */
 public class PlayerEnvelopes {
 
@@ -127,6 +130,32 @@ public class PlayerEnvelopes {
         final double frictDist = lastYDist * lastFrictionVertical - Magic.GRAVITY_MIN;
         return yDistance <= frictDist + extraGravity && yDistance > frictDist - Magic.GRAVITY_SPAN - extraGravity;
     }
+    
+    /**
+     * Test if the player is constricted in a 1.5 blocks-high area (applies to 1.14 clients and above).
+     * We cannot detect if players try to jump in here: on the server side, player is seen as never leaving the ground and without any vertical motion.
+     * 
+     * @param from
+     * @param pData
+     * @return If onGround with ground-like blocks above within a margin of 0.001.
+     */
+    public static boolean isVerticallyConstricted(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData) {
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+            return false;
+        }
+        if (pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove().touchedGroundWorkaround) {
+            // Just ensure to not be too exploitable: ensure that lost ground is ruled out.
+            return false;
+        }
+        if (!pData.isSneaking()) {
+            return false;
+        }
+        return from.isHeadObstructed(0.09, false) && from.isOnGround() && to.isOnGround();
+    }
+
+    public static boolean isMathematicallyOnGround(final PlayerLocation pLoc) {
+        return Math.abs(pLoc.getY() % (1 / 64D)) < Magic.PREDICTION_EPSILON;
+    }
 
     /**
      * Test if this move is a bunnyhop <br>
@@ -139,13 +168,16 @@ public class PlayerEnvelopes {
      *         during which, this method will return false if called, in order to prevent abuse of the speed boost.<br>
      *         Cases where the player is allowed/able to bunnyhop sooner than usual are defined in SurvivalFly (hDistRel)
      */
-    public static boolean isBunnyhop(final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
+    public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         if (data.bunnyhopDelay > 0) {
             // Jump delay hasn't ended yet...
             return false;
         }
-        return isJump(player, fromOnGround, toOnGround) && pData.isSprinting();
+        if (from.isInLiquid()) {
+            return false;
+        }
+        return isJump(from, to, player, fromOnGround, toOnGround) && pData.isSprinting();
     }
 
     /**
@@ -160,12 +192,11 @@ public class PlayerEnvelopes {
      * @param toOnGround Uses the BCT.
      * @return True if is a jump. 
      */
-    public static boolean isJump(final Player player, boolean fromOnGround, boolean toOnGround) {
+    public static boolean isJump(final PlayerLocation from, final PlayerLocation to, final Player player, boolean fromOnGround, boolean toOnGround) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
         final double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
         // Of course, since we have our own onGround handling, we need to take care of all caveat that it entails... (Lost ground, delayed jump etc...)
@@ -175,6 +206,17 @@ public class PlayerEnvelopes {
         if (thisMove.isRiptiding) {
             return false;
         }
+        // How the fuck do you even detect jumping here !??
+        // Motion doesn't change
+        // Locations do not change
+        // Bukkit velocity does not change...
+        // Math on ground doesn't f work.
+        // ... Do we need to brute force speed with jumping !? ~Lol?
+       /*if (isVerticallyConstricted(from, to, pData) 
+           && isMathematicallyOnGround(from) && !isMathematicallyOnGround(to)) {
+            Bukkit.getServer().broadcastMessage("Trying to jump");
+            return true;
+        }*/
         return  
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
@@ -204,9 +246,14 @@ public class PlayerEnvelopes {
                     MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
                     // 1: If head is obstructed, jumping cannot be predicted without MC's collision function. So, just cap motion which will be at or lower than ordinary jump gain, but never higher, and never lower than 0.1 (which is the maximum motion with no jump boost and jumping in a 2-blocks high area).
                     // Also, here, jumping with head obstructed uses the much more lenient step correction method (See comment in AirWorkarounds).
-                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the player has to jump)
-                    || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0 && lastMove.yDistance <= 0.0
-                    && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
+                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the playe        || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0
+                    || (
+                        // 2: The ordinary case
+                        lastMove.yDistance <= 0.0 && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
+                        // 2: With crawl mode (1.14+)
+                        // https://gyazo.com/653af8221425802c31201d8e4577f4f5
+                        || BridgeMisc.isVisuallyCrawling(player) && MathUtil.inRange(jumpGain - Magic.GRAVITY_MAX, thisMove.yDistance, jumpGain)
+                    ) 
                 )
             ;
     }

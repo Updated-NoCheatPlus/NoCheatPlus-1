@@ -222,14 +222,8 @@ public class LostGround {
             return false;
         }
 
-        if (jumpHeightOffSet >= 0.0) {
-            // 1: Half blocks step up (definitive).
-            // This one seems to aid in players stepping up small blocks and gaps.
-            /*if (!from.isOnGround() && to.isOnGround() && jumpHeightOffSet >= yDistance && hDistance <= thisMove.hAllowedDistance * 1.105
-                && (lastMove.yDistance < 0.0 || from.isOnGround(cc.sfStepHeight - yDistance))) {
-                return applyLostGround(player, from, true, thisMove, data, "half-step", tags);
-            }*/
-            // 2: Check for sprint-jumping on fences with trapdoors above (missing trapdoor's edge touch on server-side, player lands directly onto the fence [For NCP])
+        if (jumpHeightOffSet >= 0.0) {           
+            // 1: Check for sprint-jumping on fences with trapdoors above (missing trapdoor's edge touch on server-side, player lands directly onto the fence [For NCP])
             // Strictly speaking, this is not a lost ground case, but a generic collision issue (NCP's VS MC's)
             if (jumpHeight > 1.0 && jumpHeight <= 1.5 && jumpHeightOffSet < 0.6 && data.bunnyhopDelay > 0 
                 && yDistance > from.getyOnGround() && lastMove.yDistance <= Magic.GRAVITY_MAX && data.jumpAmplifier <= 0.0
@@ -258,7 +252,7 @@ public class LostGround {
         }
 
         // 1: Generic could step. 
-        // TODO: Possibly confine margin depending on side, moving direction (see client code).
+        // See: https://gyazo.com/779f98b7c2467af57dd8116bf0a193fc
         double horizontalMargin = 0.1 + from.getBoxMarginHorizontal();
         double verticalMargin = cc.sfStepHeight + from.getY();
         // Only apply if not recently used a lostground case and ground is within 1 block distance.
@@ -272,7 +266,7 @@ public class LostGround {
         }
         
         // 2: Ground miss with this move (client side blocks y move, but allows h move fully/mostly, missing the edge on server side).
-        // https://gyazo.com/5613ce5ab7bbb88b760c6b6e67fe35f4
+        // See: https://gyazo.com/5613ce5ab7bbb88b760c6b6e67fe35f4
         if (checkEdgeCollision(player, from.getBlockCache(), from.getWorld(), from.getX(), from.getY(), from.getZ(), from.getBoxMarginHorizontal(), from.getyOnGround(), lastMove, data, "-asc1", tags, from.getMCAccess())) {
             thisMove.missedGroundCollision = true;
             // (Use covered area to last from.)

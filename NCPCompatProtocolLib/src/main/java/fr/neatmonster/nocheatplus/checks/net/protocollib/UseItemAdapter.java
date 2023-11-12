@@ -75,7 +75,7 @@ public class UseItemAdapter extends BaseAdapter {
     
     private final static String dftag = "system.nocheatplus.useitemadapter";
         
-    // All relevant Bukkit events.
+    // All relevant Bukkit events for item-use.
     private final static MiniListener<?>[] miniListeners = new MiniListener<?>[] {
         new MiniListener<PlayerItemConsumeEvent>() {
             @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -178,7 +178,7 @@ public class UseItemAdapter extends BaseAdapter {
         }
         if (BridgeMisc.hasIsUsingItemMethod()) {
             if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
-                // Only handle the block-place digging packet, because we still want to prevent a very specific kind of use-item abuse/cheating.
+                // Only handle the digging packet, because we still want to prevent a very specific kind of use-item abuse/cheating.
                 handleDiggingPacket(event);
             }
             return;
@@ -315,7 +315,7 @@ public class UseItemAdapter extends BaseAdapter {
             }
             // Tridents (1.13)... 
             if (Bridge1_13.hasIsRiptiding() && m == Material.TRIDENT 
-            	// 0: If the trident has riptide enchant, the item can only be used in rain or water 
+            	// 0: If the trident has riptide enchant, it can only be used in rain or water 
             	&& (
                     // 1: Has riptide enchant
             		BridgeEnchant.getRiptideLevel(p) > 0.0

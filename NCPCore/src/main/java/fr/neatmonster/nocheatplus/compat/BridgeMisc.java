@@ -25,6 +25,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
@@ -32,9 +33,13 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import fr.neatmonster.nocheatplus.checks.combined.CombinedConfig;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 
 /**
@@ -59,23 +64,64 @@ public class BridgeMisc {
     private static final boolean hasIsFrozen = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "isFrozen", boolean.class) != null;
 
     private static final boolean hasGravityMethod = ReflectionUtil.getMethodNoArgs(LivingEntity.class, "hasGravity", boolean.class) != null;
-
+    // introduced roughly in 1.12, javadocs are quite confusing. If you check the code (CraftHumanEntity.java), you'll see that this just calls getHandle.isUsingItem()
+    private static final boolean hasIsHandRaisedMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "isHandRaised", boolean.class) != null;
+    // introduced in 1.17, roughly.
     private static final boolean hasIsUsingItemMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "getItemInUse", ItemStack.class) != null;
+    // introduced in 1.14
+    private static final boolean hasEntityChangePoseEvent = ReflectionUtil.getClass("org.bukkit.event.entity.EntityPoseChangeEvent") != null;
+
+    public static boolean hasEntityChangePoseEvent() {
+        return hasEntityChangePoseEvent;
+    }
 
     public static boolean hasIsUsingItemMethod() {
         return hasIsUsingItemMethod;
     }
+
+    public static boolean hasIsHandRaisedMethod() {
+        return hasIsHandRaisedMethod;
+    }
     
     /**
-     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method, fallback to PlayerData.isUsingItem()
+     * Check if the player is in crawl mode according to Minecraft's definition
+     * (In swimming pose while not in water).
+     * 
+     * @param player
+     * @return If so.
+     */
+    public static boolean isVisuallyCrawling(Player player) {
+        if (!hasEntityChangePoseEvent()) {
+            return false;
+        }
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+            return false;
+        }
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        return player.getPose().equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround);
+    }
+    
+    /**
+     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()
      * Also checks for blocking.
      */
     public static boolean isUsingItem(final Player player) {
     	if (player.isBlocking()) {
+            // Test blocking first, since this method has been available since forever.
     		return true;
     	}
-    	final IPlayerData pData = DataManager.getPlayerData(player);
-        return hasIsUsingItemMethod() ? player.getItemInUse() != null : pData.getItemInUse() != null;
+        if (hasIsUsingItemMethod()) {
+            // 1.17+ 
+            return player.getItemInUse() != null;
+        }
+        // if (hasIsHandRaisedMethod()) {
+        //     // 1.12+ test using isHandRaised (naming convention is quite bad... Why not simply naming it isUsingItem() ?)
+        //     return player.isHandRaised();
+        // }
+        // Very old server (1.11 and below), use NCP's adapter.
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        return pData.getItemInUse() != null;
     }
 
     public static Material getItemInUse(final Player player) {

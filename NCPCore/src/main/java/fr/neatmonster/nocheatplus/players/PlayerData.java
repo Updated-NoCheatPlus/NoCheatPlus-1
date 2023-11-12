@@ -29,10 +29,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.config.value.OverrideType;
 import fr.neatmonster.nocheatplus.components.data.ICanHandleTimeRunningBackwards;
@@ -56,6 +59,7 @@ import fr.neatmonster.nocheatplus.utilities.ds.corw.DualSet;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
 import fr.neatmonster.nocheatplus.utilities.ds.map.HashMapLOW;
 import fr.neatmonster.nocheatplus.utilities.ds.map.InstanceMapLOW;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.IWorldData;
 import fr.neatmonster.nocheatplus.worlds.WorldDataManager;
@@ -494,6 +498,20 @@ public class PlayerData implements IPlayerData {
         }
         requestLazyPermissionUpdate(permissionRegistry.getPreferKeepUpdatedOffline());
         lastJoinTime = timeNow;
+        // Needed because a player may log in and be already crouching or crawling.
+        final MovingConfig cc = this.getGenericInstance(MovingConfig.class);
+        if (BridgeMisc.hasEntityChangePoseEvent()) {
+            if (player.getPose().equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround)) {
+                // isVisuallyCrawling()...
+                this.setSneaking(true);
+                // Cannot sprint here 
+                this.setSprinting(false);
+            }
+            else if (player.getPose().equals(Pose.SNEAKING)) {
+                // Sneaking...
+                this.setSneaking(true);
+            }
+        }
     }
 
     private void updateCurrentWorld(final World world, final WorldDataManager worldDataManager) {

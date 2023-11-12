@@ -29,6 +29,7 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 
 /**
@@ -86,7 +87,7 @@ public class AirWorkarounds {
                 * 0: Sbyte overflow. Still not fixed by Mojang (!!)
                 * Levitation level over 127 = fall down at a fast or slow rate, depending on the value.
                 * Nothing much to add here, this will effectively let players move freely. The Extreme subcheck will however ensure that players cannot perform insane moves.
-                * Why would we have to keep up with Mojang's neglience? Playing cat-and-mice with cheaters is more than enough. 
+                * Why would we have to keep up with Mojang's negligence? Playing cat-and-mice with cheaters is more than enough. 
                 */
                 || Bridge1_9.getLevitationAmplifier(player) >= 127
                 && data.ws.use(WRPT.W_M_SF_SBYTE_OVERFLOW)
@@ -117,6 +118,7 @@ public class AirWorkarounds {
     	final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
+        final double yAcceleration = thisMove.yDistance - lastMove.yDistance;
         // Early returns first
         if (data.fireworksBoostDuration > 0 && data.keepfrictiontick < 0 && thisMove.yDistance < 0.0
             // && yDistDiffEx <= 0.0
@@ -142,11 +144,46 @@ public class AirWorkarounds {
             return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove);
         }
         
-        return /*
+        return
+
+               /*
+                * 0: Allow touch-down movements (first movement that has contact with ground after any given air phase). 
+                * This is similar to head obstruction: the game seemingly "cuts off" speed when calling its collision function (amount cannot be predicted without the function). Speed will be reset on the very next move (from ground to ground).
+                * Again, without the NMS collision logic down, we cannot predict this movement in a clean way.
+                * This may allow for 1-block step cheats variants, or other low-level exploits that do make use of the landing acceleration of the player, but it's better than having a ton of workarounds to deal with.
+                */
+                // TODO: Demand having TWO descending move? Last move as well?
+                !fromOnGround && toOnGround && thisMove.yDistance < 0.0 
+                && (
+                    // 1: Only if the player is actually decelerating (without this, there would be room for some nasty exploits [i.e.: abusing the workaround to ACCELERATE down to the ground faster than normal])
+                    thisMove.yDistance > lastMove.yDistance 
+                    // 1: With crawl mode (Very minor acceleration after colliding above)
+                    // https://gyazo.com/4808ee11dce1a527bb95100f86be2b08
+                    || BridgeMisc.isVisuallyCrawling(player) && thisMove.yDistance < lastMove.yDistance && MathUtil.inRange(0.0, Math.abs(yAcceleration), Magic.GRAVITY_MAX)
+                )
+                && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
+               /*
+                * 0: Allow players preparing to step down a block / simply descending.
+                * For the game, this move is fully on ground, thus gravity is not yet applied (hence 0 speed and 0 jump height), but for NCP (which distinguishes moving from/to ground) this is seen as "leaving the ground", so it will try to enforce friction right away.
+                * Strictly speaking, this should be confined by && !toOnGround. For the sake of leniency, we'll demand to be on ground with just the from location.
+                */
+                || thisMove.yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && fromOnGround
+                && data.ws.use(WRPT.W_M_SF_PREPARE_TO_DESCEND)
+               /*
+                * 0: Allow moves with extremely little air times [for NCP].
+                * Player leaves the ground for a single tick, spread between two moves, then immediately lands back. This on ground change is not picked up by the game, so friction never gets applied.
+                * [Essentially, NCP on ground's judgement is too precise/strict here]
+                * Happens when sprinting over small, 1-block big gaps (the game does allow players to do so)
+                * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
+                */
+                || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround 
+                && lastMove.toIsValid && thisMove.hDistance > 0.15 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0 && data.sfJumpPhase <= 1
+                && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
+               /*
                 * 0: No clean way to handle lost ground without resorting to a ton of (more) hardcoded magic. 
                 * Besides, most cases are already defined quite in detail; any room for abuse (and thus for bypasses) should be minimal.
                 */
-                thisMove.touchedGroundWorkaround && lastMove.toIsValid
+                || thisMove.touchedGroundWorkaround && lastMove.toIsValid
                /*
                 * Originally observed with stuck-speed, but can happen with honey blocks as well (Standing still while also not rotating and trying to jump)
                 * Caused by: the (fromIndex - toIndex + 1 < 1) condition in the split move mechanic (movinglistener).
@@ -173,32 +210,6 @@ public class AirWorkarounds {
                 */
                 || (from.isHeadObstructed(0.2, false) && thisMove.yDistance != 0.0 || thisMove.headObstructed && Bridge1_13.isRiptiding(player)) // We need to be much more lenient when riptiding.
                 && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
-               /*
-                * 0: Allow touch-down movements (first movement that has contact with ground after any given air phase). 
-                * This is similar to head obstruction: the game seemingly "cuts off" speed when calling its collision function (amount cannot be predicted without the function). Speed will be reset on the very next move (from ground to ground).
-                * Again, without the NMS collision logic down, we cannot predict this movement in a clean way.
-                * This may allow for 1-block step cheats variants, or other low-level exploits that do make use of the landing acceleration of the player, but it's better than having a ton of workarounds to deal with.
-                */
-                // TODO: Demand having TWO descending move? Last move as well?
-                || !fromOnGround && toOnGround && thisMove.yDistance < 0.0 // At least demand a clean descend (not 0.0)
-                && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
-               /*
-                * 0: Allow players preparing to step down a block / simply descending.
-                * For the game, this move is fully on ground, thus gravity is not yet applied (hence 0 speed and 0 jump height), but for NCP (which distinguishes moving from/to ground) this is seen as "leaving the ground", so it will try to enforce friction right away.
-                * Strictly speaking, this should be confined by && !toOnGround. For the sake of leniency, we'll demand to be on ground with just the from location.
-                */
-                || thisMove.yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && fromOnGround
-                && data.ws.use(WRPT.W_M_SF_PREPARE_TO_DESCEND)
-               /*
-                * 0: Allow moves with extremely little air times [for NCP].
-                * Player leaves the ground for a single tick, spread between two moves, then immediately lands back. This on ground change is not picked up by the game, so friction never gets applied.
-                * [Essentially, NCP on ground's judgement is too precise/strict here]
-                * Happens when sprinting over small, 1-block big gaps (the game does allow players to do so)
-                * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
-                */
-                || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround 
-                && lastMove.toIsValid && thisMove.hDistance > 0.15 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0 && data.sfJumpPhase <= 1
-                && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*
                 * 0: Allow the first move after teleport/set back/respawn on 1.7.10
                 */

@@ -2736,7 +2736,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, builder.toString());
         if (BuildParameters.debugLevel > 0) {
             builder.setLength(0);
-            builder.append("\n(attribute speed= " + attributeAccess.getHandle().getMovementSpeed(player));
+            builder.append("\n(attribute speed= " + attributeAccess.getHandle().getMovementSpeed(player) + ")");
             builder.append("\n(attribute fly speed= " + player.getFlySpeed() + ")");
             if (player.isSprinting()) { 
                 builder.append("\n(Bukkit sprinting)");

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -151,10 +152,6 @@ public class SurvivalFly extends Check {
                     debug(player, "Ground appeared due to a block-place: adjust set-back location.");
                 }
             }
-        }
-
-        if (player.getItemInUse() != null) {
-            player.sendMessage("Item in use: " + player.getItemInUse().toString());
         }
         
         // Renew the "dirty"-flag (in-air phase affected by velocity).
@@ -726,7 +723,7 @@ public class SurvivalFly extends Check {
          * - Entity pushing - next move - complete running the aiStep() function - 8
          * - Complete running the LivingEntity.tick() function 
          *
-         *>>>>>>> Send the movement to the server<<<<<<<
+         *>>>>>>> Send movement to the server<<<<<<<
          *
          * - Repeat
          * 
@@ -748,6 +745,7 @@ public class SurvivalFly extends Check {
         }
         // From KeyboardInput.java (MC-Reborn tool)
         // Sneaking and item-use aren't directly applied to the player's motion. The game reduces the input force instead.
+        // Note that this is determined by player poses, not shift key presses.
         if (pData.isSneaking()) {
             tags.add("sneaking");
             float SwiftSneakIncrement = BridgeEnchant.getSwiftSneakIncrement(player);
@@ -853,21 +851,19 @@ public class SurvivalFly extends Check {
             }
         }
         // Sprint-jumping...
-        if (!from.isInLiquid()) {
-            /* 
-             * NOTE: here you need to use to.getYaw not from. To is the most recent rotation.
-             *       Using From lags behind a few ticks, causing false positives when switching looking direction.
-             *       This does not apply for locations (from.(...) correctly reflects the player's current position)
-             */
-            if (PlayerEnvelopes.isBunnyhop(pData, fromOnGround, toOnGround, player)) {
-                thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
-                thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
-                data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY;
-                thisMove.bunnyHop = true;
-                tags.add("bunnyhop");
-                // Keep up the Improbable, but don't feed anything.
-                Improbable.update(System.currentTimeMillis(), pData);
-            }
+        /* 
+         * NOTE: here you need to use to.getYaw not from. To is the most recent rotation.
+         *       Using From lags behind a few ticks, causing false positives when switching looking direction.
+         *       This does not apply for locations (from.(...) correctly reflects the player's current position)
+         */
+        if (PlayerEnvelopes.isBunnyhop(from, to, pData, fromOnGround, toOnGround, player)) {
+            thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
+            thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
+            data.bunnyhopDelay = Magic.BUNNYHOP_MAX_DELAY;
+            thisMove.bunnyHop = true;
+            tags.add("bunnyhop");
+            // Keep up the Improbable, but don't feed anything.
+            Improbable.update(System.currentTimeMillis(), pData);
         }
         // Transform theoretical inputs to acceleration vectors (getInputVector, entity.java)
         /* 
@@ -922,7 +918,7 @@ public class SurvivalFly extends Check {
         }
         // Try to back off players from edges, if sneaking.
         // NOTE: here the game uses isShiftKeyDown (so this is shifting not sneaking, using Bukkit's isSneaking is correct)
-        if (!player.isFlying() && pData.isSneaking() && from.isAboveGround() && thisMove.yDistance <= 0.0) {
+        if (!player.isFlying() && player.isSneaking() && from.isAboveGround() && thisMove.yDistance <= 0.0) {
             for (i = 0; i < 9; i++) {
                 // Not sure about performance here. We are looping 8 different directions with 3 different 'while' loops after all...
                 Vector backOff = from.maybeBackOffFromEdge(new Vector(xTheoreticalDistance[i], 0.0, zTheoreticalDistance[i]));
@@ -1011,7 +1007,7 @@ public class SurvivalFly extends Check {
 
 
     /**
-     * Finalize this speed processing: check if we should apply a workaround. Otherwise, just throw a violation if needed.
+     * Finalize this speed processing: check if we should apply a workaround, if needed. Otherwise, just throw a violation.
      * (See AirWorkarounds class desc)
      * 
      * @param data
@@ -1043,7 +1039,8 @@ public class SurvivalFly extends Check {
                 z_idx = MathUtil.closestIndex(zTheoreticalDistance, to.getZ() - from.getZ());
                 if (HorizontalUncertainty.tryDoWallCollisionX(from, to, xTheoreticalDistance, x_idx) ||
                     HorizontalUncertainty.tryDoWallCollisionZ(from, to, zTheoreticalDistance, z_idx) ||
-                    HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)) {
+                    HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)
+                    ) {
                     isPredictable = false;
                 }
             } 
@@ -1069,9 +1066,13 @@ public class SurvivalFly extends Check {
                                     final int tick, final boolean useBlockChangeTracker,
                                     final boolean fromOnGround, final boolean toOnGround, final boolean debug, final int multiMoveCount, 
                                     final boolean isNormalOrPacketSplitMove) {
-        final boolean onGround = fromOnGround || thisMove.missedGroundCollision
-                                 || lastMove.toIsValid && lastMove.yDistance <= 0.0  
-                                 && (lastMove.from.onGround || lastMove.touchedGroundWorkaround && !thisMove.touchedGroundWorkaround /* See playerEnvelopes.isJump for touchedGroundWorkaround*/);
+        final boolean onGround;
+        if (PlayerEnvelopes.isVerticallyConstricted(from, to, pData)) {
+            // Give up. Trust what the client says here.
+            onGround = player.isOnGround();
+        }
+        else onGround = fromOnGround || thisMove.missedGroundCollision
+                        || lastMove.toIsValid && lastMove.yDistance <= 0.0 && (lastMove.from.onGround || lastMove.touchedGroundWorkaround && !thisMove.touchedGroundWorkaround /* See playerEnvelopes.isJump for touchedGroundWorkaround*/);
         double hDistanceAboveLimit = 0.0;
          
         // NOTE: Consider dropping bunnyfly once and for all. With vDistRel being reworked, this shouldn't be needed anymore.
@@ -1207,7 +1208,6 @@ public class SurvivalFly extends Check {
          *  - Fix insidePowderSnow checking (see notes in RichBoundsLoc)
          *  - Wobbling up on slime blocks/beds (still need some adaptations to it. Getting sporadic false positives)
          *  - Breaking blocks below -> On the server side, we receive a move with negative motion, but the player will fall with friction based on a
-         * After touching the ground, the player will f
          */
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
@@ -1215,7 +1215,7 @@ public class SurvivalFly extends Check {
             thisMove.canStep = true;
             tags.add("step_env");
         }
-        else if (PlayerEnvelopes.isJump(player, fromOnGround, toOnGround)) {
+        else if (PlayerEnvelopes.isJump(from, to, player, fromOnGround, toOnGround)) {
             thisMove.vAllowedDistance = thisMove.yDistance;
             thisMove.canJump = true;
             tags.add("jump_env");
@@ -1379,7 +1379,7 @@ public class SurvivalFly extends Check {
                                        boolean useBlockChangeTracker, final boolean fromOnGround, final boolean toOnGround,
                                        final boolean isNormalOrPacketSplitMove) {
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
-        // 1: Attempt to force-release the item upon a NoSlow Violation, if set so in the configuration.
+        // 1: Attempt to force-release the item upon if the prediction threw a VL and the player is using an item, if set so in the configuration.
         //    This is less invasive than a direct set back as item-use is handled quite badly in this game.
         if (cc.survivalFlyResetItem && hDistanceAboveLimit >= Magic.PREDICTION_EPSILON && BridgeMisc.isUsingItem(player)) {
             pData.requestItemUseResync();
