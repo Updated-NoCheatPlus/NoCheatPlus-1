@@ -23,6 +23,19 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  */
 public class PlayerEnvelopes {
 
+
+    /**
+     * A past air -> toOnGround, move with deceleration.
+     * 
+     * @param fromOnGround
+     * @param toOnGround
+     * @param thisMove
+     * @return If so.
+     */
+    public static boolean isTouchDownMove(final PlayerMoveData secondLastMove, final PlayerMoveData lastMove) {
+        return !lastMove.from.onGround && lastMove.to.onGround && lastMove.yDistance < 0.0 && lastMove.yDistance > secondLastMove.yDistance;
+    }
+
     /**
      * Jump off the top off a block with the ordinary jumping envelope, however
      * from a slightly higher position with the initial gain being lower than
@@ -246,8 +259,9 @@ public class PlayerEnvelopes {
                     MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
                     // 1: If head is obstructed, jumping cannot be predicted without MC's collision function. So, just cap motion which will be at or lower than ordinary jump gain, but never higher, and never lower than 0.1 (which is the maximum motion with no jump boost and jumping in a 2-blocks high area).
                     // Also, here, jumping with head obstructed uses the much more lenient step correction method (See comment in AirWorkarounds).
-                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the playe        || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0
-                    || (
+                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the playe        
+                    || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0
+                    && (
                         // 2: The ordinary case
                         lastMove.yDistance <= 0.0 && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
                         // 2: With crawl mode (1.14+)

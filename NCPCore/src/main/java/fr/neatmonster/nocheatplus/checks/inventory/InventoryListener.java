@@ -439,6 +439,13 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         data.instantBowInteract = 0;
         data.fastConsumeInteract = System.currentTimeMillis();
         data.fastConsumeFood = null;
+        if (event.getPreviousSlot() != event.getNewSlot()) {
+            if (open.check(player)) {
+                if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                    debug(player, "Force-close inventory on changing slots.");
+                }
+            }
+        }   
     }
     
     @EventHandler(priority = EventPriority.MONITOR)

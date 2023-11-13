@@ -149,7 +149,6 @@ public class AirWorkarounds {
                /*
                 * 0: Allow touch-down movements (first movement that has contact with ground after any given air phase). 
                 * This is similar to head obstruction: the game seemingly "cuts off" speed when calling its collision function (amount cannot be predicted without the function). Speed will be reset on the very next move (from ground to ground).
-                * Again, without the NMS collision logic down, we cannot predict this movement in a clean way.
                 * This may allow for 1-block step cheats variants, or other low-level exploits that do make use of the landing acceleration of the player, but it's better than having a ton of workarounds to deal with.
                 */
                 // TODO: Demand having TWO descending move? Last move as well?

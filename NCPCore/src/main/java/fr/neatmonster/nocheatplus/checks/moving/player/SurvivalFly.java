@@ -1197,6 +1197,7 @@ public class SurvivalFly extends Check {
                               final MovingData data, final MovingConfig cc, final IPlayerData pData) {
         double vDistanceAboveLimit = 0.0;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
         
         ///////////////////////////////////////////////////////////////////////////////////
         // Estimate the allowed yDistance (per-move distance check)                      //
@@ -1207,7 +1208,6 @@ public class SurvivalFly extends Check {
          *  - Jumping in waterlogged blocks
          *  - Fix insidePowderSnow checking (see notes in RichBoundsLoc)
          *  - Wobbling up on slime blocks/beds (still need some adaptations to it. Getting sporadic false positives)
-         *  - Breaking blocks below -> On the server side, we receive a move with negative motion, but the player will fall with friction based on a
          */
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
@@ -1227,8 +1227,16 @@ public class SurvivalFly extends Check {
         }
         else {
             // Otherwise, a fully in-air move (friction).
-            // Initialize with momentum.
-            thisMove.vAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
+            /*
+             * About isTouchDownMove~
+             * -> The usual case when landing back on the ground:
+             *    This tick: AIR (friction) -> TO_ON_GROUND (friction; apply the touchdown workaround)
+             *    Next tick: FROM_ON_GROUND (speed is NOW reset back to 0.0, because THIS is Minecraft's collision moment) -> TO_ON_GROUND or AIR; depending if the player decides to jump again.
+             * This does not happen when breaking blocks below. The fromOnGround moment is usually skipped, so speed never gets fully reset.
+             * HOWEVER, the next move will still have speed based on a last move with 0.0 speed.
+             * Essentially, MC's collision moment (and thus speed reset) is hidden. Hence this fix.
+             */
+            thisMove.vAllowedDistance = PlayerEnvelopes.isTouchDownMove(secondLastMove, lastMove) ? 0.0 : (lastMove.toIsValid ? lastMove.yDistance : 0.0);
             // Honey block sliding mechanic (With levitation, the player will just ascend)
             if (from.isSlidingDown() && !thisMove.hasLevitation) {
                 // Speed is static in this case
