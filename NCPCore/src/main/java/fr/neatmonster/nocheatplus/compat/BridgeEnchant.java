@@ -18,9 +18,12 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
 public final class BridgeEnchant {
 
@@ -335,7 +338,6 @@ public final class BridgeEnchant {
     }
     
     /**
-     * 
      * @param player
      * @return The speed increment granted by the swift sneak enchant level (clamped)
      *         (Formula is from LocalPlayer aiStep)
@@ -373,5 +375,33 @@ public final class BridgeEnchant {
     public static int getRiptideLevel(final Player player) {
     	return Math.min(3, getTrident(player, RIPTIDE));
     }
-
+    
+    /**
+     * Get the riptiding force.
+     * Not context-aware: assumes that you already have checked for trident-release.
+     * 
+     * @param player
+     * @param to
+     * @param from
+     * @return A new Vector containing the riptiding force's components (x,y,z).
+     */
+    public static Vector getTridentPropellingForce(final Player player, final PlayerLocation to, final PlayerLocation from) {
+        final double RiptideLevel = getRiptideLevel(player);
+        if (RiptideLevel > 0.0) {
+            // Compute the force of the push
+            float x = -TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
+            float y = -TrigUtil.sin(to.getPitch() * TrigUtil.toRadians);
+            float z = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
+            float distance = MathUtil.sqrt(x*x + y*y + z*z);
+            float force = 3.0f * ((1.0f + (float) RiptideLevel) / 4.0f);
+            x *= force / distance;
+            y *= force / distance;
+            z *= force / distance;
+            if (from.isOnGround()) {
+                x += 1.1999999f;
+            }
+            return new Vector(x, y, z);
+        }
+        return new Vector(0.0, 0.0, 0.0);
+    }
 }

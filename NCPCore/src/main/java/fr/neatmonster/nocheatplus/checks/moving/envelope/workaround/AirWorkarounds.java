@@ -157,8 +157,12 @@ public class AirWorkarounds {
                     // 1: Only if the player is actually decelerating (without this, there would be room for some nasty exploits [i.e.: abusing the workaround to ACCELERATE down to the ground faster than normal])
                     thisMove.yDistance > lastMove.yDistance 
                     // 1: With crawl mode (Very minor acceleration after colliding above)
+                    // Should note that this does not happen with jump effect.
                     // https://gyazo.com/4808ee11dce1a527bb95100f86be2b08
-                    || BridgeMisc.isVisuallyCrawling(player) && thisMove.yDistance < lastMove.yDistance && MathUtil.inRange(0.0, Math.abs(yAcceleration), Magic.GRAVITY_MAX)
+                    || BridgeMisc.isVisuallyCrawling(player) && thisMove.yDistance < lastMove.yDistance 
+                    && MathUtil.inRange(0.0, Math.abs(yAcceleration), Magic.GRAVITY_MAX)
+                    // 1: With bounce effect (With weaker bounces, the player tends to slightly accelerate to the ground instead)
+                    || data.verticalBounce != null && thisMove.yDistance < lastMove.yDistance
                 )
                 && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
                /*
@@ -172,14 +176,14 @@ public class AirWorkarounds {
                 * 0: Allow moves with extremely little air times [for NCP].
                 * Player leaves the ground for a single tick, spread between two moves, then immediately lands back. This on ground change is not picked up by the game, so friction never gets applied.
                 * [Essentially, NCP on ground's judgement is too precise/strict here]
-                * Happens when sprinting over small, 1-block big gaps (the game does allow players to do so)
+                * Happens when sprinting over small, 1-block wide gaps (the game does allow players to do so)
                 * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
                 */
                 || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround 
-                && lastMove.toIsValid && thisMove.hDistance > 0.15 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0 && data.sfJumpPhase <= 1
+                && lastMove.toIsValid && thisMove.hDistance > 0.2 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0 && data.sfJumpPhase <= 1
                 && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*
-                * 0: No clean way to handle lost ground without resorting to a ton of (more) hardcoded magic. 
+                * 0: Wildcard lost-grund: no clean way to handle it without resorting to a ton of (more) hardcoded magic. 
                 * Besides, most cases are already defined quite in detail; any room for abuse (and thus for bypasses) should be minimal.
                 */
                 || thisMove.touchedGroundWorkaround && lastMove.toIsValid

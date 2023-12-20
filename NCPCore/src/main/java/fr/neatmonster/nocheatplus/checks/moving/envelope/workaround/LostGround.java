@@ -255,7 +255,7 @@ public class LostGround {
         // See: https://gyazo.com/779f98b7c2467af57dd8116bf0a193fc
         double horizontalMargin = 0.1 + from.getBoxMarginHorizontal();
         double verticalMargin = cc.sfStepHeight + from.getY();
-        // Only apply if not recently used a lostground case and ground is within 1 block distance.
+        // Only apply if not recently used a lostground case and ground is within 1 block distance at maximum.
         if (from.isOnGround(1.0) && !lastMove.touchedGroundWorkaround
             && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), verticalMargin, from.getZ(), to.getX(), to.getY(), to.getZ(), horizontalMargin, to.getyOnGround(), 0.0)) {
             return applyLostGround(player, from, false, thisMove, data, "couldstep", tags);

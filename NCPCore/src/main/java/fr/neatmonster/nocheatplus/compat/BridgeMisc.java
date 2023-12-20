@@ -84,18 +84,30 @@ public class BridgeMisc {
     }
     
     /**
+     * Check if the player is riptiding and gliding at the same time.
+     * 
+     * @param player
+     * @return True if so.
+     */
+    public static boolean isRipGliding(final Player player) {
+        return Bridge1_9.isGlidingWithElytra(player) && Bridge1_13.isRiptiding(player);
+    }
+    
+    /**
      * Check if the player is in crawl mode according to Minecraft's definition
      * (In swimming pose while not in water).
      * 
      * @param player
-     * @return If so.
+     * @return True if so.
      */
     public static boolean isVisuallyCrawling(Player player) {
         if (!hasEntityChangePoseEvent()) {
+            // Can't know without accessing NMS.
             return false;
         }
         final IPlayerData pData = DataManager.getPlayerData(player);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+            // Can't possibly be crawling.
             return false;
         }
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
@@ -103,8 +115,10 @@ public class BridgeMisc {
     }
     
     /**
-     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()
      * Also checks for blocking.
+     *
+     * @param Player
+     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()     * 
      */
     public static boolean isUsingItem(final Player player) {
     	if (player.isBlocking()) {
@@ -115,10 +129,10 @@ public class BridgeMisc {
             // 1.17+ 
             return player.getItemInUse() != null;
         }
-        // if (hasIsHandRaisedMethod()) {
-        //     // 1.12+ test using isHandRaised (naming convention is quite bad... Why not simply naming it isUsingItem() ?)
-        //     return player.isHandRaised();
-        // }
+        if (hasIsHandRaisedMethod()) {
+            // 1.12+ test using isHandRaised (naming convention is quite bad... Why not simply naming it isUsingItem() ?)
+            return player.isHandRaised();
+        }
         // Very old server (1.11 and below), use NCP's adapter.
         final IPlayerData pData = DataManager.getPlayerData(player);
         return pData.getItemInUse() != null;

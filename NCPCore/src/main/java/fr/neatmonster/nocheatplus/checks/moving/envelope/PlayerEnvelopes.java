@@ -266,7 +266,7 @@ public class PlayerEnvelopes {
                         lastMove.yDistance <= 0.0 && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
                         // 2: With crawl mode (1.14+)
                         // https://gyazo.com/653af8221425802c31201d8e4577f4f5
-                        || BridgeMisc.isVisuallyCrawling(player) && MathUtil.inRange(jumpGain - Magic.GRAVITY_MAX, thisMove.yDistance, jumpGain)
+                        || BridgeMisc.isVisuallyCrawling(player) && MathUtil.inRange(jumpGain - Magic.GRAVITY_SPAN, thisMove.yDistance, jumpGain)
                     ) 
                 )
             ;
@@ -344,7 +344,7 @@ public class PlayerEnvelopes {
 
     /**
      * Pre conditions: A slime block is underneath and the player isn't really
-     * sneaking. This does not account for pistons pushing (slime) blocks.<br>
+     * sneaking (with negative motion with thisMove). This does not account for pistons pushing (slime) blocks.<br>
      * 
      * @param player
      * @param from
@@ -353,32 +353,33 @@ public class PlayerEnvelopes {
      * @param cc
      * @return
      */
-    public static boolean checkBounceEnvelope(final Player player, final PlayerLocation from, final PlayerLocation to, 
-                                              final MovingData data, final MovingConfig cc, final IPlayerData pData) {
+    public static boolean canBounce(final Player player, final PlayerLocation from, final PlayerLocation to, 
+                                    final MovingData data, final MovingConfig cc, final IPlayerData pData) {
         
         // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
         // A better way to do this would to get the maxY through another method, just can't seem to find it :/
-        // Collect block flags at the current location as they may not already be there, and cause NullPointer errors.
         if (player.isSneaking()) {
             return false;
         }
-        to.collectBlockFlags();
-        double blockY = ((to.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0) && ((to.getY() + 0.4375) % 1 == 0) ? to.getY() : to.getBlockY();
+        double blockY = (to.getY() + 0.4375) % 1 == 0 ? to.getY() : to.getBlockY();
         return 
                 // 0: Normal envelope (forestall NoFall).
-                (
+                MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
+                && (
                     // 1: Ordinary.
                     to.getY() - blockY <= Math.max(cc.yOnGround, cc.noFallyOnGround)
                     // 1: With carpet.
                     || BlockProperties.isCarpet(to.getTypeId()) && to.getY() - to.getBlockY() <= 0.9
-                    // 1: With riptiding
-                    || Bridge1_13.isRiptiding(player)
                 ) 
-                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) > 1.0
                 // 0: Within wobble-distance.
                 || to.getY() - blockY < 0.286 && to.getY() - from.getY() > -0.9
                 && to.getY() - from.getY() < -Magic.GRAVITY_MIN
                 && !to.isOnGround()
+                // 0: Wildcard micro bounces
+                || to.isOnGround() && !from.isOnGround() && to.getY() - from.getY() < 0.0
+                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) <= 1.0
+                // 0: Wildcard riptiding. No point in checking for distance constraints here when speed is so high.
+                || Bridge1_13.isRiptiding(player)
            ;
     }
 

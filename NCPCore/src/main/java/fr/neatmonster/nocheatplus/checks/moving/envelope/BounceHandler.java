@@ -35,7 +35,8 @@ import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
-
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 
 /**
  * Auxiliary methods for bounce effect
@@ -45,33 +46,40 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 public class BounceHandler {
 
     private static final long FLAGS_VELOCITY_BOUNCE_BLOCK = VelocityFlags.ORIGIN_BLOCK_BOUNCE;
+
     private static final long FLAGS_VELOCITY_BOUNCE_BLOCK_MOVE_ASCEND = FLAGS_VELOCITY_BOUNCE_BLOCK | VelocityFlags.SPLIT_ABOVE_0_42 | VelocityFlags.SPLIT_RETAIN_ACTCOUNT | VelocityFlags.ORIGIN_BLOCK_MOVE;
 
     /**
-     * Prepare velocity: adjust data to allow bouncing back and/or removing fall damage.<br>
-     * yDistance is < 0, the middle of the player is above a slime block (to) + on ground. 
+     * Prepare and adjust data to the incoming bounce: precondition is PlayerEnvelopes#canBounce having returned true. <br>
+     * (Player has landed on ground with negative motion and will bounce up with the next move)
      * This might be a micro-move onto ground.
      * 
      * @param player
-     * @param verticalBounce 
-     * @param from
-     * @param to
+     * @param fromY 
+     * @param toY
+     * @param bonceType
+     * @param tick
+     * @param idp
      * @param data
      * @param cc
+     * @param pData
      */
     public static void processBounce(final Player player,final double fromY, final double toY, final BounceType bounceType, final int tick, final IDebugPlayer idp,
                                      final MovingData data, final MovingConfig cc, final IPlayerData pData) {
         /** Takes into accounto micro moves */
     	double fallDistance = MovingUtil.getRealisticFallDistance(player, fromY, toY, data, pData);
-        double base =  Math.sqrt(fallDistance) / 3.3;
-        double effect = Math.min(Magic.BOUNCE_VERTICAL_MAX_DIST, base + Math.min(base / 10.0, Magic.GRAVITY_MAX)); // Ancient Greek technology with gravity added.
+        /** The base force of the bounce */
+        double baseEffect = getBaseBounceSpeed(player, fallDistance);
+        /** The final force of the bounce, capping at a maximum estimate + some gravity effects */
+        double finalEffect = Math.min(getMaximumBounceGain(player), baseEffect+Math.min(baseEffect / 10.0, Magic.GRAVITY_MAX)); // Ancient Greek technology with gravity added.
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final boolean debug = pData.isDebugActive(CheckType.MOVING);
-        if (effect > 0.415 && lastMove.toIsValid) {
-            /** Extra cap by last y distance(s). Prevents bouncing higher and higher. */
-            final double maxBounceGain = Math.abs(lastMove.yDistance < 0.0 ? Math.min(lastMove.yDistance, toY - fromY) : (toY - fromY)) - Magic.GRAVITY_SPAN;
-            if (maxBounceGain < effect) {
-                effect = maxBounceGain;
+        if (finalEffect > 0.415 && lastMove.toIsValid && Bridge1_13.isRiptiding(player)) {
+            // Riptiding is exempted, because players can strategically time the release of the trident to bounce up even higher than before (since new speed gets added to the current motion).
+            // Let vDistRel enforce the correct motion here, so that player don't exploit this to get higher bounces than normally possible (i.e.: bouncing at the maximum bounce gain immediately with a single try)
+            /** Extra capping by last y distance(s). Prevents bouncing higher and higher on normal conditions. */
+            double lastMinGain = Math.abs(lastMove.yDistance < 0.0 ? Math.min(lastMove.yDistance, toY-fromY) : (toY-fromY)) - Magic.GRAVITY_SPAN;
+            if (lastMinGain < finalEffect) {
+                finalEffect = lastMinGain;
                 if (pData.isDebugActive(CheckType.MOVING)) {
                 	idp.debug(player, "Cap bounce effect by recent y-distances.");
                 }
@@ -85,12 +93,50 @@ public class BounceHandler {
              * bounce.
              */
         }
-        // (Actually observed max. is near 3.5.) TODO: Why 3.14 then?
-        if (debug) {
-            idp.debug(player, "Set bounce effect (dY=" + fallDistance + " / " + bounceType + "): " + effect); 
+        if (pData.isDebugActive(CheckType.MOVING)) {
+            idp.debug(player, "Set bounce effect (dY=" + fallDistance + " / " + bounceType + "): " + finalEffect); 
         }
         data.noFallSkipAirCheck = true;
-        data.verticalBounce = new SimpleEntry(tick, effect, FLAGS_VELOCITY_BOUNCE_BLOCK, 1); // Just bounce for now.
+        data.verticalBounce = new SimpleEntry(tick, finalEffect, FLAGS_VELOCITY_BOUNCE_BLOCK, 1); // Just bounce for now.
+    }
+    
+    /**
+     * Gets an estimation of the bounce's speed.
+     * This uses the fall-distance, because the actual y-distance of a move can vary wildly if you collide with anything, 
+     * including the block itself (In fact, Minecraft hides speed on the server-side when landing on the ground [see desc. of touchdown workaround]).
+     * 
+     * @param player
+     * @param fallDistance Not Y distance.
+     * @return This bounce's speed.
+     */
+    public static double getBaseBounceSpeed(final Player player, double fallDistance) {
+        if (BridgeMisc.isRipGliding(player)) {
+            // Thank you Mojang for letting players perform such ridiculous moves that not even the server can handle!
+            return Math.sqrt(fallDistance);
+        }
+        if (Bridge1_13.isRiptiding(player)) {
+            return Math.sqrt(fallDistance) / 1.5;
+        }
+        return Math.sqrt(fallDistance) / 3.3;
+    }
+    
+    /**
+     * Maximum (estimated) achievable speed for a single bounce.
+     * 
+     * @param player
+     * @return The maximum speed observed.
+     */
+    public static double getMaximumBounceGain(final Player player) {
+        if (BridgeMisc.isRipGliding(player)) {
+            // Completely made up. Assume that players can roughly reach twice the maximum speed they would be able to achieve when just riptiding.
+            return Magic.BOUNCE_VERTICAL_MAX_DIST * 3.5;
+        }
+        if (Bridge1_13.isRiptiding(player)) {
+            // Managed to reach speed up to 5.9, roughly, but skilled players can probably time the release of the trident much better to get even higher speeds.
+            // (Hence x2.0)
+            return Magic.BOUNCE_VERTICAL_MAX_DIST * 2.0;
+        }
+        return Magic.BOUNCE_VERTICAL_MAX_DIST;
     }
 
 
@@ -123,20 +169,18 @@ public class BounceHandler {
                     data.verticalBounce = new SimpleEntry(tick, data.verticalBounce.value, 1);
                 }
             }
-            else {
-                data.useVerticalBounce(player);
-            }
+            else data.useVerticalBounce(player);
             return true;
         }
-        else {
-            data.verticalBounce = null;
-            return false;
-        }
+        // Nothing to do.
+        data.verticalBounce = null;
+        return false;
     }
 
 
     /**
      * Only for yDistance < 0 + some bounce envelope checked.
+     * 
      * @param player
      * @param from
      * @param to
@@ -150,7 +194,6 @@ public class BounceHandler {
     public static BounceType checkPastStateBounceDescend(final Player player, final PlayerLocation from, final PlayerLocation to,
                                                          final PlayerMoveData thisMove, final PlayerMoveData lastMove, final int tick, 
                                                          final MovingData data, final MovingConfig cc, BlockChangeTracker blockChangeTracker) {
-        // TODO: Find more preconditions.
         // TODO: Might later need to override/adapt just the bounce effect set by the ordinary method.
         final UUID worldId = from.getWorld().getUID();
         // Prepare (normal/extra) bounce.
@@ -166,21 +209,22 @@ public class BounceHandler {
                 // TODO: So far, doesn't seem to be followed by violations.
                 return BounceType.STATIC_PAST_AND_PUSH;
             }
+            // A bouncy block had been there in the past (but without push)
             // TODO: Can't know if used... data.blockChangeRef.updateSpan(entryBelowAny);
-            else {
-                return BounceType.STATIC_PAST;
-            }
+            return BounceType.STATIC_PAST;
         }
+        // No past activity found, return no bounce.
         /*
          * TODO: Can't update span here. If at all, it can be added as side
          * condition for using the bounce effect. Probably not worth it.
          */
-        return BounceType.NO_BOUNCE; // Nothing found, return no bounce.
+        return BounceType.NO_BOUNCE; 
     }
     
 
     /**
      * Only for yDistance > 0 + some bounce envelope checked.
+     * 
      * @param player
      * @param from
      * @param to

@@ -541,6 +541,17 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
             }
         }
     }
+    
+    // Check even if cancelled
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onSwingingArm(final PlayerAnimationEvent event) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        if (open.check(event.getPlayer())) {
+            if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                debug(event.getPlayer(), "Force-close inventory on swinging arm (cheat prevention).");
+            }
+        }
+    }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityPortal(final EntityPortalEnterEvent event) {

@@ -928,20 +928,11 @@ public class SurvivalFly extends Check {
         }
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
             // Riptide works by propelling the player after releasing the trident (the effect only pushes the player, unless is on ground)
-            final double RiptideLevel = BridgeEnchant.getRiptideLevel(player);
-            if (RiptideLevel > 0.0) {
-                float x = -TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
-                float y = -TrigUtil.sin(to.getPitch() * TrigUtil.toRadians);
-                float z = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
-                float distance = MathUtil.sqrt(x*x + y*y + z*z);
-                float force = 3.0f * ((1.0f + (float) RiptideLevel) / 4.0f);
-                x *= force / distance;
-                z *= force / distance;
-                for (i = 0; i < 9; i++) {
-                    xTheoreticalDistance[i] += x;
-                    zTheoreticalDistance[i] += z;
-                }
-            } 
+            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from);
+            for (i = 0; i < 9; i++) {
+                xTheoreticalDistance[i] += (double) propellingForce.getX();
+                zTheoreticalDistance[i] += (double) propellingForce.getZ();
+            }
         }
         
 
@@ -1034,13 +1025,13 @@ public class SurvivalFly extends Check {
             inputsIdx = 4;   
             // Check for workarounds, unless the move has been judged to be illegal already.
             if (!forceViolation) {
-                // Get the indeces of the theoretical x/z speeds that are closest to the actual speed.
                 x_idx = MathUtil.closestIndex(xTheoreticalDistance, to.getX() - from.getX());
                 z_idx = MathUtil.closestIndex(zTheoreticalDistance, to.getZ() - from.getZ());
                 if (HorizontalUncertainty.tryDoWallCollisionX(from, to, xTheoreticalDistance, x_idx) ||
                     HorizontalUncertainty.tryDoWallCollisionZ(from, to, zTheoreticalDistance, z_idx) ||
                     HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)
                     ) {
+                    // Set the highest predicted speed instead of the one with the smallest epsilon.
                     isPredictable = false;
                 }
             } 
@@ -1206,7 +1197,6 @@ public class SurvivalFly extends Check {
          * Stuff to fix / take care of:
          *  - In water/lava -> in air transitions
          *  - Jumping in waterlogged blocks
-         *  - Fix insidePowderSnow checking (see notes in RichBoundsLoc)
          *  - Wobbling up on slime blocks/beds (still need some adaptations to it. Getting sporadic false positives)
          */
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
@@ -1244,16 +1234,16 @@ public class SurvivalFly extends Check {
             }
             // Bounce effect (jumping has been ruled out already).
             // updateEntityAfterFallOn(), this function is called on the next move
-            if (lastMove.yDistance < 0.0 && from.isOnBouncyBlock() /*&& to.isOnBouncyBlock()*/ && !pData.isSneaking()) {
-                // NOTE: the touch-down moment is handled by AirWorkarounds, thus the move leading to a violation will be the very next one (first bouncing move, ascending)
-                if (from.isOnSlimeBlock()) {
-                    // Invert the _predicted_ distance (last one)
-                    thisMove.vAllowedDistance = -lastMove.vAllowedDistance;
+            if (lastMove.yDistance < 0.0 && lastMove.to.onBouncyBlock && !player.isSneaking()) {
+                if (lastMove.to.onSlimeBlock) {
+                    // Invert.
+                    thisMove.vAllowedDistance = -thisMove.vAllowedDistance;
                 }
                 else {
                     // Beds have a weaker bounce effect (BedBlock.java).
-                    thisMove.vAllowedDistance = -lastMove.vAllowedDistance * 0.6600000262260437;
+                    thisMove.vAllowedDistance = -thisMove.vAllowedDistance * 0.6600000262260437;
                 }
+                tags.add("bounceup");
             }
             if (data.lastStuckInBlockVertical != 1.0) {
                 // Throttle speed when stuck in
@@ -1279,24 +1269,8 @@ public class SurvivalFly extends Check {
             // TODO: Needs to be adjusted for on ground pushing
             if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
                 // Riptide works by propelling the player in air after releasing the trident (the effect only pushes the player, unless is on ground)
-                final double RiptideLevel = BridgeEnchant.getRiptideLevel(player);
-                if (RiptideLevel > 0.0) {
-                    // Compute the force of the push
-                    float x = -TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
-                    float y = -TrigUtil.sin(to.getPitch() * TrigUtil.toRadians);
-                    float z = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * TrigUtil.cos(to.getPitch() * TrigUtil.toRadians);
-                    float distance = MathUtil.sqrt(x*x + y*y + z*z);
-                    float force = 3.0f * ((1.0f + (float) RiptideLevel) / 4.0f);
-                    y *= force / distance;
-                    // Set the new distances: the game calls the push method, which means the new distance is simply added to the previous delta
-                    thisMove.vAllowedDistance += (double) y;
-                    // here, the games calls the actual moving method instead.
-                    // Lost ground won't be a problem, because item-use slows player down.
-                    if (from.isOnGround()) {
-                        thisMove.vAllowedDistance += 1.1999999f;
-                    }
-                    player.sendMessage("Trident propel(v): " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.vAllowedDistance));
-                } 
+                thisMove.vAllowedDistance += BridgeEnchant.getTridentPropellingForce(player, to, from).getY();
+                player.sendMessage("Trident propel(v): " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.vAllowedDistance));
             }
             // Workarounds need to be tested at the very end.
             if (AirWorkarounds.checkPostPredictWorkaround(data, fromOnGround, toOnGround, from, to, thisMove.vAllowedDistance, player, isNormalOrPacketSplitMove)) {

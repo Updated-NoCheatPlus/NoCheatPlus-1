@@ -224,7 +224,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 .addToGroups(CheckType.MOVING, false, IData.class, ICheckData.class)
                 .removeSubCheckData(CheckType.MOVING, true)
                 .context() //
-                );
+        );
     }
 
 
@@ -420,6 +420,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         processingEvents.remove(player.getName());
         // Various early return conditions.
         final TeleportCause cause = event.getCause();
+        // We care only about these causes.
         switch (cause) {
             case COMMAND:
             case ENDER_PEARL:
@@ -881,8 +882,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     else if (TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
                         fromIndex = queueIndex;
                     }
-                    if (fromIndex > 0 && toIndex > 0) {
-                        // Found both.
+                    if (fromIndex > 0 && toIndex >= 0) {
+                        // Found both (toIndex must be checked for equality).
                         break;
                     }
                 }
@@ -1267,20 +1268,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             useBlockChangeTracker = newTo == null && cc.trackBlockMove && (checkPassable || checkSf || checkCf) && blockChangeTracker.hasActivityShuffled(from.getWorld().getUID(), pFrom, pTo, 1.5625);
 
             // 4.5: Check jumping on things like slime blocks.
-            // Detect bounce type / use prepared bounce.
             if (newTo == null) {
-                // TODO: Mixed ground (e.g. slime blocks + slabs), specifically on pushing.
-                // TODO: More on fall damage. What with sneaking + past states?
-                // TODO: With past states: What does jump effects do here?
                 if (thisMove.yDistance < 0.0) {
-                    // Prepare bounce: The center of the player must be above the block.
                     // Common pre-conditions.
-                    // TODO: Check if really leads to calling the method for pistons (checkBounceEnvelope vs. push).
-                    if (PlayerEnvelopes.checkBounceEnvelope(player, pFrom, pTo, data, cc, pData)) {
-                        // TODO: Check other side conditions (fluids, web, max. distance to the block top (!))
+                    pTo.collectBlockFlags(); // Must be called to avoid NPEs
+                    if (PlayerEnvelopes.canBounce(player, pFrom, pTo, data, cc, pData)) {
                         // Classic static bounce.
                         if ((pTo.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) {
-                            /* TODO: May need to adapt within this method, if "push up" happened and the trigger had been ordinary */
                             verticalBounce = BounceType.STATIC;
                             checkNf = false; 
                         }
