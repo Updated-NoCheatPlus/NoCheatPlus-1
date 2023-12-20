@@ -162,6 +162,7 @@ public class AirWorkarounds {
                     || BridgeMisc.isVisuallyCrawling(player) && thisMove.yDistance < lastMove.yDistance 
                     && MathUtil.inRange(0.0, Math.abs(yAcceleration), Magic.GRAVITY_MAX)
                     // 1: With bounce effect (With weaker bounces, the player tends to slightly accelerate to the ground instead)
+                    // NOTE: this is the preparation flag: the player has not yet bounced up.
                     || data.verticalBounce != null && thisMove.yDistance < lastMove.yDistance
                 )
                 && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
@@ -186,7 +187,7 @@ public class AirWorkarounds {
                 * 0: Wildcard lost-grund: no clean way to handle it without resorting to a ton of (more) hardcoded magic. 
                 * Besides, most cases are already defined quite in detail; any room for abuse (and thus for bypasses) should be minimal.
                 */
-                || thisMove.touchedGroundWorkaround && lastMove.toIsValid
+                || thisMove.touchedGroundWorkaround
                /*
                 * Originally observed with stuck-speed, but can happen with honey blocks as well (Standing still while also not rotating and trying to jump)
                 * Caused by: the (fromIndex - toIndex + 1 < 1) condition in the split move mechanic (movinglistener).
@@ -200,7 +201,7 @@ public class AirWorkarounds {
                 * Can be observed when bunnyhopping right before colliding horizontally with a block and landing on the very edge
                 */
                 || secondLastMove.toIsValid && lastMove.touchedGroundWorkaround && lastMove.yDistance < 0.0 && lastMove.setBackYDistance > 0.0
-                && !thisMove.touchedGroundWorkaround && thisMove.yDistance < 0.0 && data.bunnyhopDelay <= 2
+                && !thisMove.touchedGroundWorkaround && thisMove.yDistance < 0.0 && data.jumpDelay <= 2
                 && MathUtil.inRange(0.001, Math.abs(thisMove.yDistance - predictedDistance), 0.05)
                 && data.ws.use(WRPT.W_M_SF_POST_LOSTGROUND_CASE)
                /*

@@ -50,7 +50,7 @@ public class BounceHandler {
     private static final long FLAGS_VELOCITY_BOUNCE_BLOCK_MOVE_ASCEND = FLAGS_VELOCITY_BOUNCE_BLOCK | VelocityFlags.SPLIT_ABOVE_0_42 | VelocityFlags.SPLIT_RETAIN_ACTCOUNT | VelocityFlags.ORIGIN_BLOCK_MOVE;
 
     /**
-     * Prepare and adjust data to the incoming bounce: precondition is PlayerEnvelopes#canBounce having returned true. <br>
+     * Prepare and adjust data to the future bounce effect: precondition is PlayerEnvelopes#canBounce having returned true. <br>
      * (Player has landed on ground with negative motion and will bounce up with the next move)
      * This might be a micro-move onto ground.
      * 
@@ -73,15 +73,16 @@ public class BounceHandler {
         /** The final force of the bounce, capping at a maximum estimate + some gravity effects */
         double finalEffect = Math.min(getMaximumBounceGain(player), baseEffect+Math.min(baseEffect / 10.0, Magic.GRAVITY_MAX)); // Ancient Greek technology with gravity added.
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        if (finalEffect > 0.415 && lastMove.toIsValid && Bridge1_13.isRiptiding(player)) {
+        if (finalEffect > 0.415 && lastMove.toIsValid && !Bridge1_13.isRiptiding(player)) {
             // Riptiding is exempted, because players can strategically time the release of the trident to bounce up even higher than before (since new speed gets added to the current motion).
             // Let vDistRel enforce the correct motion here, so that player don't exploit this to get higher bounces than normally possible (i.e.: bouncing at the maximum bounce gain immediately with a single try)
             /** Extra capping by last y distance(s). Prevents bouncing higher and higher on normal conditions. */
             double lastMinGain = Math.abs(lastMove.yDistance < 0.0 ? Math.min(lastMove.yDistance, toY-fromY) : (toY-fromY)) - Magic.GRAVITY_SPAN;
             if (lastMinGain < finalEffect) {
+                // Likely a cheat attempt...
                 finalEffect = lastMinGain;
                 if (pData.isDebugActive(CheckType.MOVING)) {
-                	idp.debug(player, "Cap bounce effect by recent y-distances.");
+                	idp.debug(player, "Cap this bounce effect by recent y-distances.");
                 }
             }
         }
@@ -101,13 +102,13 @@ public class BounceHandler {
     }
     
     /**
-     * Gets an estimation of the bounce's speed.
+     * Get an estimation of the bounce's speed.
      * This uses the fall-distance, because the actual y-distance of a move can vary wildly if you collide with anything, 
-     * including the block itself (In fact, Minecraft hides speed on the server-side when landing on the ground [see desc. of touchdown workaround]).
+     * including the block itself (In fact, Minecraft hides speed on the server-side when landing on the ground [see desc. of touchdown workaround in AirWorkarounds]).
      * 
      * @param player
      * @param fallDistance Not Y distance.
-     * @return This bounce's speed.
+     * @return The squared root of the given fall distance, divided by a magic number
      */
     public static double getBaseBounceSpeed(final Player player, double fallDistance) {
         if (BridgeMisc.isRipGliding(player)) {
@@ -121,7 +122,7 @@ public class BounceHandler {
     }
     
     /**
-     * Maximum (estimated) achievable speed for a single bounce.
+     * Maximum achievable speed for a single bounce (estimated).
      * 
      * @param player
      * @return The maximum speed observed.

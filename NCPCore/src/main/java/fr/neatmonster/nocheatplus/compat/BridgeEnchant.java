@@ -377,13 +377,12 @@ public final class BridgeEnchant {
     }
     
     /**
-     * Get the riptiding force.
-     * Not context-aware: assumes that you already have checked for trident-release.
+     * Get the riptiding force. Not context-aware.
      * 
      * @param player
      * @param to
      * @param from
-     * @return A new Vector containing the riptiding force's components (x,y,z).
+     * @return A Vector containing the riptiding force's components (x,y,z).
      */
     public static Vector getTridentPropellingForce(final Player player, final PlayerLocation to, final PlayerLocation from) {
         final double RiptideLevel = getRiptideLevel(player);

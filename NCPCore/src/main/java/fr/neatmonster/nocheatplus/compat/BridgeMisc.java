@@ -67,7 +67,7 @@ public class BridgeMisc {
     // introduced roughly in 1.12, javadocs are quite confusing. If you check the code (CraftHumanEntity.java), you'll see that this just calls getHandle.isUsingItem()
     private static final boolean hasIsHandRaisedMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "isHandRaised", boolean.class) != null;
     // introduced in 1.17, roughly.
-    private static final boolean hasIsUsingItemMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "getItemInUse", ItemStack.class) != null;
+    private static final boolean hasGetItemInUseMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "getItemInUse", ItemStack.class) != null;
     // introduced in 1.14
     private static final boolean hasEntityChangePoseEvent = ReflectionUtil.getClass("org.bukkit.event.entity.EntityPoseChangeEvent") != null;
 
@@ -75,12 +75,16 @@ public class BridgeMisc {
         return hasEntityChangePoseEvent;
     }
 
-    public static boolean hasIsUsingItemMethod() {
-        return hasIsUsingItemMethod;
+    public static boolean hasGetItemInUseMethod() {
+        return hasGetItemInUseMethod;
     }
 
     public static boolean hasIsHandRaisedMethod() {
         return hasIsHandRaisedMethod;
+    }
+    
+    public static boolean hasAnyUsingItemMethod() {
+        return hasGetItemInUseMethod || hasIsHandRaisedMethod;
     }
     
     /**
@@ -115,17 +119,15 @@ public class BridgeMisc {
     }
     
     /**
-     * Also checks for blocking.
-     *
      * @param Player
-     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()     * 
+     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()
      */
     public static boolean isUsingItem(final Player player) {
     	if (player.isBlocking()) {
             // Test blocking first, since this method has been available since forever.
     		return true;
     	}
-        if (hasIsUsingItemMethod()) {
+        if (hasGetItemInUseMethod()) {
             // 1.17+ 
             return player.getItemInUse() != null;
         }
@@ -140,7 +142,7 @@ public class BridgeMisc {
 
     public static Material getItemInUse(final Player player) {
     	final IPlayerData pData = DataManager.getPlayerData(player);
-        return hasIsUsingItemMethod() ? player.getItemInUse().getType() : pData.getItemInUse();
+        return hasGetItemInUseMethod() ? player.getItemInUse().getType() : pData.getItemInUse();
     } 
 
     public static boolean hasGravity(final LivingEntity entity) {
@@ -268,8 +270,7 @@ public class BridgeMisc {
     public static boolean maybeElytraBoost(final Player player, final Material materialInHand) {
         // TODO: Account for MC version (needs configuration override or auto adapt to protocol support).
         // TODO: Non-static due to version checks (...).
-        return BridgeMaterial.FIREWORK_ROCKET != null 
-                && materialInHand == BridgeMaterial.FIREWORK_ROCKET && Bridge1_9.isGlidingWithElytra(player);
+        return BridgeMaterial.FIREWORK_ROCKET != null && materialInHand == BridgeMaterial.FIREWORK_ROCKET && Bridge1_9.isGlidingWithElytra(player);
     }
 
     /**

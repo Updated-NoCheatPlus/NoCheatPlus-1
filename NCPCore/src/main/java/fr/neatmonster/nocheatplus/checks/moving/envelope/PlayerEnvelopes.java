@@ -174,19 +174,16 @@ public class PlayerEnvelopes {
      * Test if this move is a bunnyhop <br>
      * (Aka: sprint-jump. Increases the player's speed up to roughly twice the usual base speed)
      * 
+     * @param from
+     * @param to
      * @param pData
      * @param fromOnGround
      * @param toOnGround
-     * @return If true, a 10-ticks long countdown is activated (this phase is referred to as "bunnyfly")
-     *         during which, this method will return false if called, in order to prevent abuse of the speed boost.<br>
-     *         Cases where the player is allowed/able to bunnyhop sooner than usual are defined in SurvivalFly (hDistRel)
+     * @param player
+     * @return True, if isJump() returned true while the player is sprinting and not in a liquid.
      */
     public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        if (data.bunnyhopDelay > 0) {
-            // Jump delay hasn't ended yet...
-            return false;
-        }
         if (from.isInLiquid()) {
             return false;
         }
@@ -212,7 +209,7 @@ public class PlayerEnvelopes {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
-        // Of course, since we have our own onGround handling, we need to take care of all caveat that it entails... (Lost ground, delayed jump etc...)
+        // Of course, since we have our own onGround handling, we need to take care of all caveats that it entails... (Lost ground, delayed jump etc...)
         if (thisMove.hasLevitation) {
             return false;
         }
@@ -237,7 +234,7 @@ public class PlayerEnvelopes {
                 && ( 
                     // 1: Ordinary lift-off.
                     fromOnGround && !toOnGround
-                    // 1: With jump being delayed a tick after (only check if head is not obstructed).
+                    // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
                     || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !thisMove.headObstructed
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
@@ -248,8 +245,8 @@ public class PlayerEnvelopes {
                             // https://gyazo.com/a5c22069af8ba6a718308bf5b125659a
                             || lastMove.touchedGroundWorkaround && !thisMove.touchedGroundWorkaround
                             // 2: Second past move: 2 consecutive lost ground can happen. See: https://gyazo.com/1fbe521bf436fa2b45c196c2b4dc7ee3
-                            || thisMove.missedGroundCollision && !thisMove.to.onGround 
-                            && lastMove.touchedGroundWorkaround && !lastMove.missedGroundCollision
+                            || thisMove.touchedGroundWorkaround && !thisMove.to.onGround 
+                            && lastMove.touchedGroundWorkaround 
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.

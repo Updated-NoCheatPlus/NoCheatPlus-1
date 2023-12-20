@@ -238,8 +238,9 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        pData.setSprinting(false);
-        pData.setSneaking(false);
+        // (Let the player decide)
+        // pData.setSprinting(false);
+        // pData.setSneaking(false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -271,7 +272,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     
     /** NOTE: Cancelling does nothing. It won't stop players from sneaking.*/
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onToggleSneak(final PlayerToggleSneakEvent event) {
+    public void onToggleShiftKey(final PlayerToggleSneakEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
             // Handle via actual poses.

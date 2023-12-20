@@ -89,7 +89,6 @@ public class LostGround {
                 return true;
             }
         }
-    
         // Block change tracker (kept extra for now).
         if (blockChangeTracker != null && lostGroundPastState(player, from, to, data, cc, blockChangeTracker, tags)) {
             return true;
@@ -133,17 +132,14 @@ public class LostGround {
         }
         // 1: Missed the back-to-ground collision after stepping down a block (to). (--- -> lost onGround)
         // Can be noticed by stepping down slopes/pyramid-like structures.
-        if (thisMove.yDistance < 0.0 && from.isOnGround(from.getY() - to.getY() + 0.001) && !lastMove.touchedGroundWorkaround) {
+        if (thisMove.yDistance < 0.0 && from.isOnGround(from.getY() - to.getY() + 0.001)) {
             // Test for passability of the entire box, roughly from feet downwards.
             // TODO: Full bounds check (!).
             // NOTE: checking loc should make sense, rather if loc is higher than from?
             final Location ref = from.getLocation();
             ref.setY(to.getY());
             if (Passable.isPassable(from.getLocation(), ref)) {
-                // TODO: Needs new model (store detailed on-ground properties).
-                // NOTE: This one always comes before the one below. Could confine by that.
-                // ^ But can also happen by itself, so maybe don't :)  
-                // (No missedGroundCollision = true here!)
+                // NOTE: This one always comes before the one below, but can also happen in itself
                 return applyLostGround(player, from, false, thisMove, data, "stepdown-to", tags);
             }
         }
@@ -154,8 +150,6 @@ public class LostGround {
             && MathUtil.between(Magic.GRAVITY_MAX, thisMove.yDistance - lastMove.yDistance, cc.sfStepHeight) 
             && thisMove.yDistance > lastMove.yDistance && thisMove.hDistance >= 0.1) {
             if (from.isOnGround(0.6, 0.4, 0.0, 0L)) {
-                // This is actually a missed ground collision (corroborated by the fact that fall distance is set back to 0 when this case happens.)
-                thisMove.missedGroundCollision = true;
                 return applyLostGround(player, from, true, thisMove, data, "stepdown-from", tags);
             }
         }
@@ -173,7 +167,6 @@ public class LostGround {
                 from.isOnGround(0.5, 0.2, 0) 
                 || to.isOnGround(0.5, Math.min(0.2, 0.01 + thisMove.hDistance), Math.min(0.1, 0.01 + -thisMove.yDistance))
             )) {
-            thisMove.missedGroundCollision = true;
             return applyLostGround(player, from, true, thisMove, data, "edge-desc", tags);
         }
         // Nothing found.
@@ -225,7 +218,7 @@ public class LostGround {
         if (jumpHeightOffSet >= 0.0) {           
             // 1: Check for sprint-jumping on fences with trapdoors above (missing trapdoor's edge touch on server-side, player lands directly onto the fence [For NCP])
             // Strictly speaking, this is not a lost ground case, but a generic collision issue (NCP's VS MC's)
-            if (jumpHeight > 1.0 && jumpHeight <= 1.5 && jumpHeightOffSet < 0.6 && data.bunnyhopDelay > 0 
+            if (jumpHeight > 1.0 && jumpHeight <= 1.5 && jumpHeightOffSet < 0.6 && data.jumpDelay > 0 
                 && yDistance > from.getyOnGround() && lastMove.yDistance <= Magic.GRAVITY_MAX && data.jumpAmplifier <= 0.0
                 && (yDistance < Magic.GRAVITY_MIN || yDistance <= data.liftOffEnvelope.getJumpGain(0.0) / 1.52)) {
                 to.collectBlockFlags();
@@ -236,7 +229,6 @@ public class LostGround {
                     if (to.isOnGround(0.007, 0.0, 0.0)) {
                         // Setbacksafe: matter of taste.
                         // With false, in case of a cheating attempt, the player will be setbacked on the ground instead of the trapdoor.
-                        // (No missedGroundCollision = true here!)
                         return applyLostGround(player, from, false, thisMove, data, "trap-fence", tags);
                     }
                 }
@@ -254,10 +246,10 @@ public class LostGround {
         // 1: Generic could step. 
         // See: https://gyazo.com/779f98b7c2467af57dd8116bf0a193fc
         double horizontalMargin = 0.1 + from.getBoxMarginHorizontal();
-        double verticalMargin = cc.sfStepHeight + from.getY();
+        double fromY = cc.sfStepHeight + from.getY();
         // Only apply if not recently used a lostground case and ground is within 1 block distance at maximum.
         if (from.isOnGround(1.0) && !lastMove.touchedGroundWorkaround
-            && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), verticalMargin, from.getZ(), to.getX(), to.getY(), to.getZ(), horizontalMargin, to.getyOnGround(), 0.0)) {
+            && BlockProperties.isOnGroundShuffled(to.getWorld(), to.getBlockCache(), from.getX(), fromY, from.getZ(), to.getX(), to.getY(), to.getZ(), horizontalMargin, to.getyOnGround(), 0.0)) {
             return applyLostGround(player, from, false, thisMove, data, "couldstep", tags);
         }
         if (to.isOnGround()) {
@@ -267,18 +259,17 @@ public class LostGround {
         
         // 2: Ground miss with this move (client side blocks y move, but allows h move fully/mostly, missing the edge on server side).
         // See: https://gyazo.com/5613ce5ab7bbb88b760c6b6e67fe35f4
-        if (checkEdgeCollision(player, from.getBlockCache(), from.getWorld(), from.getX(), from.getY(), from.getZ(), from.getBoxMarginHorizontal(), from.getyOnGround(), lastMove, data, "-asc1", tags, from.getMCAccess())) {
-            thisMove.missedGroundCollision = true;
+        if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "-asc1", tags, data, from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
             // (Use covered area to last from.)
             return true;
         }
         // 3: Mostly similar to the one above
         // xzMargin 0.15: equipped end portal frame (observed and supposedly fixed on MC 1.12.2) - might use an even lower tolerance value here, once there is time to testing this.
         // TODO: Confining in x/z direction in general: should detect if collided in that direction (then skip the x/z dist <= last time).
-        double horizontalMargin1 = lastMove.yDistance <= -0.23 ? 0.3 : 0.15;
+        double verticalMargin1 = lastMove.yDistance <= -0.23 ? 0.3 : 0.15;
         if (yDistance == 0.0 && lastMove.yDistance <= -0.1515 && hDistance <= lastMove.hDistance * 1.1 && thisMove.multiMoveCount == 0
             && !lastMove.touchedGroundWorkaround
-            && checkEdgeCollision(player, to.getBlockCache(), to.getWorld(), to.getX(), to.getY(), to.getZ(), from.getX(), from.getY(), from.getZ(), hDistance, to.getBoxMarginHorizontal(), horizontalMargin1, data, "-asc2", tags, from.getMCAccess())) {
+            && interpolateGround(player, to.getBlockCache(), to.getWorld(), from.getMCAccess(), tags, "-asc2", data, to.getX(), to.getY(), to.getZ(), from.getX(), from.getY(), from.getZ(), hDistance, to.getBoxMarginHorizontal(), verticalMargin1)) {
             return true;
         }
         // 4: (Minimal margin.)
@@ -296,22 +287,24 @@ public class LostGround {
      * @param player
      * @param blockCache
      * @param world
-     * @param x1
-     *            Target position.
-     * @param y1
-     * @param z1
+     * @param tag
+     * @param data
+     * @param thisX
+     *            Target's current coordinates...
+     * @param thisY
+     * @param thisZ
+     * @param lastMove 
+     *            Last move's coordinates...
      * @param boxMarginHorizontal
      *            Center to edge, at some resolution.
      * @param yOnGround
-     * @param data
-     * @param tag
      * @return
      */
-    private static boolean checkEdgeCollision(final Player player, final BlockCache blockCache, final World world, final double x1, final double y1, 
-                                             final double z1, final double boxMarginHorizontal, final double yOnGround, 
-                                             final PlayerMoveData lastMove, final MovingData data, final String tag, final Collection<String> tags, 
-                                             final MCAccess mcAccess) {
-        return checkEdgeCollision(player, blockCache, world, x1, y1, z1, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ(), lastMove.hDistance, boxMarginHorizontal, yOnGround, data, tag, tags, mcAccess);
+    private static boolean interpolateGround(final Player player, final BlockCache blockCache, final World world, final MCAccess mcAccess, final String tag, 
+                                             final Collection<String> tags, final MovingData data, final double thisX, 
+                                             final double thisY, final double thisZ, final PlayerMoveData lastMove, final double boxMarginHorizontal, 
+                                             final double yOnGround) {
+        return interpolateGround(player, blockCache, world, mcAccess, tags, tag, data, thisX, thisY, thisZ, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ(), lastMove.hDistance, boxMarginHorizontal, yOnGround);
     }
 
 
@@ -324,52 +317,52 @@ public class LostGround {
      * @param player
      * @param blockCache
      * @param world
-     * @param x1 
-     *           Player's coordinates...
-     * @param y1
-     * @param z1
-     * @param x2 
-     *           Player's coordinates...
-     * @param y2
-     * @param z2
-     * @param hDistance2
+     * @param mcAccess
+     * @param tags
+     * @param tag
+     * @param data
+     * @param thisX 
+     *           Player's last coordinates...
+     * @param thisY
+     * @param thisZ
+     * @param lastX 
+     *           Player's current coordinates...
+     * @param lastY
+     * @param lastZ
+     * @param lastHDistance
      * @param boxMarginHorizontal
      *           AABB horizontal width (fullWidth / 2f)
      * @param yOnGround
-     * @param data
-     * @param tag
-     * @param tags
-     * @param mcAccess
      * @return
      */
-    private static boolean checkEdgeCollision(final Player player, final BlockCache blockCache, final World world, 
-                                             final double x1, final double y1, final double z1, double x2, final double y2, double z2, 
-                                             final double hDistance2, final double boxMarginHorizontal, final double yOnGround, 
-                                             final MovingData data, final String tag, final Collection<String> tags, final MCAccess mcAccess) {
+    private static boolean interpolateGround(final Player player, final BlockCache blockCache, final World world, 
+                                             final MCAccess mcAccess, final Collection<String> tags, final String tag, final MovingData data, final double thisX, final double thisY, 
+                                             final double thisZ, double lastX, final double lastY, 
+                                             double lastZ, final double lastHDistance, final double boxMarginHorizontal, final double yOnGround) {
 
         // First: calculate vector towards last from.
-        x2 -= x1;
-        z2 -= z1;
+        lastX -= thisX;
+        lastZ -= thisZ;
 
         // Second: cap the size of the extra box (at least horizontal).
-        double cappingFactor = 1.0;
-        if (Math.abs(x2) > hDistance2) {
-            cappingFactor = Math.min(cappingFactor, hDistance2 / Math.abs(x2));
+        double minFactor = 1.0;
+        if (Math.abs(lastX) > lastHDistance) {
+            minFactor = Math.min(minFactor, lastHDistance / Math.abs(lastX));
         }
-        if (Math.abs(z2) > hDistance2) {
-            cappingFactor = Math.min(cappingFactor, hDistance2 / Math.abs(z2));
+        if (Math.abs(lastZ) > lastHDistance) {
+            minFactor = Math.min(minFactor, lastHDistance / Math.abs(lastZ));
         }
 
         // TODO: Further / more precise ?
         // Third: calculate end points.
-        x2 = cappingFactor * x2 + x1;
-        z2 = cappingFactor * z2 + z1;
+        lastX = minFactor * lastX + thisX;
+        lastZ = minFactor * lastZ + thisZ;
 
         // Finally, test for ground.
         // (We don't add another xz-margin here, as the move should cover ground.)
-        if (BlockProperties.isOnGroundShuffled(world, blockCache, x1, y1, z1, x2, y1 + (data.snowFix ? 0.125 : 0.0), z2, boxMarginHorizontal + (data.snowFix ? 0.1 : 0.0), yOnGround, 0.0)) {
+        if (BlockProperties.isOnGroundShuffled(world, blockCache, thisX, thisY, thisZ, lastX, thisY + (data.snowFix ? 0.125 : 0.0), lastZ, boxMarginHorizontal + (data.snowFix ? 0.1 : 0.0), yOnGround, 0.0)) {
             // NOTE: data.fromY for set back is not correct, but currently it is more safe (needs instead: maintain a "distance to ground").
-            return applyLostGround(player, new Location(world, x2, y2, z2), true, data.playerMoves.getCurrentMove(), data, "edge" + tag, tags, mcAccess);
+            return applyLostGround(player, new Location(world, lastX, lastY, lastZ), true, data.playerMoves.getCurrentMove(), data, "edge" + tag, tags, mcAccess);
         } 
         return false;
     }

@@ -387,7 +387,7 @@ public class CreativeFly extends Check {
         double resultH = Math.max(0.0, hDistance - limitH);
 
         if (model.getApplyModifiers()) {
-            data.bunnyhopDelay--;
+            data.jumpDelay--;
             if (!flying && resultH > 0 && resultH < 0.3) {
                 // 0: yDistance envelope
                 if (yDistance >= 0.0 &&
@@ -413,11 +413,11 @@ public class CreativeFly extends Check {
                     ) {
 
                     tags.add("bunnyhop");
-                    data.bunnyhopDelay = 9;
+                    data.jumpDelay = 9;
                     thisMove.bunnyHop = true;
                     resultH = 0.0;
                 }
-                else if (data.bunnyhopDelay <= 0) {
+                else if (data.jumpDelay <= 0) {
                     resultH = 0.0;
                     tags.add("bunnyhop");
                 }

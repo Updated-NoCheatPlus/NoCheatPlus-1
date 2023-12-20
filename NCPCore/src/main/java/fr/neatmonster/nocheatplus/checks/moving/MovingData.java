@@ -87,8 +87,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Tick counter used to workaround certain transitions with repeated or high motion (e.g.: gliding->normal, riptiding->normal). */
     // TODO: Rename -> motionTransitionTick/(...)
     public int keepfrictiontick = 0;
-    /** The delay from bunnyhop to bunnyhop (internally referred to as "bunnyfly") */
-    public int bunnyhopDelay;
+    /** Delay (in ticks) from jump to back on ground */
+    public int jumpDelay;
     /** Count set back (re-) setting. */
     private int playerMoveCount = 0;
     /** setBackResetCount (incremented) at the time of (re-) setting the ordinary set back. */
@@ -329,7 +329,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      */
     public void clearFlyData() {
         playerMoves.invalidate();
-        bunnyhopDelay = 0;
+        jumpDelay = 0;
         sfJumpPhase = 0;
         jumpAmplifier = 0;
         setBack = null;

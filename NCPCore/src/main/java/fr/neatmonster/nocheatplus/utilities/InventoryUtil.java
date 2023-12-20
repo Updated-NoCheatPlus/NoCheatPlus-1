@@ -274,11 +274,6 @@ public class InventoryUtil {
         if (type == null) {
             return false;
         }
-        if (type.toString().equals("SHULKER_BOX")
-            || type.toString().equals("BARREL")
-            || type.toString().equals("CHISELED_BOOKSHELF")) {
-            return true;
-        }
         switch (type) {
             case CHEST:
             case ENDER_CHEST:
@@ -286,8 +281,15 @@ public class InventoryUtil {
             case DROPPER:
             case HOPPER:
                 return true;
-            default:
+            default: {
+                // For legacy servers
+                if (type.toString().equals("SHULKER_BOX")
+                    || type.toString().equals("BARREL")
+                    || type.toString().equals("CHISELED_BOOKSHELF")) {
+                    return true;
+                }
                 return false;
+            }
         }
     }
 
@@ -402,7 +404,7 @@ public class InventoryUtil {
     }
 
     private static void resetUsingItemStatus(final IPlayerData pData) {
-        if (BridgeMisc.hasIsUsingItemMethod()) {
+        if (BridgeMisc.hasGetItemInUseMethod()) {
             return;
         }
         pData.setItemInUse(null);

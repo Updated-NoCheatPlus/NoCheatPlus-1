@@ -63,11 +63,10 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 /**
- * Adapter for listening to packets and events relevant for item-use.
- * <a href="https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/commits/20d3e57c4ecff68c558a16f9341123378819edbc#src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java">
- * Bukkit does provide a method starting from 1.17 or so. </a> <br> 
- * Thus, the item-use status will only be set, if the Bukkit method isn't avaialble.<br>
- * The adapter will still be registered however, because we want to detect a very specific kind of item-use abuse via packets.
+ * Adapter for listening to packets and Bukkit events relevant for item-use.<br>
+ * On 1.17 and above, the adapter will only register events tied to a specific item-use exploit, since Bukkit does
+ * provide us with a getItemInUse() method.
+ * 
  */
 public class UseItemAdapter extends BaseAdapter {
 
@@ -130,8 +129,8 @@ public class UseItemAdapter extends BaseAdapter {
     public UseItemAdapter(Plugin plugin) {
         super(plugin, ListenerPriority.MONITOR, initPacketTypes());
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
-        // Only actually register all listeners, it the method is not available.
-        if (!BridgeMisc.hasIsUsingItemMethod()) {
+        // Only actually register ALL listeners, if the method is not available (not on 1.17)
+        if (!BridgeMisc.hasGetItemInUseMethod()) {
             if (Bridge1_13.hasPlayerRiptideEvent()) {
                 // Only register this event if available.
                 final MiniListener<?> riptideListener = new MiniListener<PlayerRiptideEvent>() {
@@ -176,7 +175,7 @@ public class UseItemAdapter extends BaseAdapter {
                 return;
             }
         }
-        if (BridgeMisc.hasIsUsingItemMethod()) {
+        if (BridgeMisc.hasGetItemInUseMethod()) {
             if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
                 // Only handle the digging packet, because we still want to prevent a very specific kind of use-item abuse/cheating.
                 handleDiggingPacket(event);
@@ -389,7 +388,7 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerDataSafe(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         PlayerDigType digtype = event.getPacket().getPlayerDigTypes().read(0);
-        if (!BridgeMisc.hasIsUsingItemMethod()) {
+        if (!BridgeMisc.hasGetItemInUseMethod()) {
             // DROP_ALL_ITEMS when dead?
             if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
                 pData.setItemInUse(null);

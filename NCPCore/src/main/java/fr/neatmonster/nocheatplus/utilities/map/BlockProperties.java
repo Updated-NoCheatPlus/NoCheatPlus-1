@@ -994,7 +994,6 @@ public class BlockProperties {
                 return true;
             default:
                 return false;
-
         }
     }
 
@@ -2736,7 +2735,7 @@ public class BlockProperties {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final PlayerMoveData thisMove = pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
         // Heavy on performance... Will need some more iterations
-        final boolean res = pLoc.getWorld().getBlockAt(Location.locToBlock(thisMove.to.getX()), Location.locToBlock(thisMove.to.getY()), Location.locToBlock(thisMove.to.getZ())).getLightFromSky() == 15;
+        final boolean res = pLoc.getWorld().getBlockAt(Location.locToBlock(thisMove.to.getX()), Location.locToBlock(thisMove.to.getY()), Location.locToBlock(thisMove.to.getZ())).getLightFromSky() >= 15;
         blockCache.cleanup();
         pLoc.cleanup();
         return res;
@@ -2756,8 +2755,8 @@ public class BlockProperties {
         double liquidHeight;
         final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
         final IBlockCacheNode nodeAbove = access.getOrCreateBlockCacheNode(x, y + 1, z, false);
-        final long aboveFlags = BlockFlags.getBlockFlags(nodeAbove.getType());
         final long flags = BlockFlags.getBlockFlags(node.getType());
+        final long aboveFlags = BlockFlags.getBlockFlags(nodeAbove.getType());
         if ((flags & liquidTypeFlag) != 0) {
             if (nodeAbove != null && (aboveFlags & liquidTypeFlag) != 0) {
                 // Same liquid type above, full block height
@@ -4225,8 +4224,9 @@ public class BlockProperties {
     }
 
     /**
-     * Like isOnGround, just with minimum and maximum coordinates in arbitrary
-     * order.
+     * An isOnGround check that takes arbitrary coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
+     * For the minXYZ arguments, the minimum value between the given coordinates is used.
+     * For the maxXYZ arguments, the maximum value between the given coordinates is used.
      *
      * @param access
      *            the access
@@ -4570,7 +4570,7 @@ public class BlockProperties {
 
     /**
      * Return the block location closest to the player's current location.
-     * This is for Mojang's 1.20 fix for block properties.See: https://bugs.mojang.com/browse/MC-262690 <br>
+     * This is for Mojang's 1.20 fix for block properties. See: https://bugs.mojang.com/browse/MC-262690 <br>
      * Does not check for collision against the actual AABB of the block.
      * 
      * @param access

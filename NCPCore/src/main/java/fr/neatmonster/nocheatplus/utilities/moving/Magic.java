@@ -35,7 +35,7 @@ public class Magic {
     /** EntityLiving, jumpFromGround */
     public static final float BUNNYHOP_BOOST = 0.2f;
     /** EntityLiving, noJumpDelay field */
-    public static final int BUNNYHOP_MAX_DELAY = 10;
+    public static final int MAX_JUMP_DELAY = 10;
     /** EntityLiving, handleOnClimbable */
     public static final double CLIMBABLE_MAX_SPEED = 0.15f;
     /** EntityLiving, flyingSpeed (NMS field can be misleading, this is for air in general, not strictly creative-fly) */
