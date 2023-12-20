@@ -67,7 +67,7 @@ public class FactoryOneRegistry<A> implements IFactoryOneRegistry<A> {
             return null;
         }
         else {
-            lock.lock();
+            //lock.lock();
             T instance;
             try {
                 instance = factory.getNewInstance(arg);
@@ -76,9 +76,9 @@ public class FactoryOneRegistry<A> implements IFactoryOneRegistry<A> {
                 // TODO: Exception type to throw.
                 throw new RuntimeException(e);
             }
-            finally {
-                lock.unlock();
-            }
+            //finally {
+            //    lock.unlock();
+            //}
             return instance;
         }
     }

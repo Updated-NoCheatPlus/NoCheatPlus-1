@@ -534,6 +534,10 @@ public abstract class ConfPaths {
     private static final String FIGHT_YAWRATE                            = FIGHT + "yawrate.";
     public static final String  FIGHT_YAWRATE_CHECK                      = FIGHT_YAWRATE + SUB_ACTIVE;
 
+    private static final String FIGHT_VISIBLE                            = FIGHT + "visible.";
+    public static final String FIGHT_VISIBLE_CHECK                       = FIGHT_VISIBLE + SUB_ACTIVE;
+    public static final String FIGHT_VISIBLE_ACTIONS                     = FIGHT_VISIBLE + "actions";
+
     public static final String  INVENTORY                                = CHECKS + "inventory.";
     public static final String  INVENTORY_ACTIVE                         = INVENTORY + SUB_ACTIVE;
 

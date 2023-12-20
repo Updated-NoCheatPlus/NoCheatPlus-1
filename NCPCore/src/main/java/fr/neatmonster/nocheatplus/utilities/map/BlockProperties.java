@@ -1171,6 +1171,10 @@ public class BlockProperties {
         return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_WATER_PLANT) != 0;
     }
 
+    public static final boolean isDoor(final Material mat) {
+        return MaterialUtil.ALL_DOORS.contains(mat);
+    }
+
     /** Liquid height if no solid/full blocks are above. */
     public static final double LIQUID_HEIGHT_LOWERED = 8 / 9f;
 
@@ -2938,8 +2942,7 @@ public class BlockProperties {
             return true;
         }
         else {
-            // TODO: BlockFlags.F_GROUND ?
-            return (flags & BlockFlags.F_SOLID) == 0;
+            return (flags & BlockFlags.F_GROUND) == 0;
         }
     }
 

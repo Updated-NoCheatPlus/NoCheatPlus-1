@@ -233,7 +233,7 @@ public class BridgeMaterial {
     public static final Material FIREWORK_ROCKET = getFirst("firework_rocket", "firework");
 
     /** Passable (long) grass block. */
-    public static final Material GRASS = getFirstNotNull("long_grass", "grass");
+    public static final Material GRASS = getFirstNotNull("short_grass", "long_grass", "grass");
 
     /** Classic dirt-like grass block. */
     public static final Material GRASS_BLOCK = getFirstNotNull("grass_block", "grass");

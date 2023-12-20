@@ -15,7 +15,9 @@
 package fr.neatmonster.nocheatplus.checks.blockinteract;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -31,10 +33,12 @@ import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueLookBlockChecker;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.InteractRayTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
+import fr.neatmonster.nocheatplus.utilities.collision.InteractAxisTracing;
+import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
-import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.location.TrigUtil;
 
 public class Visible extends Check {
 
@@ -47,9 +51,8 @@ public class Visible extends Check {
 
         @Override
         protected boolean check(final double x, final double y, final double z, 
-                                final float yaw, final float pitch, 
-                                final int blockX, final int blockY, final int blockZ) {
-
+                final float yaw, final float pitch, 
+                final int blockX, final int blockY, final int blockZ) {
             // Run ray-tracing again with updated pitch and yaw.
             useLoc.setPitch(pitch);
             useLoc.setYaw(yaw);
@@ -66,8 +69,8 @@ public class Visible extends Check {
         }
 
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle, 
-                                        BlockFace face, List<String> tags, boolean debug, Player player) {
+                int blockY, int blockZ, FlyingQueueHandle flyingHandle, 
+                BlockFace face, List<String> tags, boolean debug, Player player) {
             this.face = face;
             this.tags = tags;
             this.debug = debug;
@@ -77,7 +80,7 @@ public class Visible extends Check {
 
         @Override
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
+                int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
             throw new UnsupportedOperationException("Use the other method.");
         }
 
@@ -91,8 +94,7 @@ public class Visible extends Check {
 
     private final WrapBlockCache wrapBlockCache;
 
-    /** Strict set to false, due to false positives. */
-    private final InteractRayTracing rayTracing = new InteractRayTracing(false);
+    private final InteractAxisTracing rayTracing = new InteractAxisTracing();
 
     private final RayChecker checker = new RayChecker();
 
@@ -104,12 +106,12 @@ public class Visible extends Check {
     public Visible() {
         super(CheckType.BLOCKINTERACT_VISIBLE);
         wrapBlockCache = new WrapBlockCache();
-        rayTracing.setMaxSteps(60); // TODO: Configurable ?
+        rayTracing.setMaxSteps(30); // TODO: Configurable ?
     }
 
     public boolean check(final Player player, final Location loc, final double eyeHeight, final Block block, 
-                         final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle, 
-                         final BlockInteractData data, final BlockInteractConfig cc, final IPlayerData pData) {
+            final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle, 
+            final BlockInteractData data, final BlockInteractConfig cc, final IPlayerData pData) {
 
         // TODO: This check might make parts of interact/blockbreak/... + direction (+?) obsolete.
         // TODO: Might confine what to check for (left/right-click, target blocks depending on item in hand, container blocks).
@@ -134,11 +136,57 @@ public class Visible extends Check {
             final BlockCache blockCache = this.wrapBlockCache.getBlockCache();
             blockCache.setAccess(loc.getWorld());
             rayTracing.setBlockCache(blockCache);
-            collides = !checker.checkFlyingQueue(eyeX, eyeY, eyeZ, loc.getYaw(), loc.getPitch(), 
-                    blockX, blockY, blockZ, flyingHandle, face, tags, debug, player);
+            //collides = !checker.checkFlyingQueue(eyeX, eyeY, eyeZ, loc.getYaw(), loc.getPitch(), 
+            //        blockX, blockY, blockZ, flyingHandle, face, tags, debug, player);
+            rayTracing.set(blockX, blockY, blockZ, eyeX, eyeY, eyeZ);
+            rayTracing.loop();
+            //System.out.println("origin: " + blockX + " " + blockY+ " " + blockZ + " " + Location.locToBlock(eyeX) + " " + Location.locToBlock(eyeY) + " " + Location.locToBlock(eyeZ));
+            if (rayTracing.collides()) {
+                collides = true;
+                BlockCoord bc = new BlockCoord(blockX, blockY, blockZ);
+                Vector direction = new Vector(eyeX - blockX, eyeY - blockY, eyeZ - blockZ).normalize();
+                //System.out.println("dir:" + direction);
+                boolean canContinue;
+                Set<BlockCoord> visited = new HashSet<BlockCoord>();
+                do {
+                    //System.out.println("dirl:" + direction);
+                    canContinue = false;
+                for (BlockCoord neighbor : CollisionUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ)) {
+                    //System.out.println(CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, eyeHeight, null , null) + " " + CollisionUtil.correctDir(neighbor.getY(), blockY, Location.locToBlock(eyeY)) + " " + !visited.contains(neighbor)
+                            //+ " " + blockCache.getType(neighbor.getX(), neighbor.getY(), neighbor.getZ()) + " " + neighbor.getX() + " " + neighbor.getY() + " " + neighbor.getZ()
+                            //+ " " + blockCache.getType(bc.getX(), bc.getY(), bc.getZ()) + " " + bc.getX() + " " + bc.getY() + " " + bc.getZ());
+                    if (CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, eyeHeight, null , null) && CollisionUtil.correctDir(neighbor.getY(), blockY, Location.locToBlock(eyeY)) && !visited.contains(neighbor)) {
+                        if (TrigUtil.isSameBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ)) {
+                            collides = false;
+                            break;
+                        }
+                        visited.add(neighbor);
+                        rayTracing.set(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ);
+                        rayTracing.loop();
+                        canContinue = true;
+                        collides = rayTracing.collides();
+                        //if (!collides) break;
+                        //bc = new BlockCoord(rayTracing.getBlockX(), rayTracing.getBlockY(), rayTracing.getBlockZ());
+                        //direction = new Vector(eyeX - rayTracing.getBlockX(), eyeY - rayTracing.getBlockY(), eyeZ - rayTracing.getBlockZ()).normalize();
+                        bc = new BlockCoord(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+                        direction = new Vector(eyeX - neighbor.getX(), eyeY - neighbor.getY(), eyeZ - neighbor.getZ()).normalize();
+                        break;
+                    }
+                }
+                } while (collides && canContinue);
+                if (collides) tags.add("raytracing");
+            }
+            else if (rayTracing.getStepsDone() > rayTracing.getMaxSteps()) {
+                tags.add("raytracing_maxsteps");
+                collides = true;
+            }
+            else {
+                collides = false;
+            }
+            
             checker.cleanup();
             useLoc.setWorld(null);
-            // Cleanup.
+            //Cleanup.
             rayTracing.cleanup();
             blockCache.cleanup();
         }
@@ -242,7 +290,7 @@ public class Visible extends Check {
          */
 
         // Perform ray-tracing.
-        rayTracing.set(eyeX, eyeY, eyeZ, collideX, collideY, collideZ, blockX, blockY, blockZ);
+        //rayTracing.set(eyeX, eyeY, eyeZ, collideX, collideY, collideZ, blockX, blockY, blockZ);
         rayTracing.loop();
 
         final boolean collides;

@@ -76,6 +76,8 @@ public class FightConfig extends ACheckConfig {
 
     public final ActionList selfHitActions;
 
+    public final ActionList visibleActions;
+
     // Special flags:
     public final boolean cancelDead;
     public final boolean knockBackVelocityPvP;
@@ -148,6 +150,8 @@ public class FightConfig extends ACheckConfig {
         reachActions = config.getOptimizedActionList(ConfPaths.FIGHT_REACH_ACTIONS, Permissions.FIGHT_REACH);
 
         selfHitActions = config.getOptimizedActionList(ConfPaths.FIGHT_SELFHIT_ACTIONS, Permissions.FIGHT_SELFHIT);
+
+        visibleActions = config.getOptimizedActionList(ConfPaths.FIGHT_VISIBLE_ACTIONS, Permissions.FIGHT_VISIBLE);
 
         cancelDead = config.getBoolean(ConfPaths.FIGHT_CANCELDEAD);
 		loopMaxLatencyTicks = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 1, 15, 8);

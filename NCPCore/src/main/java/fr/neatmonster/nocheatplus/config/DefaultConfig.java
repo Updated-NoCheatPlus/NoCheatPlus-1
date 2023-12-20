@@ -376,6 +376,9 @@ public class DefaultConfig extends ConfigFile {
         // SelfHit, legacy
         set(ConfPaths.FIGHT_SELFHIT_CHECK, "default", 154);
         set(ConfPaths.FIGHT_SELFHIT_ACTIONS, "cancel log:fselfhit:0:5:icf cmdc:kickselfhit:0:5", 154);
+        // Visible
+        set(ConfPaths.FIGHT_VISIBLE_CHECK, "default", 1154);
+        set(ConfPaths.FIGHT_VISIBLE_ACTIONS, "cancel vl>30 log:fvisible:8:5:if cancel", 1154);
 
 
         /* Inventory */
@@ -626,6 +629,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".flyingfrequency", start + "is manipulating packets sent to the server to gain an unfair advantage" + end, 154);
         set(ConfPaths.STRINGS + ".freach", start + "tried to hit an entity from a suspicious distance (Reach: &6[reachdistance]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".fselfhit", start + "tried to hit themselves" + end, 154);
+        set(ConfPaths.STRINGS + ".fvisible", start + "tried to attack target through a solid obstacle" + end, 1154);
         set(ConfPaths.STRINGS + ".godmode", start + "tried to ignore inflicted damage (Health: &7[health]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".gutenberg", start + "created a book with too many pages" + end, 154);
         set(ConfPaths.STRINGS + ".impossiblehit", start + "tried to hit an entity while performing another action (Tags: &6[tags]&7)" + end, 154);

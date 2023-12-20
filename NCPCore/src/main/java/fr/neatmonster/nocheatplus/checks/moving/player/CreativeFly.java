@@ -1060,7 +1060,6 @@ public class CreativeFly extends Check {
 
         // Adjust false
         allowedElytraHDistance += Math.sqrt(x*x + z*z) + 0.1;
-        useLoc.setWorld(null);
         return new double[] {allowedElytraHDistance, allowedElytraYDistance};
     }
 

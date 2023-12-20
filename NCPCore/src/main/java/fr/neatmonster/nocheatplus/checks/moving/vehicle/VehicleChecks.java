@@ -774,6 +774,7 @@ public class VehicleChecks extends CheckListener {
         // Adjust data.
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         data.joinOrRespawn = false;
+        data.vehicleLeave = false;
         data.removeAllVelocity();
         // Event should have a vehicle, in case check this last.
         final Location vLoc = vehicle.getLocation(useLocVehicleEnter);
@@ -918,8 +919,9 @@ public class VehicleChecks extends CheckListener {
         aux.resetPositionsAndMediumProperties(player, loc, data, cc);
         data.setSetBack(loc);
         data.removeAllVelocity();
-        data.addHorizontalVelocity(new AccountEntry(0.9, 1, 1));
-        data.addVerticalVelocity(new SimpleEntry(0.6, 1)); // TODO: Typical margin?
+        //data.addHorizontalVelocity(new AccountEntry(0.9, 1, 1));
+        //data.addVerticalVelocity(new SimpleEntry(0.6, 1)); // TODO: Typical margin?
+        data.vehicleLeave = true;
         useLocLeave.setWorld(null);
         useLocVehicleLeave.setWorld(null);
     }

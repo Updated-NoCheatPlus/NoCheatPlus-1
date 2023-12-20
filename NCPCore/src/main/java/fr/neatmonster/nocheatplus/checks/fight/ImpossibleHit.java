@@ -77,6 +77,7 @@ public class ImpossibleHit extends Check {
             // TODO: Maybe move this one to the InventoryListener as an Open subcheck: simply closing on attacking is less invasive than cancelling the hit, gameplay-wise.
             violation = true;
             tags.add("inventoryopen");
+            player.closeInventory();
         }
         // Blocking/Using item and attacking
         else if (BridgeMisc.isUsingItem(player) && !resetActiveItem) {

@@ -768,6 +768,13 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // So when the player leave the vehicle will make PlayerMoveEvent 
             // work normal again and update the position so result in the location player start to ride minecart and location player left it
         }
+        else if (data.vehicleLeave && to.distance(from) > 3) {
+        	earlyReturn = true;
+            token = "vehicle-leave-sb";
+            // Set-back for sure
+            newTo = data.getSetBack(from);
+            data.vehicleLeave = false;
+        }
         else if (player.isDead()) {
             // Ignore dead players.
             data.sfHoverTicks = -1;

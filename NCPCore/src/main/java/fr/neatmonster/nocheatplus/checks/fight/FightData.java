@@ -43,6 +43,7 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
     public double reachVL;
     public double speedVL;
     public double impossibleHitVL;
+    public double visibleVL;
 
     // Shared data between checks
     public String lastWorld = "";
@@ -145,6 +146,9 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
                 case FIGHT_NOSWING:
                     noSwingVL = 0;
                     // Not reset time, for leniency rather.
+                    break;
+                case FIGHT_VISIBLE:
+                    visibleVL = 0;
                     break;
                 case FIGHT_SELFHIT:
                     selfHitVL.clear(System.currentTimeMillis());
