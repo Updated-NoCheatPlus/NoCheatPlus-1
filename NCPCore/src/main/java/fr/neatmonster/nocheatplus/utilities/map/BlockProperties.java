@@ -1562,7 +1562,7 @@ public class BlockProperties {
             BlockFlags.setFlag(mat, BlockFlags.F_PASSABLE_X4 | BlockFlags.F_VARIABLE);
         }
         for (final Material mat : MaterialUtil.WOODEN_TRAP_DOORS) {
-            BlockFlags.setFlag(mat, BlockFlags.F_PASSABLE_X4 | BlockFlags.F_VARIABLE);
+            BlockFlags.setFlag(mat, BlockFlags.F_VARIABLE);
         }
         
         // Blocks that vary with redstone or interaction.
@@ -1607,11 +1607,6 @@ public class BlockProperties {
         // Flexible ground (height):
         // 1.10.2 +- client uses the reported height.
         for (final Material mat : new Material[]{BridgeMaterial.FARMLAND,}) {
-            BlockFlags.setFlag(mat, BlockFlags.F_GROUND_HEIGHT);
-        }
-
-        // Issues standing on with F_PASSABLE_X4. Note getGroundMinHeight.
-        for (Material mat : MaterialUtil.WOODEN_TRAP_DOORS) {
             BlockFlags.setFlag(mat, BlockFlags.F_GROUND_HEIGHT);
         }
 
@@ -2891,7 +2886,7 @@ public class BlockProperties {
         }
         // Basic flags and facing for trap door.
         final long flags1 = BlockFlags.getBlockFlags(access.getType(x, y, z));
-        if ((flags1 & BlockFlags.F_PASSABLE_X4) == 0) {
+        if (!MaterialUtil.ALL_TRAP_DOORS.contains(access.getType(x, y, z))) {
             return false;
         }
         // TODO: Really confine to trap door types (add a flag or something else)?

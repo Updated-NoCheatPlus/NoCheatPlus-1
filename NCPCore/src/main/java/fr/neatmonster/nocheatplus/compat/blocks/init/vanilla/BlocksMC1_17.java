@@ -5,10 +5,7 @@ import org.bukkit.Material;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
-import fr.neatmonster.nocheatplus.config.ConfPaths;
-import fr.neatmonster.nocheatplus.config.ConfigFile;
-import fr.neatmonster.nocheatplus.config.ConfigManager;
-import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
+import fr.neatmonster.nocheatplus.config.*;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -94,38 +91,16 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockInit.setPropsAs("DEEPSLATE_TILE_SLAB", Material.COBBLED_DEEPSLATE);
 
         // Copper Blocks
-        for (Material mat : MaterialUtil.COPPER_BLOCKS) {
+        for (Material mat : MaterialUtil.ALL_REFINED_COPPER_BLOCKS) {
             BlockInit.setPropsAs(mat, Material.IRON_ORE);
         }
-
-        // Copper stairs
-        BlockInit.setPropsAs("CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("EXPOSED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WEATHERED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("OXIDIZED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        // Copper slabs
-        BlockInit.setPropsAs("CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("EXPOSED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WEATHERED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("OXIDIZED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-
-        // Waxed Copper stairs
-        BlockInit.setPropsAs("WAXED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_EXPOSED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_WEATHERED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_OXIDIZED_CUT_COPPER_STAIRS", Material.COPPER_BLOCK);
-        // Waxed Copper slabs
-        BlockInit.setPropsAs("WAXED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_EXPOSED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_WEATHERED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
-        BlockInit.setPropsAs("WAXED_OXIDIZED_CUT_COPPER_SLAB", Material.COPPER_BLOCK);
 
         // Flower Azalea
         BlockProperties.setBlockProps("AZALEA", BlockProperties.instantType);
         BlockFlags.addFlags("AZALEA", BlockFlags.F_GROUND);
         BlockProperties.setBlockProps("FLOWERING_AZALEA", BlockProperties.instantType);
         BlockFlags.addFlags("FLOWERING_AZALEA", BlockFlags.F_GROUND);
-        //
+        // This is temporary ground.
         BlockFlags.addFlags("BIG_DRIPLEAF", BlockFlags.F_GROUND);
         BlockProperties.setBlockProps("BIG_DRIPLEAF", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
         BlockProperties.setBlockProps("BIG_DRIPLEAF_STEM", new BlockProperties.BlockProps(BlockProperties.woodAxe, 0.1f));
@@ -166,8 +141,12 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
 
         //Other blocks
         BlockProperties.setBlockProps("CALCITE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 0.75f, true));
-        BlockProperties.setBlockProps("TUFF", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
-        BlockFlags.setBlockFlags("POWDER_SNOW", BlockFlags.F_POWDERSNOW | BlockFlags.F_IGN_PASSABLE | BlockFlags.F_GROUND);
+
+        // Tuff
+        for (Material mat : MaterialUtil.ALL_TUFF) {
+            BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
+        }
+        BlockFlags.setBlockFlags("POWDER_SNOW", BlockFlags.F_POWDERSNOW | BlockFlags.F_IGN_PASSABLE | BlockFlags.F_GROUND | BlockFlags.F_GROUND_HEIGHT);
         BlockProperties.setBlockProps("POWDER_SNOW", new BlockProperties.BlockProps(BlockProperties.noTool, 0.25f));
         BlockInit.setPropsAs("POWDER_SNOW_CAULDRON", Material.CAULDRON);
         BlockInit.setPropsAs("WATER_CAULDRON", Material.CAULDRON);

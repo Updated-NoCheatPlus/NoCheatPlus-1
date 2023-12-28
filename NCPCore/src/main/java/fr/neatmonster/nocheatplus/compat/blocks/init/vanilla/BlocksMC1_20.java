@@ -18,10 +18,8 @@ import org.bukkit.Material;
 
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
-import fr.neatmonster.nocheatplus.config.ConfPaths;
-import fr.neatmonster.nocheatplus.config.ConfigFile;
-import fr.neatmonster.nocheatplus.config.ConfigManager;
-import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.config.*;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -49,8 +47,13 @@ public class BlocksMC1_20 implements BlockPropertiesSetup {
             BlockFlags.addFlags(mat, BlockFlags.SOLID_GROUND);
         }
         // (Hanging signs are treated as a normal sign and added in BlocksMC1_14)
-        
 
+        if (ServerVersion.compareMinecraftVersion("1.20.4") >= 0) {
+            BlockProperties.setBlockProps("CRAFTER", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f));
+            BlockFlags.setBlockFlags("CRAFTER", BlockFlags.FULLY_SOLID_BOUNDS);
+            BlockProperties.setBlockProps("TRIAL_SPAWNER", new BlockProperties.BlockProps(BlockProperties.noTool, 50f));
+            BlockFlags.setBlockFlags("TRIAL_SPAWNER", BlockFlags.FULLY_SOLID_BOUNDS);
+        }
         ConfigFile config = ConfigManager.getConfigFile();
         if (config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)))
         StaticLog.logInfo("Added block-info for Minecraft 1.20 blocks.");

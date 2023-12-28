@@ -31,6 +31,7 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 public class LegacyBlocks {
     private static final BlockStairs STAIRS = new BlockStairs();
+    private static final BlockTrapDoor TRAPDOOR = new BlockTrapDoor();
     private static final Map<Material, Block> blocks = init(); // new HashMap<>(); //private final Map<Material, Block> block;
 
     //public LegacyBlocks() {
@@ -41,6 +42,9 @@ public class LegacyBlocks {
         Map<Material, Block> blocks = new HashMap<>();
         for (Material mat : MaterialUtil.ALL_STAIRS) {
             blocks.put(mat, STAIRS);
+        }
+        for (Material mat : MaterialUtil.ALL_TRAP_DOORS) {
+            blocks.put(mat, TRAPDOOR);
         }
         blocks.put(BridgeMaterial.END_PORTAL_FRAME, new BlockEndPortalFrame());
         blocks.put(BridgeMaterial.PISTON_HEAD, new BlockPistonHead());
@@ -101,6 +105,63 @@ public class LegacyBlocks {
         }    
     }
 
+    public static class BlockTrapDoor implements Block {
+
+        private static final double closedHeight = 0.1875;
+        private static final double openWidth = 0.1875;
+        public BlockTrapDoor() {
+            
+        }
+
+        @Override
+        public double[] getShape(BlockCache cache, Material mat, int x, int y, int z, boolean old) {
+            return getShapeLegacy(cache.getData(x, y, z));
+        }
+
+        public double[] getShapeLegacy(int data) {
+            BlockFace face = dataToDirection(data);
+            if (face == null) return null;
+            return getShape(face, (data & 4) != 0, (data & 8) == 0);
+        }
+
+        public BlockFace dataToDirection(int data) {
+            switch (data & 3) {
+            case 0:
+                return BlockFace.NORTH;
+            case 1:
+                return BlockFace.SOUTH;
+            case 2:
+                return BlockFace.WEST;
+            case 3:
+                return BlockFace.EAST;
+            }
+            return null;
+        }
+
+        private double[] getShape(BlockFace face, boolean open, boolean bottom) {
+            if (open) {
+                switch(face) {
+                    case NORTH:
+                        return new double[] {0.0, 0.0, 1.0 - openWidth, 1.0, 1.0, 1.0};
+                    case SOUTH:
+                        return new double[] {0.0, 0.0, 0.0, 1.0, 1.0, openWidth};
+                    case EAST:
+                        return new double[] {0.0, 0.0, 0.0, openWidth, 1.0, 1.0};
+                    case WEST:
+                        return new double[] {1.0 - openWidth, 0.0, 0.0, 1.0, 1.0, 1.0};
+                    default:
+                        break;
+                    }
+                }
+                else {
+                    return bottom
+                            ? new double[] {0.0, 0.0, 0.0, 1.0, closedHeight, 1.0}
+                    : new double[] {0.0, 1.0 - closedHeight, 0.0, 1.0, 1.0, 1.0};
+
+                }
+            return new double[] {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
+        }
+    }
 
     public static class BlockEndPortalFrame implements Block {
 
@@ -211,8 +272,6 @@ public class LegacyBlocks {
             return null;
         }
     }
-
-    // Mostly taken from NMS - StairBlock.java
 
     // Mostly taken from NMS - StairBlock.java
     public static class BlockStairs implements Block {

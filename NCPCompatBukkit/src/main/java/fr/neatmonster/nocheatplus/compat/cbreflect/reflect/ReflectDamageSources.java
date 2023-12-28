@@ -41,6 +41,10 @@ public class ReflectDamageSources {
         if (nmsDamageSources == null) {
             nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dM", nmsClass);
         }
+        // 1.20.4
+        if (nmsDamageSources == null) {
+            nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dN", nmsClass);
+        }
         nmsfall = ReflectionUtil.getMethodNoArgs(nmsClass, "k", reflectDamageSource.nmsClass);
     }
 
