@@ -68,7 +68,7 @@ public class CreativeFly extends Check {
     * 2) Prevents possible bypasses with Fly checks switches.
     * ^ Done.
     * Leave here: Spectator, Flying.
-    * TODO: Cleanup pending for elytra movement handle.
+
     */
 
     private final List<String> tags = new LinkedList<String>();
@@ -103,7 +103,6 @@ public class CreativeFly extends Check {
 
         // Reset tags, just in case.
         tags.clear();
-        // TODO: Other set back policy for elytra, e.g. not set in narrow spaces?
         final boolean debug = pData.isDebugActive(type);
         final GameMode gameMode = player.getGameMode();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
@@ -126,18 +125,6 @@ public class CreativeFly extends Check {
             }
         }
 
-        // Do not check for nofall if the player has slowfalling active or is gliding
-        if (Bridge1_9.isGlidingWithElytra(player) && thisMove.yDistance > -0.5) {
-            data.clearNoFallData();
-        } 
-        
-        // HACK: when switching model, we need to add some velocity to harmonize the transition and not trggering fps.
-        workaroundSwitchingModel(player, thisMove, lastMove, model, data, cc, debug);
-
-
-
-
-
 
         //////////////////////////
         // Horizontal move.
@@ -146,8 +133,6 @@ public class CreativeFly extends Check {
         double[] resH = hDist(player, from, to, hDistance, yDistance, sprinting, flying, thisMove, lastMove, time, model, data, cc);
         double limitH = resH[0];
         double resultH = resH[1];
-        double[] rese = elytraCheck(player, from, to, hDistance, yDistance, thisMove, lastMove, lostGround, data, cc, debug); // Related to the elytra
-        resultH = Math.max(resultH, rese[1]);
 
         // Check velocity.
         if (resultH > 0) {
@@ -183,7 +168,7 @@ public class CreativeFly extends Check {
         //////////////////////////
 
         double limitV = 0.0; // Limit. For debug only, violation handle on resultV
-        double resultV = rese[0]; // Violation (normalized to 100 * 1 block, applies if > 0.0).
+        double resultV = 0.0; // Violation (normalized to 100 * 1 block, applies if > 0.0).
 
         // Distinguish checking method by y-direction of the move:
         // Ascend.
@@ -367,15 +352,9 @@ public class CreativeFly extends Check {
         //     }
         // }
 
-        // Moving on stairs with creativefly
-        if (Bridge1_9.hasElytra() && from.isAboveStairs() && to.isAboveStairs()) {
-            limitH = Math.max(limitH, 0.7 * fSpeed);
-        }
-
         // Ordinary friction
         // TODO: Use last friction (as well)?
         // TODO: Test/adjust more.
-        // TODO: Skipping on ripglide phases is not ideal, but at the same time, the speed increase is so much that
         // it doesn't really make much sense checking for friction as well...
         if (lastMove.toIsValid) {
             double frictionDist = lastMove.hDistance * Magic.FRICTION_MEDIUM_AIR;
@@ -451,17 +430,6 @@ public class CreativeFly extends Check {
         if (model.getApplyModifiers() && flying && yDistance > 0.0) {
             limitV *= data.flySpeed / Magic.DEFAULT_FLYSPEED;
         }
-
-        // Related to elytra.
-        // TODO: Better detection of an elytra model (extra flags?).
-        if (model.getVerticalAscendGliding()) {
-            limitV = Math.max(limitV, limitV = hackLytra(yDistance, limitV, thisMove, lastMove, from, data));
-        }
-        
-        // Gliding in water
-        if (Bridge1_9.isGlidingWithElytra(from.getPlayer()) && data.liqtick > 1) {
-            limitV = Math.max(limitV, 0.35);
-        }
         
         // Friction with gravity.
         if (model.getGravity()) {
@@ -517,353 +485,6 @@ public class CreativeFly extends Check {
 
 
     /**
-     * Elytra gliding model
-     * @param from
-     * @param to
-     * @param hDistance
-     * @param yDistance
-     * @param thisMove
-     * @param lastMove
-     * @param lostGround
-     * @param data
-     * @param player
-     * @return resultH, resultV.
-     *
-     * @author xaw3ep
-     */
-    private double[] elytraCheck(final Player player, final PlayerLocation from, final PlayerLocation to, final double hDistance, 
-                                 final double yDistance, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
-                                 final boolean lostGround, final MovingData data, final MovingConfig cc, final boolean debug) {
-
-        /* Known false positives:
-         * Still have setback with taking off ?
-         * Fly out water with low envelope
-         * Head obstructed ?
-         */
-        // TODO: Attempt to simplify
-        double resultV = 0.0;
-        double resultH = 0.0;
-        if (!cc.elytraStrict || !Bridge1_9.isGlidingWithElytra(player) || player.isFlying()) return new double[] {0.0, 0.0};
-        double allowedElytraHDistance = 0.0;
-        double allowedElytraYDistance = 0.0;
-        double baseV = 0.0;
-        final double gravity = Bridge1_13.getSlowfallingAmplifier(player) >= 0.0 ? 0.01 : 0.08;
-
-        if ((lastMove.flyCheck != thisMove.flyCheck || lastMove.modelFlying != thisMove.modelFlying) && !lastMove.elytrafly) {
-            //data.sfJumpPhase = 0;
-            tags.add("e_pre");
-        } 
-        else if (!from.isResetCond() && !isCollideWithHB(from)) {
-            thisMove.elytrafly = true;
-
-            final double lastHdist = lastMove.toIsValid ? lastMove.hDistance : 0.0;
-            final Vector lookvec = to.getLocation().getDirection();
-            final float radPitch = (float) Math.toRadians(to.getPitch());
-            allowedElytraYDistance = lastMove.elytrafly ? lastMove.yAllowedDistance : lastMove.toIsValid ? lastMove.yDistance : 0.0;
-            if (Math.abs(allowedElytraYDistance) < 0.003D) allowedElytraYDistance = 0.0D;
-            final double xzlength = Math.sqrt(lookvec.getX() * lookvec.getX() + lookvec.getZ() * lookvec.getZ());
-            double squaredCos = Math.cos(radPitch); squaredCos = squaredCos * squaredCos;
-
-            baseV = MovingUtil.getBaseV(hDistance, yDistance, radPitch, squaredCos, -1.0, gravity, to.getPitch() == -90f);
-
-            allowedElytraYDistance += gravity * (-1.0D + squaredCos * 0.75D);
-            double x = lastMove.to.getX() - lastMove.from.getX();
-            double z = lastMove.to.getZ() - lastMove.from.getZ();
-            if (Math.abs(x) < 0.003D) x = 0.0D;
-            if (Math.abs(z) < 0.003D) z = 0.0D;
-
-            if (allowedElytraYDistance < 0.0D && xzlength > 0.0) {
-                final double d = allowedElytraYDistance * -0.1 * squaredCos;
-                x += lookvec.getX() * d / xzlength;
-                z += lookvec.getZ() * d / xzlength;
-                allowedElytraYDistance += d;
-            }
-
-            // Look up
-            if (radPitch < 0.0F) {
-                // For compatibility
-                if (to.getPitch() == -90f
-                    && MathUtil.equal(yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
-                    allowedElytraHDistance += 0.01;
-                    if (debug) debug(player, "Add the distance to allowed on look up (hDist/Allowed): " + hDistance +"/"+ allowedElytraHDistance);
-                }
-                else if (xzlength > 0.0) {
-                   final double d = lastHdist * -Math.sin(radPitch) * 0.04;
-                   x -= lookvec.getX() * d / xzlength;
-                   z -= lookvec.getZ() * d / xzlength;
-                   allowedElytraYDistance += d * 3.2;
-                }
-            }
-
-            if (xzlength > 0.0) {
-                x += (lookvec.getX() / xzlength * lastHdist - x) * 0.1D;
-                z += (lookvec.getZ() / xzlength * lastHdist - z) * 0.1D;
-            }
-            
-            // Friction
-            allowedElytraYDistance *= Magic.FRICTION_MEDIUM_ELYTRA_AIR;
-
-            // Fireworks
-            // Can't be more precise due to some problems, still have ~10% faster bypasses :(
-            if (data.fireworksBoostDuration > 0) {
-                // Handled somewhere else
-                // TODO: More strict vertical check
-                thisMove.yAllowedDistance = allowedElytraYDistance = yDistance;
-                if (Math.round(data.fireworksBoostTickNeedCheck / 4) > data.fireworksBoostDuration
-                    && hDistance < MathUtil.dist(x, z)) {
-                    thisMove.hAllowedDistance = Math.sqrt(x*x + z*z);
-                    if (debug) debug(player, "Set hAllowedDistance for this firework boost phase (hDist/Allowed): " + thisMove.hDistance + "/" + thisMove.hAllowedDistance);
-                    return new double[] {0.0, 0.0};
-                }
-                x *= 0.99;
-                z *= 0.99;
-                x += lookvec.getX() * 0.1D + (lookvec.getX() * 1.5D - x) * 0.5D;
-                z += lookvec.getZ() * 0.1D + (lookvec.getZ() * 1.5D - z) * 0.5D;
-                tags.add("fw_speed");
-                /* Problem with calculating fireworks duration and it end sooner,
-                 * speed after boost might be faster because fw speed lim < actual speed lim without boosting.
-                 */
-                if (hDistance < lastMove.hAllowedDistance * 0.994) {
-                    thisMove.hAllowedDistance = lastMove.hAllowedDistance * 0.994;
-                    if (debug) debug(player, "Firework boost phase has ended sooner than expected, but the player is still legitimately boosting (hDist/Allowed): " + thisMove.hDistance + "/" + thisMove.hAllowedDistance);
-                    return new double[] {0.0, 0.0};
-                }
-                else allowedElytraHDistance += 0.2;
-            }
-
-            // Adjust false
-            allowedElytraHDistance += Math.sqrt(x*x + z*z) + 0.1;
-            if (debug) {
-                debug(player, "Cumulative elytra hDistance (hDist/Allowed): " + hDistance + "/" + allowedElytraHDistance + " lasthDist:" + lastHdist);
-                debug(player, "radiansPitch: " + radPitch + " yDist:" + yDistance + " lastyDist:" + lastMove.yDistance + " allowy:" + allowedElytraYDistance);
-            }
-            // Difference from vAllowedDistance to yDistance.
-            final double yDistDiffEx = yDistance - allowedElytraYDistance;
-
-            if (data.fireworksBoostDuration <= 0) {
-
-                // Workaround, elytra jump 
-                if (yDistance > 0.0 && yDistance < 0.42 && thisMove.touchedGround) {
-                    allowedElytraYDistance = yDistance;
-                    allowedElytraHDistance = Math.max(0.35, allowedElytraHDistance * 1.35);
-                    if (debug) debug(player, "Elytra jump (hDist/Allowed): " + thisMove.hDistance +"/"+ allowedElytraHDistance);
-                } 
-                // Head is obstructed
-                else if (from.isHeadObstructed() && lastMove.yDistance > 0.0 && yDistDiffEx < 0.0 && (allowedElytraYDistance > 0.0 || yDistance == 0.0)) {
-                    allowedElytraYDistance = yDistance;
-                } 
-                else if (yDistance < 0.0) {
-
-                    if (
-                        // Pos -> neg
-                        lastMove.yDistance > 0.0 && yDistance < 0.0 
-                        && (
-                           lastMove.yDistance < Magic.GRAVITY_MAX + Magic.GRAVITY_MIN && yDistance > - Magic.GRAVITY_MIN
-                           || lastMove.yDistance < Magic.GRAVITY_MIN && yDistance > - Magic.GRAVITY_MIN - Magic.GRAVITY_MAX
-                        )
-                        // For compatibility
-                        //|| data.sfJumpPhase < 6 && lastMove.yDistance > yDistance && yDistance - allowedElytraYDistance < 0.0 && yDistance - allowedElytraYDistance > -Magic.GRAVITY_MAX
-                        ) {
-                        allowedElytraYDistance = yDistance;
-                    }
-                }
-
-                if (yDistance > 0.0) {
-                    if (allowedElytraYDistance < yDistance && !MathUtil.equal(allowedElytraYDistance, yDistance, 0.001)) {
-                        tags.add("e_vasc");
-                        resultV = yDistance;
-                    }
-                } 
-                else if (yDistance < 0.0) {
-                    if (allowedElytraYDistance > yDistance && !MathUtil.equal(allowedElytraYDistance, yDistance, Magic.GRAVITY_MAX)) {
-                        tags.add("e_vdesc");
-                        resultV = Math.abs(yDistance);
-                    }
-                } 
-                else {
-                    // TODO: ....
-                    //tags.add("e_vzero");
-                }
-
-                if (
-                    // Touch ground
-                    yDistance <= 0.0 && (to.isOnGround() || to.isResetCond() || thisMove.touchedGround)
-                    // Less envelope
-                    || yDistDiffEx > -Magic.GRAVITY_MAX && yDistDiffEx < 0.0
-                    // Slow Falling no move
-                    || gravity < 0.05 && !TrigUtil.isSamePos(lastMove.from, lastMove.to) && (hDistance == 0.0 && yDistance == 0.0 || yDistance < -Magic.GRAVITY_SPAN)
-                    ) {
-                    allowedElytraYDistance = yDistance;
-                } 
-                // TODO: Better
-                else if (Math.abs(yDistDiffEx) > (gravity < 0.05 ? 0.00001 : 0.03)) {
-                    tags.add("e_vdiff");
-                    //if (resultV <= 0.0 && yDistDiffEx > 0.0) {
-                    //    Location newto = to.getLocation().clone().subtract(0.0, Math.max(yDistDiffEx, 0.5), 0.0);
-                    //    final PlayerMoveInfo moveInfo = auxMoving.usePlayerMoveInfo();
-                    //    moveInfo.set(player, newto, null, cc.yOnGround);
-                    //    moveInfo.from.collectBlockFlags();
-                    //    if (moveInfo.from.isPassableBox()) data.setSetBack(moveInfo.from);
-                    //    auxMoving.returnPlayerMoveInfo(moveInfo);
-                    //}
-                    resultV = Math.max(Math.abs(yDistance - allowedElytraYDistance), resultV);
-                }
-            }
-
-            if (allowedElytraHDistance < hDistance) {
-                tags.add("e_hspeed");
-                resultH = hDistance - allowedElytraHDistance;
-            }
-        } 
-        // Gliding in water
-        // TODO: Add vertical check
-        // TODO: Why is a gliding check needed here? MC doesn't check for fallflying if in water (EntityLiving.travel. MC checks: if(water) else if(lava) else if(fallflying) else normal)
-        else if(from.isInLiquid()) {
-
-            allowedElytraHDistance = thisMove.hAllowedDistance;
-            final int level = BridgeEnchant.getDepthStriderLevel(player);
-            
-            // if (!Double.isInfinite(Bridge1_13.getDolphinGraceAmplifier(player))) {
-            //     allowedElytraHDistance *= Magic.modDolphinsGrace;
-            //     if (level > 0) allowedElytraHDistance *= 1.0 + 0.1 * level;
-            // }
-
-            if (level > 0) {
-                allowedElytraHDistance *= Magic.modDepthStrider[level];
-                final double attrMod = attributeAccess.getHandle().getSpeedAttributeMultiplier(player);
-                if (attrMod == Double.MAX_VALUE) {
-                    final double speedAmplifier = mcAccess.getHandle().getFasterMovementAmplifier(player);
-                    if (!Double.isInfinite(speedAmplifier)) {
-                        allowedElytraHDistance *= 1.0D + 0.2D * (speedAmplifier + 1);
-                    }
-                } 
-                else allowedElytraHDistance *= attrMod;
-            }
-
-            if (lastMove.toIsValid && data.liqtick < 3 && hDistance < lastMove.hAllowedDistance + 0.07) {
-                allowedElytraHDistance = lastMove.hAllowedDistance + 0.07;
-            }
-
-            // Firework maximum speed
-            if (data.fireworksBoostDuration > 0) allowedElytraHDistance = Math.max(allowedElytraHDistance, 1.8);
-
-            // Friction
-            if (hDistance < lastMove.hAllowedDistance * (data.liqtick < 5 ? 1.0 : Magic.FRICTION_MEDIUM_WATER)) {
-                allowedElytraHDistance = lastMove.hAllowedDistance * (data.liqtick < 5 ? 1.0 : Magic.FRICTION_MEDIUM_WATER);
-            }
-            
-            // Finally, trigger a violation
-            if (thisMove.hDistance > allowedElytraHDistance) {
-                tags.add("e_hspeed(liq)");
-                resultH = hDistance - allowedElytraHDistance;
-            }
-        }
-
-        if (resultV > 0.0) {
-            if (data.getOrUseVerticalVelocity(baseV) != null) {
-                allowedElytraYDistance = yDistance;
-                resultV = 0.0;
-            }
-        }
-
-        thisMove.hAllowedDistance = allowedElytraHDistance;
-        thisMove.yAllowedDistance = MathUtil.equal(allowedElytraYDistance, yDistance, 0.001) ? yDistance : allowedElytraYDistance;
-        return new double[] {resultV, resultH};
-    }
-    
-    
-    /**
-     * 
-     * @param yDistance
-     * @param limitV
-     * @param thisMove
-     * @param lastMove
-     * @param from
-     * @param data
-     * @return limitV
-     */
-    private double hackLytra(final double yDistance, final double limitV, final PlayerMoveData thisMove, 
-                             final PlayerMoveData lastMove, final PlayerLocation from, 
-                             final MovingData data) {
-
-        // TODO: Hack, move / config / something.
-        // TODO: Confine more. hdist change relates to ydist change
-        // TODO: Further: jumpphase vs. y-distance to set back. Problem: velocity
-        // TODO: Further: record max h and descend speeds and relate to those.
-        // TODO: Demand total speed to decrease.
-
-        // Elytra jump, let elytraCheck hande it
-        if (yDistance > 0.0 && yDistance < 0.42 && thisMove.touchedGround) {
-            tags.add("e_jump");
-            return yDistance;
-        } 
-
-        if (yDistance > Magic.GLIDE_DESCEND_PHASE_MIN && yDistance < 34.0 * Magic.GRAVITY_MAX 
-            && (
-                // Normal envelope.
-                lastMove.hDistance < 3.3 && yDistance - lastMove.yDistance < lastMove.hDistance / 11.0
-                // Inversion (neg -> pos).
-                || lastMove.yDistance < -Magic.GRAVITY_SPAN 
-                && yDistance < Magic.GRAVITY_MAX + Magic.GRAVITY_ODD && yDistance > Magic.GRAVITY_SPAN
-            )
-            && thisMove.hDistance < lastMove.hDistance
-            && (lastMove.yDistance > 0.0 || lastMove.hDistance > 0.55) // Demand some speed on the transition.
-            // Demand total speed to decrease somehow, unless for the very transition.
-            //&& (thisMove.distanceSquared / lastMove.distanceSquared < 0.99
-            //        || lastMove.yDistance < 0.0) // Might confine the latter something to be tested.
-            ) {
-
-            // (Increasing y-distance.)
-            if (lastMove.hDistance > 0.51) {
-                tags.add("e_asc1");
-                return yDistance;
-            }
-            // (Decreasing y-distance.)
-            else if (thisMove.hDistance > Magic.GRAVITY_MIN && yDistance < lastMove.yDistance) {
-
-                final PlayerMoveData pastMove1 = data.playerMoves.getSecondPastMove();
-                if (pastMove1.toIsValid && pastMove1.to.extraPropertiesValid) {
-                    // Demand this being the first one, or decreasing by a decent amount with past two moves.
-                    if (
-                        // First move rather decreasing.
-                        pastMove1.yDistance < lastMove.yDistance 
-                        // Decreasing by a reasonable (?) amount.
-                        || yDistance - pastMove1.yDistance < -0.001) {
-                        tags.add("e_asc2");
-                        return yDistance;
-                    }
-                }
-            }
-        }
-
-        // Elytra boost with fireworks rockets.
-        if (yDistance > limitV && data.fireworksBoostDuration > 0 && lastMove.toIsValid
-            && (
-                yDistance >= lastMove.yDistance 
-                || yDistance - lastMove.yDistance < Magic.GRAVITY_MAX
-                // TODO: Head blocked -> friction does it?
-            )
-            && (
-                yDistance - lastMove.yDistance < 0.79 // TODO
-                || lastMove.yDistance < 0.0 && yDistance < 1.54
-            )
-            && yDistance < 1.67) {
-            /*
-             * TODO: Do cross check item consumption (do other events fire?).
-             * [?on tick: expectations framework, check before tick and before
-             * other inventory events, once set]
-             */
-            // TODO: Remove fumbling with magic constants.
-            // TODO: Relate horizontal to vertical + relate to looking direction.
-            // TODO: More invalidation conditions, like total age (checked elsewhere?).
-            tags.add("fw_boost_asc");
-            return yDistance;
-        }
-
-        return limitV;
-    }
-
-    /**
      * Descending phase vDist check
      * @param from
      * @param to
@@ -883,7 +504,6 @@ public class CreativeFly extends Check {
         double resultV = 0.0;
         // Note that 'extreme moves' are covered by the extreme move check.
         // TODO: if gravity: friction + gravity.
-        // TODO: min-max envelope (elytra).
         // TODO: ordinary flying (flying: enforce maximum speed at least)
         return new double[] {limitV, resultV};
     }
@@ -924,156 +544,6 @@ public class CreativeFly extends Check {
 
 
    /**
-    * Adds velocity to a player upon switching movement model, in order to
-    * workaround false positives
-    * @param player
-    * @param thisMove
-    * @param lastMove
-    * @param model
-    * @param data
-    * @param cc
-    * @author xaw3ep
-    */
-    private void workaroundSwitchingModel(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
-                                          final ModelFlying model, final MovingData data, final MovingConfig cc, final boolean debug) {
-
-        if (lastMove.toIsValid && lastMove.modelFlying != thisMove.modelFlying) {
-
-            // Gliding -> Other modelflying
-            if (lastMove.modelFlying != null && lastMove.modelFlying.getVerticalAscendGliding()) {
-                final double amount = guessVelocityAmount(player, thisMove, lastMove, data);
-                if (thisMove.touchedGround || model.getId().equals("gamemode.creative")) {
-                    data.addHorizontalVelocity(new AccountEntry(amount, 3, MovingData.getHorVelValCount(amount)));
-                    if (debug) debug(player, "Jetpack.elytra -> " + (thisMove.touchedGround ? "touchedGround" : "gamemode.creative") + ": add velocity");
-                }
-
-                if (model.getId().equals("gamemode.creative")) {
-                    data.addVerticalVelocity(new SimpleEntry(0.0, 2));
-                    if (debug) debug(player, "Jetpack.elytra -> gamemode.creative: add velocity");
-                }
-                return;
-            }
-        }
-
-        final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
-        // Quick change between models, reset friction, invalid
-        if (secondPastMove.modelFlying != null && lastMove.modelFlying != null
-            && secondPastMove.modelFlying == model && model != lastMove.modelFlying) {
-            if (debug) debug(player, "Invalidate this move on too fast model switch: " + (secondPastMove.modelFlying.getId().toString() + " -> " + lastMove.modelFlying.getId().toString() + " -> " + model.getId().toString()));
-            thisMove.invalidate();
-        }
-    }
-
-
-   /**
-    * @param player
-    * @param thisMove
-    * @param lastMove
-    * @param data
-    * @return
-    */
-    private static double guessVelocityAmount(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
-
-        // Default margin: Allow slightly less than the previous speed.
-        final double defaultAmount = lastMove.hDistance * (1.0 + Magic.FRICTION_MEDIUM_AIR) / 2.0;
-
-        // Test for exceptions.
-        if (thisMove.hDistance > defaultAmount && Bridge1_9.isWearingElytra(player) 
-            && lastMove.modelFlying != null 
-            && lastMove.modelFlying.getId().equals(MovingConfig.ID_JETPACK_ELYTRA)) {
-            // Allowing the same speed won't always work on elytra (still increasing, differing modeling on client side with motXYZ).
-            // (Doesn't seem to be overly effective.)
-
-            final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
-            if (secondPastMove.modelFlying != null
-                && PlayerEnvelopes.glideEnvelopeWithHorizontalGain(thisMove, lastMove, secondPastMove)) {
-                return lastMove.hDistance + 0.1468;
-            }
-        }
-        return defaultAmount;
-    }
-    
-    public static double[] guessElytraVelocityAmount(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
-        final Location useLoc = new Location(null, 0, 0, 0);
-        useLoc.setYaw(thisMove.to.getYaw());
-        useLoc.setPitch(thisMove.to.getPitch());
-        final double speed = Bridge1_13.getSlowfallingAmplifier(player) >= 0.0 ? 0.01 : 0.08;
-        double allowedElytraYDistance = 0.0;
-        double allowedElytraHDistance = 0.0;
-        final double lastHdist = lastMove.toIsValid ? lastMove.hDistance : 0.0;
-        final Vector lookvec = useLoc.getDirection();
-        final float radPitch = (float) Math.toRadians(thisMove.to.getPitch());
-        allowedElytraYDistance = lastMove.elytrafly ? lastMove.yAllowedDistance : lastMove.toIsValid ? lastMove.yDistance : 0.0;
-        if (Math.abs(allowedElytraYDistance) < 0.003D) allowedElytraYDistance = 0.0D;
-        final double xzlength = Math.sqrt(lookvec.getX() * lookvec.getX() + lookvec.getZ() * lookvec.getZ());
-        double f4 = Math.cos(radPitch); f4 = f4 * f4;
-
-        allowedElytraYDistance += speed * (-1.0D + f4 * 0.75D);
-        double x = lastMove.to.getX() - lastMove.from.getX();
-        double z = lastMove.to.getZ() - lastMove.from.getZ();
-        
-        if (allowedElytraYDistance < 0.0D && xzlength > 0.0) {
-            final double d = allowedElytraYDistance * -0.1 * f4;
-            x += lookvec.getX() * d / xzlength;
-            z += lookvec.getZ() * d / xzlength;
-            allowedElytraYDistance += d;
-        }
-        
-        // Look up
-        if (radPitch < 0.0F) {
-            // For compatibility
-            if (thisMove.to.getPitch() == -90f
-                && MathUtil.equal(thisMove.yDistance, allowedElytraYDistance * Magic.FRICTION_MEDIUM_ELYTRA_AIR, 0.01)) {
-                allowedElytraHDistance += 0.01;
-            }
-            else if (xzlength > 0.0) {
-                final double d = lastHdist * -Math.sin(radPitch) * 0.04;
-                x -= lookvec.getX() * d / xzlength;
-                z -= lookvec.getZ() * d / xzlength;
-                allowedElytraYDistance += d * 3.2;
-            } 
-        }
-
-        if (xzlength > 0.0) {
-            x += (lookvec.getX() / xzlength * lastHdist - x) * 0.1D;
-            z += (lookvec.getZ() / xzlength * lastHdist - z) * 0.1D;
-        }
-        
-        if (data.fireworksBoostDuration > 0) {
-            allowedElytraYDistance = Math.abs(thisMove.yDistance) < 2.0 ?
-                    thisMove.yDistance : lastMove.toIsValid ? lastMove.yDistance : 0;
-            if (Math.round(data.fireworksBoostTickNeedCheck / 4) > data.fireworksBoostDuration 
-                && thisMove.hDistance < Math.sqrt(x*x + z*z)) {
-                return new double[] {Math.sqrt(x*x + z*z), allowedElytraYDistance};
-            }
-
-            x *= 0.99;
-            z *= 0.99;
-            x += lookvec.getX() * 0.1D + (lookvec.getX() * 1.5D - x) * 0.5D;
-            z += lookvec.getZ() * 0.1D + (lookvec.getZ() * 1.5D - z) * 0.5D;
-
-            if (thisMove.hDistance < lastMove.hAllowedDistance * 0.994) {
-                return new double[] {lastMove.hAllowedDistance * 0.994, allowedElytraYDistance};
-            } 
-            else allowedElytraHDistance += 0.2;
-        }
-
-        // Adjust false
-        allowedElytraHDistance += Math.sqrt(x*x + z*z) + 0.1;
-        return new double[] {allowedElytraHDistance, allowedElytraYDistance};
-    }
-
-
-  /**
-    * @param from
-    * @return
-    */
-    private boolean isCollideWithHB(PlayerLocation from) {
-        return (from.getBlockFlags() & BlockFlags.F_STICKY) != 0;
-    }
-
-
-  /**
     * Output debug
     * @param player
     * @param hDistance
@@ -1100,12 +570,6 @@ public class CreativeFly extends Check {
         }
         if (thisMove.verVelUsed != null) {
             builder.append(" , vVelUsed: " + thisMove.verVelUsed);
-        }
-        if (data.fireworksBoostDuration > 0 && MovingConfig.ID_JETPACK_ELYTRA.equals(model.getId())) {
-            builder.append(" , boost: " + data.fireworksBoostDuration);
-        }
-        if (thisMove.elytrafly) {
-            builder.append(", elytraFly");
         }
         builder.append(" , model: " + model.getId());
         if (!tags.isEmpty()) {

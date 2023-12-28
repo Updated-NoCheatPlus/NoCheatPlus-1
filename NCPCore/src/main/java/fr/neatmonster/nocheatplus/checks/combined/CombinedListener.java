@@ -31,6 +31,7 @@ import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
@@ -44,6 +45,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
+import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
@@ -90,14 +92,38 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     @SuppressWarnings("unchecked")
     public CombinedListener(){
         super(CheckType.COMBINED);
+
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
+        // Register version/context-specific events.
         if (Bridge1_9.hasEntityToggleGlideEvent()) {
             queuedComponents.add(new Listener() {
-                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+                // Don't ignore cancelled events here (gliding is client-sided, correct me if I'm wrong).
+                @EventHandler(priority = EventPriority.LOWEST)
                 public void onToggleGlide(final EntityToggleGlideEvent event) {
-                    if (shouldDenyGliding(event.getEntity(), event.isGliding())) {
+                    final IPlayerData pData = DataManager.getPlayerData(player);
+                    final MovingData data = pData.getGenericInstance(MovingData.class);
+                    final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+                    // Always fake use velocity here to smoothen the transition between glide->no glide or no no glide->glide transitions.
+                    data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+                    if (shouldDenyGlidingStart((Player)event.getEntity(), event.isGliding(), true)) {
                         event.setCancelled(true);
                     }
+                }
+            });
+        }
+        else {
+            // If -for whatever reason- the event is not available, handle toggle gliding with PMEs
+            queuedComponents.add(new Listener() {
+                // We can ignore the event here, if cancelled, since the player will not be able to move anyway
+                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+                public void onEventlessToggleGlide(final PlayerMoveEvent event) {
+                    final PlayerMoveData lastMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getFirstPastMove();
+                    final PlayerMoveData thisMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
+                    // Assumption: we consider players toggle gliding on if they were not gliding before and they now are.
+                    if (shouldDenyGlidingStart(event.getPlayer(), thisMove.isGliding && !lastMove.isGliding, false)) {
+                        // Force-stop.
+                        event.getPlayer().setGliding(false);
+                    } 
                 }
             });
         }
@@ -109,14 +135,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 }
             });
         }
-        /*else {
-            queuedComponents.add(new Listener() {
-                @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-                public void onPlayerGliding(final PlayerMoveEvent event) {
-                    handleToggleGlideWithoutEvent(); 
-                }
-            });
-        }*/
+
+        // Register Data, Listener and Config.
         api.register(api.newRegistrationContext()
                 // CombinedConfig
                 .registerConfigWorld(CombinedConfig.class)
@@ -132,8 +152,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 .registerDataPlayer(CombinedData.class)
                 .factory(new IFactoryOne<PlayerFactoryArgument, CombinedData>() {
                     @Override
-                    public CombinedData getNewInstance(
-                            PlayerFactoryArgument arg) {
+                    public CombinedData getNewInstance(PlayerFactoryArgument arg) {
                         return new CombinedData();
                     }
                 })
@@ -143,29 +162,65 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 );
     }
 
-    /** Judge if the player can effectively glide when toggling on */
-    private boolean shouldDenyGliding(final Entity entity, final boolean toggledOn) {
-        // Ignore non players.
-        if (!(entity instanceof Player)) {
-            return false;
-        }
-        final Player player = (Player) entity;
-        // Actual lift off (start gliding...)
+    /** 
+     * Judge if the player can effectively start to glide.
+     * 
+     * @param player
+     * @param toggledOn Based on an assumption, if the proper event isn't there.
+     * @param isToggleGlideEvent Whether this method gets called from the actual ToggleGlideEvent or from a PlayerMoveEvent.
+     * @return True, if the player cannot start glide.
+     */
+    private boolean shouldDenyGlidingStart(final Player player, boolean toggledOn, boolean isToggleGlideEvent) {
         if (toggledOn) {
             final PlayerMoveInfo info = aux.usePlayerMoveInfo();
             info.set(player, player.getLocation(info.useLoc), null, 0.0001); // Only restrict very near ground.
             final IPlayerData pData = DataManager.getPlayerData(player);
             final MovingData data = pData.getGenericInstance(MovingData.class);
             final boolean res = !MovingUtil.canLiftOffWithElytra(player, info.from, data);
+            final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
             info.cleanup();
             aux.returnPlayerMoveInfo(info);
-            if (res && pData.isDebugActive(CheckType.MOVING)) {
-                debug(player, "Prevent toggle glide on (cheat prevention).");
+            // Smoothen the transition by fake using velocity.
+            if (!isToggleGlideEvent && res) {
+                data.addVelocity(player, pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
             }
-            // Cannot glide.
+            if (res && pData.isDebugActive(CheckType.MOVING)) {
+                debug(player, "Prevent toggle glide on (cheat prevention, " + (isToggleGlideEvent ? "ToggleGlideEvent)" : "PlayerMoveEvent)"));
+            }
             return res;
         }
+        // Did not toggle on.
         return false;
+    }
+
+    
+    /** Check if this gliding phase should be aborted (We validate both toggle glide and gliding). */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+    public void onGlidingPhase(final PlayerMoveEvent event) {
+        final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        if (!Bridge1_9.isGliding(event.getPlayer()) /*&& lastMove.isGliding*/) {
+            // No gliding, no deal.
+            return;
+        }
+        final PlayerMoveInfo info = aux.usePlayerMoveInfo();
+        info.set(event.getPlayer(), event.getPlayer().getLocation(info.useLoc), null, 0.0001);
+        if (MovingUtil.canGlide(event.getPlayer(), info.from, data)) {
+            // Nothing to do.
+            info.cleanup();
+            aux.returnPlayerMoveInfo(info);
+            return;
+        }
+        // Abort this gliding phase (i.e.: the player collided with water, elytra broke mid-flight etc...).
+        event.getPlayer().setGliding(false);
+        info.cleanup();
+        aux.returnPlayerMoveInfo(info);
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        // Smoothen the transition by fake using velocity.
+        data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+        if (pData.isDebugActive(CheckType.MOVING)) {
+            debug(event.getPlayer(), "Abort gliding phase.");
+        }
     }
     
     /** NOTE: this is updated at the end of the tick */
@@ -283,7 +338,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             pData.setSneaking(false);
             return;
         }
-        if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGlidingWithElytra(event.getPlayer()) || Bridge1_13.isRiptiding(event.getPlayer())) {
+        if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGliding(event.getPlayer()) || Bridge1_13.isRiptiding(event.getPlayer())) {
             // Bukkit's ambiguous "isSneaking()" method would return true for all these cases, but like we've said above, sneaking is determined by player poses, not shift key presses. Just ignore.
             pData.setSneaking(false);
             return;

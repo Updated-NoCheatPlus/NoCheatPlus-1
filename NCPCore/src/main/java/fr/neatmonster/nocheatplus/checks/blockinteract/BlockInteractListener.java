@@ -357,7 +357,6 @@ public class BlockInteractListener extends CheckListener {
                 // Expiration tick: not general latency, rather a minimum margin for sudden congestion.
                 mData.fireworksBoostTickExpire = TickTask.getTick() + ticks;
                 // TODO: Invalidation mechanics: by tick/time well ?
-                // TODO: Implement using it in CreativeFly.
                 if (pData.isDebugActive(CheckType.MOVING)) {
                     debug(player, "Elytra boost (power " + power + "): " + stack);
                 }

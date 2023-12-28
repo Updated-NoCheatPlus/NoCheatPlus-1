@@ -46,6 +46,46 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 public class AirWorkarounds {
 
     /**
+     * Several non-predictable moves with gliding
+     * 
+     * @param data
+     * @param player
+     * @param from
+     * @param fromOnGround
+     * @param to
+     * @param toOnGround
+     * @param isNormalOrPacketSplitMove
+     * @return True, if a workaround applies
+     */
+    private static boolean oddGliding(final MovingData data, final Player player, final PlayerLocation from, boolean fromOnGround, final PlayerLocation to, boolean toOnGround, boolean isNormalOrPacketSplitMove) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        return 
+               /*
+                * 0: Touch down into ground / webs / water / whatever, allow the movement. NCP will then force-stop gliding.
+                */
+               !from.isOnGroundOrResetCond() && to.isOnGroundOrResetCond() && thisMove.yDistance < 0.0
+               && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
+               /*
+                * 0: Same case but with a block change.
+                */
+               || !fromOnGround && toOnGround && thisMove.yDistance < 0.0
+               && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
+               /*
+                * 0: With Bukkit skipping moving events... Not sure how further we can confine this one.
+                */
+               || !isNormalOrPacketSplitMove
+               && data.ws.use(WRPT.W_M_SF_INACCURATE_SPLIT_MOVE)
+               /*
+                * 0: Boosting against a ceiling.
+                */
+               || data.fireworksBoostDuration > 0 && thisMove.headObstructed && thisMove.yDistance != 0.0
+               && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
+        ;
+    }
+
+    /**
      * Several non-predictable moves with levitation
      * 
      * @param data
@@ -73,7 +113,7 @@ public class AirWorkarounds {
                /*
                 * 0: Players can still press the space bar in powder snow to boost ascending speed.
                 */
-                || from.isInPowderSnow() && MathUtil.between(thisMove.vAllowedDistance, thisMove.yDistance, thisMove.vAllowedDistance + data.liftOffEnvelope.getJumpGain(data.jumpAmplifier))
+                || from.isInPowderSnow() && MathUtil.between(thisMove.yAllowedDistance, thisMove.yDistance, thisMove.yAllowedDistance + data.liftOffEnvelope.getJumpGain(data.jumpAmplifier))
                 && thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 && BridgeMisc.hasLeatherBootsOn(player)
                 && data.ws.use(WRPT.W_M_SF_PWDSNW_ASCEND)
                /*
@@ -119,28 +159,11 @@ public class AirWorkarounds {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
         final double yAcceleration = thisMove.yDistance - lastMove.yDistance;
-        // Early returns first
-        if (data.fireworksBoostDuration > 0 && data.keepfrictiontick < 0 && thisMove.yDistance < 0.0
-            // && yDistDiffEx <= 0.0
-            && lastMove.toIsValid && thisMove.yDistance - lastMove.yDistance > -0.7) {
-            data.keepfrictiontick = 0;
-            // Transition from CreativeFly to SurvivalFly having been in a gliding phase.
-            // TO be cleaned up...
-            return true;
+
+        if (Bridge1_9.isGliding(player)) {
+            return oddGliding(data, player, from, fromOnGround, to, toOnGround, isNormalOrPacketSplitMove);
         }
-        if (data.keepfrictiontick < 0) {
-            if (lastMove.toIsValid) {
-                if (thisMove.yDistance < 0.4 && lastMove.yDistance == thisMove.yDistance) {
-                    data.keepfrictiontick = 0;
-                    data.setFrictionJumpPhase();
-                }
-            } 
-            else data.keepfrictiontick = 0;
-            // Transition from CreativeFly to SurvivalFly having been in a gliding phase.
-            // TO be cleaned up...
-            return true;
-        }
-        if (thisMove.hasLevitation) {
+        if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
             return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove);
         }
         
@@ -201,8 +224,8 @@ public class AirWorkarounds {
                 * Can be observed when bunnyhopping right before colliding horizontally with a block and landing on the very edge
                 */
                 || secondLastMove.toIsValid && lastMove.touchedGroundWorkaround && lastMove.yDistance < 0.0 && lastMove.setBackYDistance > 0.0
-                && !thisMove.touchedGroundWorkaround && thisMove.yDistance < 0.0 && data.jumpDelay <= 2
-                && MathUtil.inRange(0.001, Math.abs(thisMove.yDistance - predictedDistance), 0.05)
+                && !thisMove.touchedGroundWorkaround && thisMove.yDistance < 0.0 && thisMove.hDistance > 0.18
+                && MathUtil.inRange(0.001, Math.abs(thisMove.yDistance - predictedDistance), Magic.GRAVITY_MAX)
                 && data.ws.use(WRPT.W_M_SF_POST_LOSTGROUND_CASE)
                /*
                 * 0: Allow the first move(s) bumping head with a block above.

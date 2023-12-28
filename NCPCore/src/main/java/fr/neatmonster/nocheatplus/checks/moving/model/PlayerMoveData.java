@@ -88,15 +88,10 @@ public class PlayerMoveData extends MoveData {
     public double hAllowedDistance;
 
     /**
-     * Allowed vertical distance mostly use for elytra. Set in CreativeFly.check.
-     */
-    public double yAllowedDistance;
-
-    /**
      * Vertical allowed distance estimated by checks.
      * TODO: Get rid of yAllowedDistance and use this one instead for both checks.
      */
-    public double vAllowedDistance;
+    public double yAllowedDistance;
 
 
     // Properties involving the environment.
@@ -159,10 +154,9 @@ public class PlayerMoveData extends MoveData {
         canJump = false;
         // Bounds set by checks.
         xAllowedDistance = 0.0;
-        yAllowedDistance = 0.0;
         zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
-        vAllowedDistance = 0.0;
+        yAllowedDistance = 0.0;
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;

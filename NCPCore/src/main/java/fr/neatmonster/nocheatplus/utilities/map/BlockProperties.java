@@ -600,7 +600,7 @@ public class BlockProperties {
      * @return the factor
      */
     public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+        if (player.isFlying() || Bridge1_9.isGliding(player)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -640,7 +640,7 @@ public class BlockProperties {
      * @param thisMove Should be used over location to compose the correct position (split moves)
      */
     public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGlidingWithElytra(player)) {
+        if (player.isFlying() || Bridge1_9.isGliding(player)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }

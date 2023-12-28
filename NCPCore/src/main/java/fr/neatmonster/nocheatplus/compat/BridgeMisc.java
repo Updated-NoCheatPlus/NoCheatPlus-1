@@ -94,7 +94,7 @@ public class BridgeMisc {
      * @return True if so.
      */
     public static boolean isRipGliding(final Player player) {
-        return Bridge1_9.isGlidingWithElytra(player) && Bridge1_13.isRiptiding(player);
+        return Bridge1_9.isGliding(player) && Bridge1_13.isRiptiding(player);
     }
     
     /**

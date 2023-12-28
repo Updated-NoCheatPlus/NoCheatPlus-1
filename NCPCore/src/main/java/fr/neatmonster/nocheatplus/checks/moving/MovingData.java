@@ -84,9 +84,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     /** Tick counter for how long a player has been in water 0= out of water, 10= fully in water. */
     public int liqtick = 0;
-    /** Tick counter used to workaround certain transitions with repeated or high motion (e.g.: gliding->normal, riptiding->normal). */
-    // TODO: Rename -> motionTransitionTick/(...)
-    public int keepfrictiontick = 0;
     /** Delay (in ticks) from jump to back on ground */
     public int jumpDelay;
     /** Count set back (re-) setting. */
@@ -836,7 +833,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public void addVelocity(final Player player, final MovingConfig cc, final double vx, final double vy, final double vz, final long flags) {
         final int tick = TickTask.getTick();
         // TODO: Slightly odd to call this each time, might switch to a counter-strategy (move - remove). 
-        removeInvalidVelocity(tick  - cc.velocityActivationTicks);
+        removeInvalidVelocity(tick - cc.velocityActivationTicks);
 
         if (pData.isDebugActive(CheckType.MOVING)) {
             CheckUtils.debug(player, CheckType.MOVING, " New velocity: " + vx + ", " + vy + ", " + vz);

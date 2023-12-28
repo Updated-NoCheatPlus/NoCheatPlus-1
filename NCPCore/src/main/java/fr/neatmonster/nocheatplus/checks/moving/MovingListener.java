@@ -1136,7 +1136,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player));
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
-        thisMove.isGliding = Bridge1_9.isGlidingWithElytra(player);
+        thisMove.isGliding = Bridge1_9.isGliding(player);
         thisMove.isRiptiding = Bridge1_13.isRiptiding(player);
         thisMove.isSprinting = pData.isSprinting();
         thisMove.isSneaking = pData.isSneaking();
@@ -1210,9 +1210,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 1: Set time resolutions and various counters.
         // 1.1: Proactive reset of elytraBoost (MC 1.11.2).
         if (data.fireworksBoostDuration > 0) {
-            if (!lastMove.valid 
-                || (cc.resetFwOnground && (lastMove.flyCheck != CheckType.MOVING_CREATIVEFLY || lastMove.modelFlying != thisMove.modelFlying))
-                || data.fireworksBoostTickExpire < tick) {
+            if (!lastMove.valid || data.fireworksBoostTickExpire < tick) {
                 data.fireworksBoostDuration = 0;
             }
             else data.fireworksBoostDuration --;
@@ -1547,12 +1545,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
             // 2: Set back handling.
             prepareSetBack(player, event, newTo, data, cc, pData);
-
-            // 3: Prevent freezing (e.g. ascending with gliding set in water, but moving normally).
-            if ((thisMove.flyCheck == CheckType.MOVING_SURVIVALFLY || thisMove.flyCheck == CheckType.MOVING_CREATIVEFLY
-                && pFrom.isInLiquid()) && Bridge1_9.isGlidingWithElytra(player)) {
-                player.setGliding(false);            
-            }
             return true;
         }
     }
@@ -1565,13 +1557,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         data.adjustWalkSpeed(walkSpeed, tick, cc.speedGrace);
         // TODO: Adjust height of PlayerLocation more efficiently / fetch model early.
         final ModelFlying model = cc.getModelFlying(player, moveInfo.from, data, cc);
-        if (MovingConfig.ID_JETPACK_ELYTRA.equals(model.getId())) {
-            final MCAccess mcAccess = this.mcAccess.getHandle();
-            MovingUtil.setElytraProperties(player, moveInfo.from, from, cc.yOnGround, mcAccess);
-            MovingUtil.setElytraProperties(player, moveInfo.to, to, cc.yOnGround, mcAccess);
-            thisMove.set(moveInfo.from, moveInfo.to);
-            if (multiMoveCount > 0) thisMove.multiMoveCount = multiMoveCount;
-        }
         thisMove.modelFlying = model;
     }
 
@@ -1841,33 +1826,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         // No cancel intended.
         return null;
-    }
-
-    /** TODO: Get rid with the hDistrel and vDistrel overhaul */
-    private static double guessVelocityAmount(final Player player, final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
-                                              final MovingData data, final MovingConfig cc) {
-        // Default margin: Allow slightly less than the previous speed.
-        final double defaultAmount = lastMove.hDistance * (1.0 + Magic.FRICTION_MEDIUM_AIR) / 2.0;
-        // Test for exceptions.
-        if (Bridge1_9.isWearingElytra(player) && lastMove.modelFlying != null && lastMove.modelFlying.getId().equals(MovingConfig.ID_JETPACK_ELYTRA)) {
-            // Still elytra move, not forcing CreativeFly check, just pass the res to velocity
-            final double[] res = CreativeFly.guessElytraVelocityAmount(player, thisMove, lastMove, data);
-            //data.addVerticalVelocity(new SimpleEntry(lastMove.yDistance < -0.1034 ? (lastMove.yDistance * Magic.FRICTION_MEDIUM_AIR + 0.1034) 
-            //                                        : lastMove.yDistance, cc.velocityActivationCounter));
-            data.keepfrictiontick = -15;
-            data.addVerticalVelocity(new SimpleEntry(res[1], cc.velocityActivationCounter));
-            return res[0];
-            //if (thisMove.hDistance > defaultAmount) {
-                // Allowing the same speed won't always work on elytra (still increasing, differing modeling on client side with motXYZ).
-                // (Doesn't seem to be overly effective.)
-            //    if (data.fireworksBoostDuration > 0) {
-            //        return 2.0;
-            //    } 
-            //    else if (lastMove.toIsValid && lastMove.hAllowedDistance > 0.0) return lastMove.hAllowedDistance; // This one might replace below?
-            //    return defaultAmount + 0.5;
-            //}
-        }
-        return defaultAmount;
     }
 
 
@@ -2221,10 +2179,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 // Fix issues when gliding down vines with elytra.
                 // Checking for velocity does not work since sometimes it can be applied after this check runs
                 // TODO: Actually find out why NoFall is running at all when still gliding, rather.
-                else if (moveInfo.from.isOnClimbable() 
-                        && (firstPastMove.modelFlying != null && firstPastMove.modelFlying.getVerticalAscendGliding()
-                        || firstPastMove.elytrafly || thisMove.modelFlying != null && thisMove.modelFlying.getVerticalAscendGliding()
-                        || thisMove.elytrafly)) {
+                else if (moveInfo.from.isOnClimbable() && firstPastMove.isGliding) {
                     if (debug) debug(player, "Ignore fakefall on climbable on elytra move");
                 }
                 // NOTE: Double violations are possible with the in-air check below.
@@ -2777,11 +2732,10 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 builder.append("\n(swift sneak= " + swiftSneak + ")");
             }
             if (Bridge1_9.isGliding(player)) {
-                builder.append("\n(gliding, no elytra check)");
+                builder.append("\n(gliding, no elytra-wearing check)");
             }
             if (Bridge1_13.isRiptiding(player)) {
                 builder.append("\n(riptiding with Lvl: " + BridgeEnchant.getRiptideLevel(player) + ")");
-
             }
             if (player.getAllowFlight()) {
                 builder.append("\n(allow flight)");

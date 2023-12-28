@@ -61,7 +61,6 @@ public class MovingConfig extends ACheckConfig {
     public final boolean ignoreAllowFlight;
 
     private final Map<GameMode, ModelFlying> flyingModelGameMode = new HashMap<GameMode, ModelFlying>();
-    private final ModelFlying flyingModelElytra;
     public final ActionList creativeFlyActions;
 
     /** Assumed number of packets per second under ideal conditions. */
@@ -183,8 +182,6 @@ public class MovingConfig extends ACheckConfig {
             flyingModelGameMode.put(gameMode, new ModelFlying("gamemode." + gameMode.name().toLowerCase(), config, 
                     ConfPaths.MOVING_CREATIVEFLY_MODEL + (gameMode.name().toLowerCase()) + ".", defaultModel).lock());
         }
-        flyingModelElytra = new ModelFlying(ID_JETPACK_ELYTRA, config, ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra.", 
-                                            new ModelFlying(null, defaultModel).verticalAscendGliding(true).lock());
 
         resetFwOnground = config.getBoolean(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET);
         elytraStrict = config.getBoolean(ConfPaths.MOVING_CREATIVEFLY_EYTRA_STRICT);
@@ -324,7 +321,6 @@ public class MovingConfig extends ACheckConfig {
 
         final GameMode gameMode = player.getGameMode();
         final ModelFlying modelGameMode = flyingModelGameMode.get(gameMode);
-        final boolean isGlidingWithElytra = Bridge1_9.isGlidingWithElytra(player) && MovingUtil.isGlidingWithElytraValid(player, fromLocation, data, cc);
         final long now = System.currentTimeMillis();
         switch(gameMode) {
             case SURVIVAL:
@@ -339,12 +335,8 @@ public class MovingConfig extends ACheckConfig {
         // Actual flying (ignoreAllowFlight is a legacy option for rocket boots like flying).
 
         if (player.isFlying() 
-            || !isGlidingWithElytra && !ignoreAllowFlight && player.getAllowFlight()) {
+            || !ignoreAllowFlight && player.getAllowFlight()) {
             return modelGameMode;
-        }
-        // Elytra.
-        if (isGlidingWithElytra) { // Defensive: don't demand isGliding.
-            return flyingModelElytra;
         }
         // Default by game mode.
         return modelGameMode;

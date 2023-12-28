@@ -74,6 +74,10 @@ public class LostGround {
         if (yDistance > Math.max(cc.sfStepHeight, data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) + 0.174) || from.isSlidingDown()) {
             return false;
         }
+        if (Bridge1_9.isGliding(player) || Bridge1_13.isRiptiding(player) || from.isResetCond()) {
+            // Cannot happen under these conditions.
+            return false;
+        }
 
         // TODO: Remove this stupid fix (temporary)
         data.snowFix = (from.getBlockFlags() & BlockFlags.F_HEIGHT_8_INC) != 0;
@@ -209,6 +213,7 @@ public class LostGround {
             // This is actually a missed ground collision (corroborated by the fact that fall distance is set back to 0 when this case happens.)
             return applyLostGround(player, from, true, thisMove , data, "0.03", tags);
         }
+
         if (yDistance > cc.sfStepHeight || hDistance > 1.5 || hDistance <= 0.001) { 
             // Preliminary conditions to better confine all cases that will follow.
             // hDistance is somewhat arbitrary. These cases do not happen with extreme horizontal speeds (on both spectrums).

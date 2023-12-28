@@ -14,33 +14,35 @@
  */
 package fr.neatmonster.nocheatplus.checks.fight;
 
-import fr.neatmonster.nocheatplus.actions.ParameterName;
-import fr.neatmonster.nocheatplus.checks.Check;
-import fr.neatmonster.nocheatplus.checks.CheckType;
-import fr.neatmonster.nocheatplus.checks.ViolationData;
-import fr.neatmonster.nocheatplus.checks.moving.util.MovingUtil;
-import fr.neatmonster.nocheatplus.compat.MCAccess;
-import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.InteractAxisTracing;
-import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
-import fr.neatmonster.nocheatplus.utilities.location.TrigUtil;
-import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
-import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.Check;
+import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
+import fr.neatmonster.nocheatplus.utilities.collision.InteractAxisTracing;
+import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
+import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
+
 /**
- *
+ * A check to verify that hits are legit in terms of target visibility (look-independant)
  * @author xaw3ep
  */
-public class Visible extends Check{
+public class Visible extends Check {
+    
     private final InteractAxisTracing rayTracing = new InteractAxisTracing();
+    
     private final WrapBlockCache wrapBlockCache;
     
     public Visible() {
@@ -50,8 +52,8 @@ public class Visible extends Check{
     }
 
     public boolean check(final Player player, final Location loc, 
-            final Entity damaged, final boolean damagedIsFake, final Location dLoc, 
-            final FightData data, final FightConfig cc) {
+                         final Entity damaged, final boolean damagedIsFake, final Location dLoc, 
+                         final FightData data, final FightConfig cc) {
         boolean cancel = false;
 
         final MCAccess mcAccess = this.mcAccess.getHandle();
@@ -82,7 +84,9 @@ public class Visible extends Check{
         
         final BlockCoord sCollidingBox = new BlockCoord(Location.locToBlock(dminX), Location.locToBlock(dminY), Location.locToBlock(dminZ));
         final BlockCoord eCollidingBox = new BlockCoord(Location.locToBlock(dmaxX), Location.locToBlock(dmaxY), Location.locToBlock(dmaxZ));
-        if (CollisionUtil.isInsideAABBIncludeEdges(eyeX, eyeY, eyeZ, dminX, dminY, dminZ, dmaxX, dmaxY, dmaxZ)) return cancel;
+        if (CollisionUtil.isInsideAABBIncludeEdges(eyeX, eyeY, eyeZ, dminX, dminY, dminZ, dmaxX, dmaxY, dmaxZ)) {
+            return cancel;
+        }
         
         final BlockCache blockCache = this.wrapBlockCache.getBlockCache();
         blockCache.setAccess(loc.getWorld());
@@ -122,7 +126,8 @@ public class Visible extends Check{
                         break;
                     }
                 }
-            } while (cancel && canContinue);
+            } 
+            while (cancel && canContinue);
         }
         if (rayTracing.getStepsDone() > rayTracing.getMaxSteps()) {
             cancel = true;

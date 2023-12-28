@@ -99,95 +99,29 @@ public class MovingUtil {
                 && (cc.ignoreCreative || gameMode != GameMode.CREATIVE) && !player.isFlying()
                 // IgnoreAllowFlight is off or the player is allowed to fly (cf).
                 && (cc.ignoreAllowFlight || !player.getAllowFlight())
-                // Gliding is handled by cf
-                && (
-                    !Bridge1_9.isGlidingWithElytra(player) 
-                    || !isGlidingWithElytraValid(player, fromLocation, data, cc)
-                )
-                // Riptiding is handled by Sf.
-                || Bridge1_13.isRiptiding(player)
             ;
     }
 
 
     /**
-     * Get vertical velocity that's behind this motion.
-     * @param lasthDistance
-     * @param yDistance
-     * @param radPitch pitch in Radians (elytra)
-     * @param squaredCos squared of cos(radPitch) (elytra)
-     * @param levitation 
-     * @param speed (elytra)
-     * @param up (elytra)
-     * @return baseV.
-     */
-    public static double getBaseV(double lasthDistance, double yDistance, float radPitch, double squaredCos, double levitation, double speed, boolean up) { 
-
-        double baseV = yDistance;
-        if (levitation >= 0.0) {
-            baseV /= Magic.FRICTION_MEDIUM_AIR;
-            return (baseV - 0.01 * levitation) / 0.8 + 0.221;
-        } 
-        if (radPitch < 0.0 && !up) {
-            baseV -= lasthDistance * -Math.sin(radPitch) * 0.128;
-        }
-        if (baseV < 0.0) {
-            baseV /= (1.0 - (0.1 * squaredCos));
-        }
-        baseV -= speed * (-1.0 + squaredCos * 0.75);
-        return baseV;
-    }
-
-
-    /**
-     * Consistency / cheat check. Prerequisite is Bridge1_9.isGlidingWithElytra(player) having returned true.
+     * Consistency / cheat check. 
+     * Prerequisite is Bridge1_9.isGlidingWithElytra(player) having returned true.
      * 
      * @param player
-     * @param fromLocation
+     * @param loc
      * @param data
      * @param cc
      * @return
      */
-    public static boolean isGlidingWithElytraValid(final Player player, final PlayerLocation fromLocation, 
-                                                   final MovingData data, final MovingConfig cc) {
-
-        // TODO: Configuration for which/if to check on either lift-off / unknown / gliding.
-        // TODO: Item durability?
-        // TODO: TEST LAVA (ordinary and boost, lift off and other).
-        /*
-         * TODO: Allow if last move not touched ground (+-) after all the
-         * onGround check isn't much needed, if we can test for the relevant stuff (web?).
-         */
-        
-        // Firstly, validate the lift off, if the EntityToggleGlideEvent is not present.
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        if (
-                !Bridge1_9.hasEntityToggleGlideEvent() 
-                // If the event is absent (for whatever reason) use our own definition of "toggle glide on" 
-                || lastMove.modelFlying == null // Last move didn't have a model and the player is now gliding. Assume this is a lift off.
-                || !MovingConfig.ID_JETPACK_ELYTRA.equals(lastMove.modelFlying.getId())) { // Same as above.
-            // Treat as a lift off.
-            return canLiftOffWithElytra(player, fromLocation, data);
-        }
-
-        /*
-         * TODO: Test / verify it gets turned off if depleted during gliding,
-         * provided the client doesn't help knowing. (Only shortly tested with
-         * grep -r "ItemElytra.d" <- looks good.)
-         */
-        //        // Test late, as lift-off check also tests for this.
-        //        if (InventoryUtil.isItemBroken(player.getInventory().getChestplate())) {
-        //            return false;
-        //        }
-        // Actually check if this gliding phase is valid, finally.
+    public static boolean canGlide(final Player player, final PlayerLocation loc, final MovingData data) {
         // Only stuck-speed blocks (webs/berry bushes/powder snow?) can stop a player who isn't propelled by a rocket.
-        return data.fireworksBoostDuration > 0 || !fromLocation.isInWeb() || !player.isDead() || !player.isSleeping();
+        return data.fireworksBoostDuration > 0 && !loc.isResetCond()
+               || !loc.isResetCond() && !player.isDead() && !player.isSleeping() && !InventoryUtil.isItemBroken(player.getInventory().getChestplate());
     }
-
 
     /**
      * To be called on EntityToggleGligeEvent(s). If the event is absent, this must be called after checking for lift-off assumption conditions.
-     * (CB: on ground is done wrongly, inWater is probably not correct, web is not checked).
+     * (CB: on ground is done wrongly, inWater is probably NOT correct, web is not checked).
      * 
      * @param player
      * @param loc

@@ -447,15 +447,6 @@ public class DefaultConfig extends ConfigFile {
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "spectator." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 154);
             set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "spectator." + ConfPaths.SUB_GROUND, false, 154);
         }
-        if (Bridge1_9.hasElytra()) {
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_HORIZONTAL_SPEED, 666, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_HORIZONTAL_MODSPRINT, 1.0, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_ASCEND_SPEED, 0, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_VERTICAL_MAXHEIGHT, cfMaxWorldY, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_MODEL + "elytra." + ConfPaths.SUB_MODIFIERS, false, 154);
-	        set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_FWRESET, false, 154);
-            set(ConfPaths.MOVING_CREATIVEFLY_EYTRA_STRICT, true, 154);
-        }
         set(ConfPaths.MOVING_CREATIVEFLY_ACTIONS,
                 "cancel log:flyfile:3:5:f"
                         + " vl>100 cancel log:creativefly:8:9:i log:flyfile:0:10:f"
