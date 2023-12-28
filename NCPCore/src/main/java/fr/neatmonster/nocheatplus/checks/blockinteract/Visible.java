@@ -41,7 +41,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.InteractAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
-import fr.neatmonster.nocheatplus.utilities.location.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
 public class Visible extends Check {
 

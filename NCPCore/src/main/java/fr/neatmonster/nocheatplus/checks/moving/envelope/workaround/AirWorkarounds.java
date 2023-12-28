@@ -65,12 +65,12 @@ public class AirWorkarounds {
                /*
                 * 0: Touch down into ground / webs / water / whatever, allow the movement. NCP will then force-stop gliding.
                 */
-               !from.isOnGroundOrResetCond() && to.isOnGroundOrResetCond() && thisMove.yDistance < 0.0
+               !from.isOnGroundOrResetCond() && to.isOnGroundOrResetCond() && lastMove.yDistance < 0.0
                && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
                /*
                 * 0: Same case but with a block change.
                 */
-               || !fromOnGround && toOnGround && thisMove.yDistance < 0.0
+               || !fromOnGround && toOnGround && lastMove.yDistance < 0.0
                && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
                /*
                 * 0: With Bukkit skipping moving events... Not sure how further we can confine this one.
@@ -150,7 +150,7 @@ public class AirWorkarounds {
      * @param toOnGround
      * @param from
      * @param to
-     * @param predictedDistance This will be overridden if this method returns true.
+     * @param predictedDistance Will be overridden if this method returns true.
      * @return True, if a non-predictable case applies.
      */
     public static boolean checkPostPredictWorkaround(final MovingData data, final boolean fromOnGround, final boolean toOnGround, final PlayerLocation from, 
@@ -175,23 +175,7 @@ public class AirWorkarounds {
                 * This may allow for 1-block step cheats variants, or other low-level exploits that do make use of the landing acceleration of the player, but it's better than having a ton of workarounds to deal with.
                 */
                 // TODO: Demand having TWO descending move? Last move as well?
-                !fromOnGround && toOnGround && thisMove.yDistance < 0.0 
-                && (
-                    // 1: Only if the player is actually decelerating (without this, there would be room for some nasty exploits [i.e.: abusing the workaround to ACCELERATE down to the ground faster than normal])
-                    thisMove.yDistance > lastMove.yDistance 
-                    // 1: RANT: Why can't this stupid ass game ever be CONSISTENT with its mechanics!?
-                    // When landing: thisMove.yDistance > lastMove.yDistance 99% of the time.
-                    // B U T there seem to be cases where player micro-ACCELERATES onto the ground FOR LITERALLY NO REASON.
-                    || MathUtil.inRange(0.001, Math.abs(yAcceleration), 0.008)
-                    // 1: With crawl mode (Very minor acceleration after colliding above)
-                    // Should note that this does not happen with jump effect.
-                    // https://gyazo.com/4808ee11dce1a527bb95100f86be2b08
-                    || BridgeMisc.isVisuallyCrawling(player) && thisMove.yDistance < lastMove.yDistance 
-                    && MathUtil.inRange(0.0, Math.abs(yAcceleration), Magic.GRAVITY_MAX)
-                    // 1: With bounce effect (With weaker bounces, the player tends to slightly accelerate to the ground instead)
-                    // NOTE: this is the preparation flag: the player has not yet bounced up.
-                    || data.verticalBounce != null && thisMove.yDistance < lastMove.yDistance
-                )
+                !fromOnGround && toOnGround && thisMove.yDistance < 0.0 && thisMove.yDistance > predictedDistance && predictedDistance < 0.0
                 && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
                /*
                 * 0: Allow players preparing to step down a block / simply descending.
@@ -207,10 +191,8 @@ public class AirWorkarounds {
                 * Happens when sprinting over small, 1-block wide gaps (the game does allow players to do so)
                 * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
                 */
-                || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround 
-                && lastMove.toIsValid && thisMove.hDistance > 0.2 && lastMove.yDistance == 0.0 
-                && (thisMove.yDistance == 0.0 || thisMove.yDistance < 0.0 && thisMove.yDistance > -Magic.DEFAULT_GRAVITY) // Sometimes gravity does get applied albeit for an extremely short amount of time.
-                && data.sfJumpPhase <= 1
+                || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround && data.sfJumpPhase <= 1
+                && lastMove.toIsValid && thisMove.hDistance > 0.2 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0
                 && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*
                 * 0: Wildcard lost-grund: no clean way to handle it without resorting to a ton of (more) hardcoded magic. 
