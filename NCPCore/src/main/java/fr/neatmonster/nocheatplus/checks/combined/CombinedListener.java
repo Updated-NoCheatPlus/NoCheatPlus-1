@@ -100,11 +100,11 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 // Don't ignore cancelled events here (gliding is client-sided, correct me if I'm wrong).
                 @EventHandler(priority = EventPriority.LOWEST)
                 public void onToggleGlide(final EntityToggleGlideEvent event) {
-                    final IPlayerData pData = DataManager.getPlayerData(player);
+                    final IPlayerData pData = DataManager.getPlayerData((Player)event.getEntity());
                     final MovingData data = pData.getGenericInstance(MovingData.class);
                     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
                     // Always fake use velocity here to smoothen the transition between glide->no glide or no no glide->glide transitions.
-                    data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+                    data.addVelocity((Player)event.getEntity(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
                     if (shouldDenyGlidingStart((Player)event.getEntity(), event.isGliding(), true)) {
                         event.setCancelled(true);
                     }
@@ -217,7 +217,9 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         aux.returnPlayerMoveInfo(info);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         // Smoothen the transition by fake using velocity.
-        data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+        if (!Bridge1_9.hasEntityToggleGlideEvent()) {
+            data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+        }
         if (pData.isDebugActive(CheckType.MOVING)) {
             debug(event.getPlayer(), "Abort gliding phase.");
         }
@@ -238,9 +240,9 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         // For Bukkit: sneaking= shift key press. Both player#isSneaking() and PlayerToggleSneakEvents are fired with action packets (PRESS/RELEASE_SHIFT_KEY).
         // For Minecraft: sneaking= being in crouch pose or in crawl pose (added in 1.14. Check "isMovingSlowly()" method in client code).
         // Historically (up until Minecraft 1.14), a player could have entered the crouching pose by tapping the shift key only, thus, Bukkit's coincidence of SNEAKING == SHIFTING was okay.
-        // This coincidence however is no longer true, because of the aforementioned version introducing two new mechanics related the poses/sneaking.
+        // This coincidence however is no longer true, because of the aforementioned version introducing two new mechanics related to poses/sneaking.
         //  -> The bounding box is contracted if sneaking, allowing players to enter 1.5 blocks-high areas and STAY in crouch pose, REGARDLESS of shift key presses (until they get out).
-        //     (Thus, a player can enter such area and proceed to spam shift key presses without ever leaving the pose)
+        //     (Thus, a player can enter such an area and proceed to spam shift key presses without ever leaving the pose)
         //  -> 1.14 added "crawl mode", which activates if the player is somehow constricted in areas lower than 1.5 blocks (i.e.: with trapdoors).
         //     When players are in this mode, inputs are always slowed down, regardless of shift key presses (once again).
         //     [Since crawling conveniently shares the same pose of swimming, Minecraft simply checks if the player is in SWIMMING pose and not in water (Check client code in: LocalPlayer.java -> aiStep() -> isMovingSlowly() -> isVisuallyCrawling())]

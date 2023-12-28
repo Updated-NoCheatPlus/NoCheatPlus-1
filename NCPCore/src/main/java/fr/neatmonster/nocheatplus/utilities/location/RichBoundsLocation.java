@@ -1086,9 +1086,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is on ground
      */
     public boolean isOnGround(final double yOnGround) {
-        if (onGround != null) {
+        /*if (onGround != null) {
             return onGround;
-        }
+        }*/
         if (notOnGroundMaxY >= yOnGround) return false;
         else if (onGroundMinY <= yOnGround) return true;
         return isOnGround(yOnGround, 0D, 0D, 0L);
@@ -1104,9 +1104,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is on ground
      */
     public boolean isOnGround(final long ignoreFlags) {
-        if (onGround != null) {
+        /*if (onGround != null) {
             return onGround;
-        }
+        }*/
         // Full on-ground check (blocks).
         return BlockProperties.isOnGround(world, blockCache, minX, minY - yOnGround, minZ, maxX, minY, maxZ, ignoreFlags);
     }
@@ -1122,9 +1122,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is on ground
      */
     public boolean isOnGround(final double yOnGround, final long ignoreFlags) {
-        if (onGround != null) {
+        /*if (onGround != null) {
             return onGround;
-        }
+        }*/
         if (ignoreFlags == 0) {
             if (notOnGroundMaxY >= yOnGround) return false;
             else if (onGroundMinY <= yOnGround) return true;
@@ -1146,9 +1146,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is on ground
      */
     public boolean isOnGround(final double yOnGround, final double xzMargin, final double yMargin) {
-        if (onGround != null) {
+        /*if (onGround != null) {
             return onGround;
-        }
+        }*/
         if (xzMargin >= 0 && onGroundMinY <= yOnGround) return true;
         if (xzMargin <= 0 && yMargin == 0) {
             if (notOnGroundMaxY >= yOnGround) return false;
@@ -1171,9 +1171,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is on ground
      */
     public boolean isOnGround(final double yOnGround, final double xzMargin, final double yMargin, final long ignoreFlags) {
-        if (onGround != null) {
+        /*if (onGround != null) {
             return onGround;
-        }
+        }*/
         if (ignoreFlags == 0) {
             if (xzMargin >= 0 && onGroundMinY <= yOnGround) return true;
             if (xzMargin <= 0 && yMargin == 0) {

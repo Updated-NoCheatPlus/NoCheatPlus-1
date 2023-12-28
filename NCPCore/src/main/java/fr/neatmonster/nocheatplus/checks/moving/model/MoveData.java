@@ -114,11 +114,6 @@ public class MoveData {
     
     // Meta stuff
     /**
-     * Set if strict elytra active on a move.
-     */
-    public boolean elytrafly;
-
-    /**
      * The fly check that was using the current data. One of MOVING_SURVIVALFLY,
      * MOVING_CREATIVEFLY, UNKNOWN.
      */
@@ -139,7 +134,6 @@ public class MoveData {
         hDistance = TrigUtil.xzDistance(from, to);
         distanceSquared = yDistance * yDistance + hDistance * hDistance;
         toIsValid = true;
-        elytrafly = false;
         flyCheck = null;
         modelFlying = null;
     }

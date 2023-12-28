@@ -71,6 +71,7 @@ public class PlayerMoveData extends MoveData {
      */
     public boolean hasAttackSlowDown;
 
+
     // Bounds set by checks.
     /**
      * Estimated X distance only. Set in SurvivalFly.
@@ -103,6 +104,9 @@ public class PlayerMoveData extends MoveData {
 
     /** The player can potentially jump with this move. Set in SurvivalFly.check(vdistrel) */
     public boolean canJump;
+    
+    /** Highly uncertain movement: player might step up with this movement; we cannot know for sure. Set with lost-ground couldstep */
+    public boolean couldStepUp;
     
 
     // Meta stuff.
@@ -152,11 +156,12 @@ public class PlayerMoveData extends MoveData {
         bunnyHop = false;
         canStep = false;
         canJump = false;
+        couldStepUp = false;
         // Bounds set by checks.
         xAllowedDistance = 0.0;
+        yAllowedDistance = 0.0;
         zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
-        yAllowedDistance = 0.0;
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;

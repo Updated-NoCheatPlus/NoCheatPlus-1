@@ -524,7 +524,7 @@ public class SurvivalFly extends Check {
         }
         // WASD key presses, as well as sneaking and item-use are irrelevant when gliding.
         thisMove.hasImpulse = false;
-        // Initialize speed and horizontal friction.
+        // Initialize speed.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.xDistance : 0.0;
         thisMove.yAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
@@ -622,12 +622,12 @@ public class SurvivalFly extends Check {
         // Surely a questionable decision on Mojang's part.
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
             final Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from);
-            // Riptide works by propelling the player in air after releasing the trident (the effect only pushes the player, unless is on ground)
+            // Fortunately, we do not have to account for onGround push here, as gliding does not work on ground.
             thisMove.xAllowedDistance += propellingForce.getX();
             thisMove.yAllowedDistance += propellingForce.getY();
             thisMove.zAllowedDistance += propellingForce.getZ();
         }
-        
+        // Can a vertical workaround apply? If so, override the prediction.
         if (AirWorkarounds.checkPostPredictWorkaround(data, fromOnGround, toOnGround, from, to, thisMove.yAllowedDistance, player, isNormalOrPacketSplitMove)) {
             thisMove.yAllowedDistance = thisMove.yDistance;
         }
@@ -761,9 +761,9 @@ public class SurvivalFly extends Check {
         // (Ground check is already included)
         if (from.isOnSlimeBlock()) {
             // Use pData#isSneaking() because swimming on slime blocks is a thing.
-            if (Math.abs(thisMove.yDistance) < 0.1 && !pData.isSneaking()) { // -0.0784000015258789
-                thisMove.xAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
-                thisMove.zAllowedDistance *= 0.4 + Math.abs(thisMove.yDistance) * 0.2;
+            if (Math.abs(lastMove.yDistance) < 0.1 && !pData.isSneaking()) { // -0.0784000015258789
+                thisMove.xAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
+                thisMove.zAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
             }
         }
         // Sliding speed (honey block)
@@ -1203,10 +1203,10 @@ public class SurvivalFly extends Check {
             }
         }
         // Check for workarounds at the end.
+        // Override the prediction (just allow the movement in this case.)
         if (AirWorkarounds.checkPostPredictWorkaround(data, fromOnGround, toOnGround, from, to, thisMove.yAllowedDistance, player, isNormalOrPacketSplitMove)) {
-            // Override the prediction (just allow the movement in this case.)
             thisMove.yAllowedDistance = thisMove.yDistance;
-            player.sendMessage("ID: " + (!justUsedWorkarounds.isEmpty() ? StringUtil.join(justUsedWorkarounds, " , ") : ""));
+            if (!thisMove.touchedGroundWorkaround) player.sendMessage("ID: " + (!justUsedWorkarounds.isEmpty() ? StringUtil.join(justUsedWorkarounds, " , ") : ""));
         }
 
         /** Expected difference from current to allowed */       
@@ -1228,7 +1228,7 @@ public class SurvivalFly extends Check {
         // Check on change of Y direction        //
         ///////////////////////////////////////////
         /* Not on ground, not on climbables, not in liquids, not in stuck-speed, no lostground (...) */
-        final boolean fullyInAir = !resetFrom && !resetTo && !(data.timeRiptiding + 2000 > now);
+        final boolean fullyInAir = !thisMove.touchedGroundWorkaround && !resetFrom && !resetTo && !(data.timeRiptiding + 2000 > now);
         final boolean yDirectionSwitch = lastMove.toIsValid && lastMove.yDistance != yDistance && (yDistance <= 0.0 && lastMove.yDistance >= 0.0 || yDistance >= 0.0 && lastMove.yDistance <= 0.0); 
 
         if (fullyInAir && yDirectionSwitch) {
@@ -1270,7 +1270,9 @@ public class SurvivalFly extends Check {
                                        boolean useBlockChangeTracker, int tick) {
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
-        // Vertical push/pull: top priority
+        /* 
+         * 0: Vertical push/pull is put on top priority
+         */ 
         if (useBlockChangeTracker) {
             double[] res = getVerticalBlockMoveResult(thisMove.yDistance, from, to, tick, data);
             if (res != null) {
@@ -1280,22 +1282,37 @@ public class SurvivalFly extends Check {
                 return new double[]{yAllowedDistance, yDistanceAboveLimit};
             }
         }
+
         // Don't test if gliding or riptiding with the stuff below.
-        if (Bridge1_9.isGliding(player) || Bridge1_13.isRiptiding(player)) {
+        if (Bridge1_9.isGliding(player) || Bridge1_13.isRiptiding(player) || from.isInLiquid() || from.isOnClimbable()) {
             return new double[]{yAllowedDistance, yDistanceAboveLimit};
         }
-        // Attempt to re-estimate with 0 momentum.
+
         /*
-         * About isTouchDownMove~
+         * 1: About isTouchDownMove~
          * -> The usual case when landing back on the ground:
          *    This tick: AIR (friction) -> TO_ON_GROUND (still friction; apply the touchdown workaround)
          *    Next tick: FROM_ON_GROUND (speed is NOW reset back to 0.0) -> TO_ON_GROUND or AIR; depending if the player decides to jump again.
          * This does not happen when breaking blocks below. The fromOnGround moment is usually skipped, so speed never gets fully reset.
          * HOWEVER, the next move will still have speed based on a last move with 0 speed (as if it was reset).
          * This is yet another weird behaviour involving Minecraft's collision logic, which seemingly hides the reset of speed.
-         * To fix this, we can resort to brute force, and attempt to re-estimate speed starting with 0.0 momentum upon failing vdistrel (provided all workarounds have been tested already).
+         * To fix this, we can resort to brute force, and attempt to re-estimate speed starting with 0.0 momentum upon failing vdistrel.
          */
         if (PlayerEnvelopes.isTouchDownMove(secondLastMove, lastMove) && yDistanceAboveLimit > 0.0) {
+            double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo, 
+                                    thisMove.hDistance, thisMove.yDistance, isNormalOrPacketSplitMove, multiMoveCount, lastMove, 
+                                    data, cc, pData, true);
+            yAllowedDistance = res[0];
+            yDistanceAboveLimit = res[1];
+        }
+        /* 
+         * 2: If a lost ground case happened with the previous move and this move has thrown a violation, attempt to re-estimate starting from 0.0 momentum
+         * (In case the movement with 0.0 y motion gets hidden by Minecraft's collision function, likewise the case above. Can be noticed by stepping down a stair of slabs)
+         * See: https://gyazo.com/0f748030296aebc0484564629abe6864
+         * After interpolating the ground status, notice how the player immediately proceeds to descend with speed as if they actually landed on the ground with the previous move (-0.0784) 
+         */
+        if (!thisMove.touchedGroundWorkaround && !thisMove.couldStepUp && lastMove.touchedGroundWorkaround && yDistanceAboveLimit > 0.0) {
+            // Explicitly demand to not be having a lost ground case with this move.
             double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo, 
                                     thisMove.hDistance, thisMove.yDistance, isNormalOrPacketSplitMove, multiMoveCount, lastMove, 
                                     data, cc, pData, true);
@@ -1336,26 +1353,27 @@ public class SurvivalFly extends Check {
         /*
          * 1: Player failed with a concurrent lost ground case: force-set the ground status and re-estimate.
          */
-        if (thisMove.touchedGroundWorkaround && hDistanceAboveLimit > 0.0) {
+        if ((thisMove.touchedGroundWorkaround || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.touchedGroundWorkaround) && hDistanceAboveLimit > 0.0) {
             double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
                                     fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
             hAllowedDistance = res[0];
             hDistanceAboveLimit = res[1];
         }
         /*
-         * 2: Edge case: undetectable jump and ground status: resort to brute force.
+         * 2: Undetectable jump: player failed with the onGround flag, let's brute force with off-ground then.
          */
         if (PlayerEnvelopes.isVerticallyConstricted(from, to, pData) && hDistanceAboveLimit > 0.0) {
             double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
-                                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, true);
+                                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, true); 
             hAllowedDistance = res[0];
             hDistanceAboveLimit = res[1];
         }
         /* 
-         * 3: Above limit again? Check for past onGround states caused by block changes (block changed) 
+         * 3: Above limit again? Check for past onGround states caused by block changes (i.e.: ground was pulled off from the player's feet)
          */
         if (useBlockChangeTracker && hDistanceAboveLimit > 0.0) {
-            if (from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)) {
+            // Be sure to test this only if the player is seemingly off ground
+            if (!from.isOnGround() && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)) {
                 tags.add("blockchange_h");
                 double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
                                         fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
@@ -1364,7 +1382,7 @@ public class SurvivalFly extends Check {
             }
         }
         /* 
-         * 4: Still above limit? Maybe this was a block push, rather than a generic ground change
+         * 4: Still above limit? Maybe this was a block push, rather than a generic ground change (i.e.: physically pushed by a piston sideways)
          */
         // 1.025 is a Magic value
         // Why the hell would block pushing be limited to distances lower than 1.025?? 

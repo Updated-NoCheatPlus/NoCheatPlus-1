@@ -166,10 +166,6 @@ public class PlayerEnvelopes {
         return from.isHeadObstructed(0.09, false) && from.isOnGround() && to.isOnGround();
     }
 
-    public static boolean isMathematicallyOnGround(final PlayerLocation pLoc) {
-        return Math.abs(pLoc.getY() % (1 / 64D)) < Magic.PREDICTION_EPSILON;
-    }
-
     /**
      * Test if this move is a bunnyhop <br>
      * (Aka: sprint-jump. Increases the player's speed up to roughly twice the usual base speed)
@@ -216,17 +212,6 @@ public class PlayerEnvelopes {
         if (thisMove.isRiptiding) {
             return false;
         }
-        // How the fuck do you even detect jumping here !??
-        // Motion doesn't change
-        // Locations do not change
-        // Bukkit velocity does not change...
-        // Math on ground doesn't f work.
-        // ... Do we need to brute force speed with jumping !? ~Lol?
-       /*if (isVerticallyConstricted(from, to, pData) 
-           && isMathematicallyOnGround(from) && !isMathematicallyOnGround(to)) {
-            Bukkit.getServer().broadcastMessage("Trying to jump");
-            return true;
-        }*/
         return  
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
@@ -291,21 +276,23 @@ public class PlayerEnvelopes {
         if (thisMove.isRiptiding) {
             return false;
         }
-        // NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
         return  
+                // 0: NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
                 fromOnGround && toOnGround
                 && (
                     // 1: Handle "excessive ground" cases. AKA: cases where the client leaves ground, but for NCP, the distance from ground is so small that it cannot distingush, resulting as if the player never left.
                     // (Thus, in this case, the game correctly applies friction)
                     thisMove.yDistance <= 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
                     // 1: Otherwise, if motion is positive, we must check against the exact stepping motion; if we don't want abuses that is.
-                    || thisMove.yDistance > 0.0 && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
+                    || MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
                 )
+                // 0: Wildcard couldstep
+                || thisMove.couldStepUp
                 // 0: ...Or having an extremely little air time from a ground status to a ground status (lastMove: from air/ground OR to air/ground thisMove: toOnGround.
                 || lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, Math.abs(thisMove.yDistance) * 1.3)
                 && lastMove.yDistance <= 0.0 && thisMove.yDistance > 0.0
                 && lastMove.touchedGround && lastMove.toIsValid && toOnGround
-                && MathUtil.inRange(0.001, thisMove.yDistance, cc.sfStepHeight)
+                && MathUtil.inRange(0.01, thisMove.yDistance, cc.sfStepHeight)
             ;
     }
 
