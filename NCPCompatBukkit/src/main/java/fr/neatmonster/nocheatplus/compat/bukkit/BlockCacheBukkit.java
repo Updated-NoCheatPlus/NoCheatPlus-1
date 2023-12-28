@@ -64,7 +64,7 @@ public class BlockCacheBukkit extends BlockCache {
     public double[] fetchBounds(final int x, final int y, final int z){
         Material mat = getType(x, y, z);
         long flags = BlockFlags.getBlockFlags(mat);
-        if ((flags & (BlockFlags.F_IGN_PASSABLE)) != 0 && (flags & (BlockFlags.F_GROUND)) == 0) {
+        if (flags == BlockFlags.F_IGN_PASSABLE) {
             return null;
         }
         // minX, minY, minZ, maxX, maxY, maxZ
