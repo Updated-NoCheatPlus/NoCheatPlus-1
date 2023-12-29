@@ -51,6 +51,8 @@ import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
+import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
@@ -76,7 +78,8 @@ public class SurvivalFly extends Check {
     private final ArrayList<String> justUsedWorkarounds = new ArrayList<String>();
     private final BlockChangeTracker blockChangeTracker;
     /** Location for temporary use with getLocation(useLoc). Always call setWorld(null) after use. Use LocUtil.clone before passing to other API. */
-    private final Location useLoc = new Location(null, 0, 0, 0);    
+    private final Location useLoc = new Location(null, 0, 0, 0);   
+    private final IHandle<IEntityAccessCollide> entityCollide = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IEntityAccessCollide.class);
 
     /**
      * Instantiates a new survival fly check.
@@ -247,6 +250,12 @@ public class SurvivalFly extends Check {
                 yAllowedDistance = vRes[0];
                 yDistanceAboveLimit = vRes[1];
             }
+        }
+
+        if (entityCollide != null) {
+        	boolean onGroundNMS = entityCollide.getHandle().getOnGround(player);
+            Vector vec = entityCollide.getHandle().collide(player, new Vector(thisMove.xDistance, thisMove.yDistance, thisMove.zDistance), onGroundNMS, cc);
+            System.out.println("onGrd:" + onGroundNMS + " | " + vec + " | " + thisMove.xDistance + " " + thisMove.yDistance + " " + thisMove.zDistance);
         }
        
 
@@ -1210,7 +1219,8 @@ public class SurvivalFly extends Check {
         }
 
         /** Expected difference from current to allowed */       
-        final double offset = thisMove.yDistance - thisMove.yAllowedDistance; 
+        final double offset = thisMove.yDistance - thisMove.yAllowedDistance;
+        System.out.println("yDistance:"+ thisMove.yDistance + " " + thisMove.yAllowedDistance + ":allowedYDist");
         if (Math.abs(offset) < Magic.PREDICTION_EPSILON) {
             // Accuracy margin.
         }
