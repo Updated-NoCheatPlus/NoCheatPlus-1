@@ -529,7 +529,7 @@ public class SurvivalFly extends Check {
         // Beats me why Mojang keeps letting players perform such ridiculous moves.
         if (!Bridge1_9.isGliding(player)) {
             // No Gliding, no deal
-            return new double[] {thisMove.hDistance, 0.0, thisMove.yAllowedDistance, 0.0};
+            return new double[] {thisMove.hDistance, 0.0, thisMove.yDistance, 0.0};
         }
         // WASD key presses, as well as sneaking and item-use are irrelevant when gliding.
         thisMove.hasImpulse = false;
@@ -600,7 +600,7 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance += -viewVector.getZ() * baseSpeed / viewVecHorizontalLength;
         }
         if (viewVecHorizontalLength > 0.0) {
-            // Accellerate
+            // Accelerate
             thisMove.xAllowedDistance += (viewVector.getX() / viewVecHorizontalLength * thisMoveHDistance - thisMove.xAllowedDistance) * 0.1;
             thisMove.zAllowedDistance += (viewVector.getZ() / viewVecHorizontalLength * thisMoveHDistance - thisMove.zAllowedDistance) * 0.1;
         }
@@ -699,11 +699,11 @@ public class SurvivalFly extends Check {
          * - Call Entity.move() from LivingEntity.travel()
          *    -> Stuck speed multiplier 14
          *    -> maybeBackOffFromEdge - 15
-         *    -> wall collision(Entity.collide()) - 16
+         *    -> wall collision(Entity.collide()) - 16 [Speed is cut off]
          *
          *>>>>>>>Complete this move, prepare the next one.<<<<<<<
          *
-         *    -> horizontalCollision - next move - 1
+         *    -> horizontalCollision - next move - 1 [Speed is now reset to 0.0 on the colliding axis]
          *    -> checkFallDamage(do liquid puishing if was not previosly in water) - next move - 2
          *    -> Block.updateEntityAfterFallOn() - next move - 3
          *    -> Block.stepOn() (for slime block) - next move - 4
@@ -753,9 +753,9 @@ public class SurvivalFly extends Check {
         }
 
 
-        /////////////////////////////////////////////////////////////
-        // Next tick / move (client) -  Last tick / move (server)  //
-        /////////////////////////////////////////////////////////////
+        /////////////////////////////////
+        // Next tick / move           //
+        ////////////////////////////////
         // Initialize the allowed distance(s) with the previous speed. (Only if we have end-point coordinates)
         // This essentially represents the momentum of the player.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.to.getX() - lastMove.from.getX() : 0.0;
@@ -783,13 +783,8 @@ public class SurvivalFly extends Check {
             }
         }
         // Stuck speed reset (the game resets momentum each tick the player is in a stuck-speed block)
-        //if (this.stuckSpeedMultiplier.lengthSqr() > 1.0E-7D) {
-        //    p_19974_ = p_19974_.multiply(this.stuckSpeedMultiplier);
-        //    this.stuckSpeedMultiplier = Vec3.ZERO;
-        //    this.setDeltaMovement(Vec3.ZERO);
-        //}
         if (data.lastStuckInBlockHorizontal != 1.0) { 
-            if (TrigUtil.lengthSquared(data.nextStuckInBlockHorizontal, data.nextStuckInBlockVertical, data.nextStuckInBlockHorizontal) > 1.0E-7) { // (Vanilla check, don't ask)
+            if (TrigUtil.lengthSquared(data.lastStuckInBlockHorizontal, data.lastStuckInBlockVertical, data.lastStuckInBlockHorizontal) > 1.0E-7) { // (Vanilla check, don't ask)
                 // Throttle speed if stuck in.
                 thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0.0;
             }
@@ -807,9 +802,9 @@ public class SurvivalFly extends Check {
         // TODO: Properly implement
 
 
-        //////////////////////////////////////////////////////////////////////
-        // Current tick / move (client) - Current tick / move (server)      //
-        //////////////////////////////////////////////////////////////////////
+        /////////////////////////////
+        // Last tick / move        //
+        /////////////////////////////
         // See CombinedListener.java for more details
         // This is done before liquid pushing...
         if (thisMove.hasAttackSlowDown) {
@@ -851,8 +846,6 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
             thisMove.bunnyHop = true;
             tags.add("bunnyhop");
-            // Keep up the Improbable, but don't feed anything.
-            Improbable.update(System.currentTimeMillis(), pData);
         }
         // Transform theoretical inputs to acceleration vectors (getInputVector, entity.java)
         /* 
@@ -898,6 +891,7 @@ public class SurvivalFly extends Check {
                 zTheoreticalDistance[i] = MathUtil.clamp(zTheoreticalDistance[i], -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
             }
         }
+        // Stuck-speed multiplier.
         if (TrigUtil.lengthSquared(data.nextStuckInBlockHorizontal, data.nextStuckInBlockVertical, data.nextStuckInBlockHorizontal) > 1.0E-7) {
             for (i = 0; i < 9; i++) {
                 xTheoreticalDistance[i] *= (double) data.nextStuckInBlockHorizontal;
@@ -936,7 +930,7 @@ public class SurvivalFly extends Check {
          * Will also perform some auxiliary checks.<br>
          * Otherwise, only the combined horizontal distance will be checked against the offset.
          */
-        boolean strict = true; 
+        boolean strict = true; // cc.sfStrictHorizontal
         /**
          * If true, it means that there could be a theoretical speed to set, but a subcheck has requested not to.
          */
@@ -994,7 +988,7 @@ public class SurvivalFly extends Check {
      * @param zTheoreticalDistance The list of all 8 possible z distances.
      * @param from
      * @param to
-     * @param inputIndex Index of the array containing all theoretical directions (8 - left/forward/backward/right/b.left/b.right/f.right/f.left). 
+     * @param inputsIndex Index of the array containing all theoretical directions (8 - left/forward/backward/right/b.left/b.right/f.right/f.left). 
      */
     private void postPredictionProcessing(final MovingData data, final IPlayerData pData, final Player player, 
                                           double[] xTheoreticalDistance, double[] zTheoreticalDistance, final PlayerLocation from, final PlayerLocation to,
@@ -1006,17 +1000,14 @@ public class SurvivalFly extends Check {
         int z_idx = -1;
         if (inputsIdx > 8) {
             // Between all 8 predicted speeds, we couldn't find one with an offset of 0.0001 from actual speed.
-            // To prevent an IndexOutOfBounds, set the input index back to 4, which corresponds to the index of the input of NONE/NONE.
+            // To prevent an IndexOutOfBounds, set the input index back to 4.
             // (This is the one that will be set IF the player is actually cheating)
             inputsIdx = 4;   
             // Check for workarounds, unless the move has been judged to be illegal already.
             if (!forceViolation) {
                 x_idx = MathUtil.closestIndex(xTheoreticalDistance, to.getX() - from.getX());
                 z_idx = MathUtil.closestIndex(zTheoreticalDistance, to.getZ() - from.getZ());
-                if (HorizontalUncertainty.tryDoWallCollisionX(from, to, xTheoreticalDistance, x_idx) ||
-                    HorizontalUncertainty.tryDoWallCollisionZ(from, to, zTheoreticalDistance, z_idx) ||
-                    HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)
-                    ) {
+                if (HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)) {
                     // Set the highest predicted speed instead of the one with the smallest epsilon.
                     isPredictable = false;
                 }
@@ -1119,7 +1110,7 @@ public class SurvivalFly extends Check {
     /**
      * Core y-distance checks for in-air movement.
      * 
-     * @param forceResetMomentum Whether the check should start with 0.0 on starting to apply air friction.
+     * @param forceResetMomentum Whether the check should start with 0.0 speed on applying air friction.
      */
     private double[] vDistRel(final long now, final Player player, final PlayerLocation from, 
                               final boolean fromOnGround, final boolean resetFrom, final PlayerLocation to, 
@@ -1130,6 +1121,11 @@ public class SurvivalFly extends Check {
                               boolean forceResetMomentum) {
         double yDistanceAboveLimit = 0.0;
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        /**
+         * TODO: Later, introduce a "strict mode" for vertical handling as well.
+         * - Strict mode would be the default option (actual prediction below)
+         * - Non strict will fall-back to legacy checks: just measure the player's jump height and in-air count, possibly re-introduce the "average gravity change" [vacc] check
+         */
         
         ///////////////////////////////////////////////////////////////////////////////////
         // Estimate the allowed yDistance (per-move distance check)                      //
@@ -1138,7 +1134,7 @@ public class SurvivalFly extends Check {
          * Stuff to fix / take care of:
          *  - In water/lava -> in air transitions
          *  - Jumping in waterlogged blocks
-         *  - Wobbling up on slime blocks/beds (still need some adaptations to it. Getting sporadic false positives)
+         *  - Refine step definition.
          */
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
@@ -1165,12 +1161,12 @@ public class SurvivalFly extends Check {
                 // Speed is static in this case
                 thisMove.yAllowedDistance = -Magic.SLIDE_SPEED_THROTTLE;
             }
-            // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fallback to the jump check above).
+            // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fall back to the jump check above).
             // updateEntityAfterFallOn(), this function is called on the next move
             if (lastMove.yDistance < 0.0 && lastMove.to.onBouncyBlock && !player.isSneaking()) {
                 if (lastMove.to.onSlimeBlock) {
                     // The effect works by inverting the distance.
-                    // However this move is hidden because of Minecraft's collision function.
+                    // However, this move is hidden because of Minecraft's collision function.
                     thisMove.yAllowedDistance = -thisMove.yAllowedDistance;
                 }
                 else {
@@ -1202,7 +1198,36 @@ public class SurvivalFly extends Check {
             thisMove.yAllowedDistance *= data.lastFrictionVertical;
             // Stuck-speed with the updated multiplier
             if (TrigUtil.lengthSquared(data.nextStuckInBlockHorizontal, data.nextStuckInBlockVertical, data.nextStuckInBlockHorizontal) > 1.0E-7) {
-                thisMove.yAllowedDistance *= (double) data.nextStuckInBlockVertical;
+                thisMove.yAllowedDistance *= data.nextStuckInBlockVertical;
+            }
+            // Collision next.
+            System.out.println("Before passing to the collide function: " + thisMove.yAllowedDistance);
+            if (entityCollide != null) {
+                Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, thisMove.yAllowedDistance, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, cc);
+                if (thisMove.yAllowedDistance != collisionVector.getY()) {
+                    // Collided. Check special cases first.
+                    if (data.nextStuckInBlockVertical != 1.0 && !fromOnGround && !toOnGround) {
+                        // Ignore collision if the player has not yet landed on the ground.
+                        // The move just before the touch-down will get a cut off of speed to reach the ground, but speed gets throttled anyway to a static value (as though it was never applied))
+                        System.out.println("Ignore collision speed due to stuck-speed: " + thisMove.yAllowedDistance);
+                    }
+                    else if (collisionVector.getY() == 0.0 && from.isHeadObstructed(1.5, false)) { // If the resulting collision is 0.0, the player will end up on ground with the next move.
+                        // Fix for Minecraft skipping the "speed reset moment". Can be observed by jumping with head obstructed in a 2-blocks high area.
+                        // The function will set speed back to 0.0 here; friction will be applied on the very next tick, but the client never sends the "reset move" the server (instead we see the player immediately descending but with speed that is still based on 0 momentum)
+                        thisMove.yAllowedDistance = collisionVector.getY();
+                        // Must re-iterate gravity here.
+                        if (BridgeMisc.hasGravity(player)) {
+                            thisMove.yAllowedDistance -= !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
+                        }
+                        thisMove.yAllowedDistance *= data.lastFrictionVertical;
+                        System.out.println("Reiterated gravity after 0.0 collision: " + thisMove.yAllowedDistance);
+                    }
+                    else {
+                        // No special case happened.
+                        thisMove.yAllowedDistance = collisionVector.getY();
+                        System.out.println("Just passed to the collide function: " + collisionVector.getY());
+                    }
+                }
             }
             // TODO: Needs to be adjusted for on ground pushing
             if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
@@ -1211,8 +1236,7 @@ public class SurvivalFly extends Check {
                 player.sendMessage("Trident propel(v): " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.yAllowedDistance));
             }
         }
-        // Check for workarounds at the end.
-        // Override the prediction (just allow the movement in this case.)
+        // Check for workarounds at the end and override the prediction if needed (just allow the movement in this case.)
         if (AirWorkarounds.checkPostPredictWorkaround(data, fromOnGround, toOnGround, from, to, thisMove.yAllowedDistance, player, isNormalOrPacketSplitMove)) {
             thisMove.yAllowedDistance = thisMove.yDistance;
             if (!thisMove.touchedGroundWorkaround) player.sendMessage("ID: " + (!justUsedWorkarounds.isEmpty() ? StringUtil.join(justUsedWorkarounds, " , ") : ""));
@@ -1298,25 +1322,8 @@ public class SurvivalFly extends Check {
             return new double[]{yAllowedDistance, yDistanceAboveLimit};
         }
 
-        /*
-         * 1: About isTouchDownMove~
-         * -> The usual case when landing back on the ground:
-         *    This tick: AIR (friction) -> TO_ON_GROUND (still friction; apply the touchdown workaround)
-         *    Next tick: FROM_ON_GROUND (speed is NOW reset back to 0.0) -> TO_ON_GROUND or AIR; depending if the player decides to jump again.
-         * This does not happen when breaking blocks below. The fromOnGround moment is usually skipped, so speed never gets fully reset.
-         * HOWEVER, the next move will still have speed based on a last move with 0 speed (as if it was reset).
-         * This is yet another weird behaviour involving Minecraft's collision logic, which seemingly hides the reset of speed.
-         * To fix this, we can resort to brute force, and attempt to re-estimate speed starting with 0.0 momentum upon failing vdistrel.
-         */
-        if (PlayerEnvelopes.isTouchDownMove(secondLastMove, lastMove) && yDistanceAboveLimit > 0.0) {
-            double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo, 
-                                    thisMove.hDistance, thisMove.yDistance, isNormalOrPacketSplitMove, multiMoveCount, lastMove, 
-                                    data, cc, pData, true);
-            yAllowedDistance = res[0];
-            yDistanceAboveLimit = res[1];
-        }
         /* 
-         * 2: If a lost ground case happened with the previous move and this move has thrown a violation, attempt to re-estimate starting from 0.0 momentum
+         * 1: If a lost ground case happened with the previous move and this move has thrown a violation, attempt to re-estimate starting from 0.0 momentum
          * (In case the movement with 0.0 y motion gets hidden by Minecraft's collision function, likewise the case above. Can be noticed by stepping down a stair of slabs)
          * See: https://gyazo.com/0f748030296aebc0484564629abe6864
          * After interpolating the ground status, notice how the player immediately proceeds to descend with speed as if they actually landed on the ground with the previous move (-0.0784) 

@@ -29,10 +29,7 @@ import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockFormEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPistonRetractEvent;
-import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.material.Directional;
@@ -128,6 +125,17 @@ public class BlockChangeListener implements Listener {
             public void onEvent(PlayerInteractEvent event) {
                 if (enabled) {
                     onPlayerInteract(event);
+                }
+            }
+        },
+        new MiniListener<BlockBreakEvent>() {
+            // Include cancelled events, due to the use-block part.
+            @EventHandler(ignoreCancelled = false, priority = EventPriority.MONITOR)
+            @RegisterMethodWithOrder(tag = defaultTag)
+            @Override
+            public void onEvent(BlockBreakEvent event) {
+                if (enabled) {
+                    onBreakingBlocks(event);
                 }
             }
         },
@@ -310,6 +318,13 @@ public class BlockChangeListener implements Listener {
             if (action == org.bukkit.event.block.Action.PHYSICAL) {
                 onInteractPhysical(event);
             }
+        }
+    }
+
+    private void onBreakingBlocks(BlockBreakEvent event) {
+        // Lag-compensate block breaking. Experimental
+        if (event.getBlock() != null) {
+            tracker.addBlocks((event.getBlock()));
         }
     }
 

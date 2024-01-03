@@ -58,7 +58,7 @@ public class PlayerMoveData extends MoveData {
 	public boolean isSneaking;
 	
 	/** Player action set on PlayerMoveEvents */
-	public boolean isSwmming;
+	public boolean isSwimming;
 	
     /**
      * The distance covered by a move from the setback point to the to.getY() point.
@@ -150,7 +150,7 @@ public class PlayerMoveData extends MoveData {
     	isRiptiding = false;
     	isSprinting = false;
     	isSneaking = false;
-    	isSwmming = false;
+    	isSwimming = false;
         slowedByUsingAnItem = false;
         // Properties involving the environment.
         bunnyHop = false;

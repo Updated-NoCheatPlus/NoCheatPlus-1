@@ -334,4 +334,12 @@ public class MathUtil {
     public static double toSeconds(final long milliseconds) {
         return (double) milliseconds / 1000D;
     }
+
+    public static boolean equal(float var0, float var1) {
+      return Math.abs(var1 - var0) < 1.0E-5F;
+   }
+
+   public static boolean equal(double var0, double var2) {
+      return Math.abs(var2 - var0) < 9.999999747378752E-6D;
+   }
 }

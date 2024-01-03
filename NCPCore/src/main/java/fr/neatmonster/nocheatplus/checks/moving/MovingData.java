@@ -82,8 +82,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     // Data shared between the moving checks    //
     //////////////////////////////////////////////
-    /** Tick counter for how long a player has been in water 0= out of water, 10= fully in water. */
-    public int liqtick = 0;
     /** Delay (in ticks) from jump to back on ground */
     public int jumpDelay;
     /** Count set back (re-) setting. */
@@ -341,7 +339,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         vehicleConsistency = MoveConsistency.INCONSISTENT;
         verticalBounce = null;
         blockChangeRef.valid = false;
-        liqtick = 0;
         // Set to 1.0 to prevent any unintentional / by 0. These are mainly used within multiplication or division operations anyway.
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;
         lastFrictionHorizontal = lastBlockSpeedMultiplier = 1.0f;

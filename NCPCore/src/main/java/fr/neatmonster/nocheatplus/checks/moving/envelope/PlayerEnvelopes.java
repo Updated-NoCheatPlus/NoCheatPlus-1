@@ -1,5 +1,8 @@
 package fr.neatmonster.nocheatplus.checks.moving.envelope;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
+import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
+import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -17,24 +20,14 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
+import org.bukkit.util.Vector;
 
 /**
  * Various auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
  */
 public class PlayerEnvelopes {
 
-
-    /**
-     * A past air -> toOnGround, move with deceleration.
-     * 
-     * @param fromOnGround
-     * @param toOnGround
-     * @param thisMove
-     * @return If so.
-     */
-    public static boolean isTouchDownMove(final PlayerMoveData secondLastMove, final PlayerMoveData lastMove) {
-        return !lastMove.from.onGround && lastMove.to.onGround && lastMove.yDistance < 0.0 && lastMove.yDistance > secondLastMove.yDistance;
-    }
+    private static final IHandle<IEntityAccessCollide> entityCollide = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IEntityAccessCollide.class);
 
     /**
      * Jump off the top off a block with the ordinary jumping envelope, however
@@ -203,7 +196,6 @@ public class PlayerEnvelopes {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        final double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
         // Of course, since we have our own onGround handling, we need to take care of all caveats that it entails... (Lost ground, delayed jump etc...)
         if (thisMove.hasLevitation) {
@@ -212,6 +204,10 @@ public class PlayerEnvelopes {
         if (thisMove.isRiptiding) {
             return false;
         }
+        double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
+        // This is for jumping with head obstructed.
+        Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class));
+        jumpGain = collisionVector.getY();
         return  
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
@@ -220,7 +216,7 @@ public class PlayerEnvelopes {
                     // 1: Ordinary lift-off.
                     fromOnGround && !toOnGround
                     // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !thisMove.headObstructed
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && jumpGain == collisionVector.getY()
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
@@ -235,22 +231,8 @@ public class PlayerEnvelopes {
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
-                && (
-                    // 1: The ordinary case. The player's speed matches the jump speed gain.
-                    // This must be the current move, never the last one.
-                    MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
-                    // 1: If head is obstructed, jumping cannot be predicted without MC's collision function. So, just cap motion which will be at or lower than ordinary jump gain, but never higher, and never lower than 0.1 (which is the maximum motion with no jump boost and jumping in a 2-blocks high area).
-                    // Also, here, jumping with head obstructed uses the much more lenient step correction method (See comment in AirWorkarounds).
-                    // This could be much stricter if we had a isHeadObstructed method that raytraces up to ceiling (to know how much free space the playe        
-                    || lastMove.toIsValid && thisMove.headObstructed && thisMove.yDistance > 0.0
-                    && (
-                        // 2: The ordinary case
-                        lastMove.yDistance <= 0.0 && MathUtil.inRange(0.1 * data.lastStuckInBlockVertical, thisMove.yDistance, jumpGain - Magic.GRAVITY_SPAN) 
-                        // 2: With crawl mode (1.14+)
-                        // https://gyazo.com/653af8221425802c31201d8e4577f4f5
-                        || BridgeMisc.isVisuallyCrawling(player) && MathUtil.inRange(jumpGain - Magic.GRAVITY_SPAN, thisMove.yDistance, jumpGain)
-                    ) 
-                )
+                        // This must be the current move, never the last one.
+                && MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
             ;
     }
 

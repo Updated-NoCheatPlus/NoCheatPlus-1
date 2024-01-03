@@ -727,7 +727,7 @@ public class CollisionUtil {
         }
         if (dz != 0) {
             if (nextBounds[0] == 0.0 && nextBounds[3] == 1.0 && nextBounds[1] == 0.0 && nextBounds[4] == 1.0) {
-                if (axisData != null && (dx > 0 ? nextBounds[2] != 0.0 : nextBounds[5] != 1.0)) {
+                if (axisData != null && (dz > 0 ? nextBounds[2] != 0.0 : nextBounds[5] != 1.0)) {
                     axisData.exclude = dz > 0 ? Direction.Z_POS : Direction.Z_NEG;
                     return true;
                 }

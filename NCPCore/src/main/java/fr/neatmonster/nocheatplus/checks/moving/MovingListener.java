@@ -404,7 +404,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final Player player = event.getEntity();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         data.clearMostMovingCheckData();
         data.setSetBack(player.getLocation(useDeathLoc)); 
         if (pData.isDebugActive(checkType)) debug(player, "Death: " + player.getLocation(useDeathLoc));
@@ -1140,7 +1139,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.isRiptiding = Bridge1_13.isRiptiding(player);
         thisMove.isSprinting = pData.isSprinting();
         thisMove.isSneaking = pData.isSneaking();
-        thisMove.isSwmming = Bridge1_13.isSwimming(player);
+        thisMove.isSwimming = Bridge1_13.isSwimming(player);
         thisMove.slowedByUsingAnItem = BridgeMisc.isUsingItem(player);
 
 
@@ -1215,11 +1214,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             }
             else data.fireworksBoostDuration --;
         }
-        
-        // 1.2: Liquid tick time.
-        // TODO: Remove.
-        if (pFrom.isInLiquid()) data.liqtick = data.liqtick < 10 ? data.liqtick + 1 : data.liqtick > 0 ? data.liqtick - 1 : 0; 
-        else data.liqtick = data.liqtick > 0 ? data.liqtick - 2 : 0;
 
         // 1.3: Set riptiding time.
         if (Bridge1_13.isRiptiding(player)) data.timeRiptiding = System.currentTimeMillis();
@@ -1382,15 +1376,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             data.explosionVelAxisX = 0.0;
             data.explosionVelAxisY = 0.0;
             data.explosionVelAxisZ = 0.0;
-        }
-        
-        // 7: HACK: Fake add velocity when levitation ends to smoothen the transition and not trigger false positives
-        if (lastMove.hasLevitation && !thisMove.hasLevitation) {
-            // Ensure to use the previous yDistance which has been checked by SurvivalFly.
-            data.addVelocity(player, cc, 0.0, lastMove.yDistance + Magic.GRAVITY_MAX, 0.0, VelocityFlags.ORIGIN_INTERNAL);
-            if (debug) {
-                debug(player, "Transition from levitation to normal move: fake use velocity.");
-            }
         }
         
 

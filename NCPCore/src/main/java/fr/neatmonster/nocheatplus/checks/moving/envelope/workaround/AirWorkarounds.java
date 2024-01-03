@@ -33,7 +33,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 
 /**
- * Aim of this class is to provide a quick'n'dirty way of handling movements that cannot be predicted through ordinary means, thus resorting to hard-coded magic. <br>
+ * Aim of this class is to provide a quick'n'dirty way of handling movements that cannot be predicted through ordinary means (not necessarily elegance), thus resorting to hard-coded magic. <br>
  * A few things to keep in mind:<br>
  *  - Before adding any workaround, you should attempt to handle the movement in the way the client intends it (or at least to the closest possible estimate that NCP's infrastructure will allow): falling back to a workaround sould be the last resort.<br>
  *  - Each workaround has to have proper documentation. Emphasis on "why" the workaround is needed in the first place.  <br>
@@ -99,16 +99,11 @@ public class AirWorkarounds {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         return  
-               /*
-                * 0: Can't ascend if head is obstructed
-                * DO note that this is the "lenient" headObstructed check: players might be considered as colliding if within the given leniency range.
-                */
-                (thisMove.headObstructed || lastMove.toIsValid && lastMove.headObstructed && lastMove.yDistance >= 0.0) 
-                && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
+
                /*
                 * 0: Don't predict if the movement has messed up coordiantes.
                 */
-                || !isNormalOrPacketSplitMove && thisMove.yDistance > 0.0
+                !isNormalOrPacketSplitMove && thisMove.yDistance > 0.0
                 && data.ws.use(WRPT.W_M_SF_INACCURATE_SPLIT_MOVE)
                /*
                 * 0: Players can still press the space bar in powder snow to boost ascending speed.
@@ -168,56 +163,27 @@ public class AirWorkarounds {
         }
         
         return
-
-               /*
-                * 0: Allow touch-down movements (first movement that has contact with ground after any given air phase). 
-                * This is similar to head obstruction: the game seemingly "cuts off" speed when calling its collision function (amount cannot be predicted without the function). Speed will be reset on the very next move (from ground to ground).
-                * This may allow for 1-block step cheats variants, or other low-level exploits that do make use of the landing acceleration of the player, but it's better than having a ton of workarounds to deal with.
-                */
-                // TODO: Demand having TWO descending move? Last move as well?
-                !fromOnGround && toOnGround && thisMove.yDistance < 0.0 && thisMove.yDistance > predictedDistance && predictedDistance < 0.0
-                && data.ws.use(WRPT.W_M_SF_TOUCHDOWN)
                /*
                 * 0: Allow players preparing to step down a block / simply descending.
                 * For the game, this move is fully on ground, thus gravity is not yet applied (hence 0 speed and 0 jump height), but for NCP (which distinguishes moving from/to ground) this is seen as "leaving the ground", so it will try to enforce friction right away.
                 * Strictly speaking, this should be confined by && !toOnGround. For the sake of leniency, we'll demand to be on ground with just the from location.
                 */
-                || thisMove.yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && fromOnGround
+                thisMove.yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && fromOnGround
                 && data.ws.use(WRPT.W_M_SF_PREPARE_TO_DESCEND)
                /*
                 * 0: Allow moves with extremely little air times [for NCP].
-                * Player leaves the ground for a single tick, spread between two moves, then immediately lands back. This on ground change is not picked up by the game, so friction never gets applied.
-                * [Essentially, NCP on ground's judgement is too precise/strict here]
+                * Player leaves the ground for such a short period of time that the game never enforces gravity.
                 * Happens when sprinting over small, 1-block wide gaps (the game does allow players to do so)
                 * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
                 */
                 || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround && data.sfJumpPhase <= 1
-                && lastMove.toIsValid && thisMove.hDistance > 0.2 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0
+                && lastMove.toIsValid && thisMove.hDistance > 0.18 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0
                 && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*
-                * 0: Wildcard lost-grund: no clean way to handle it without resorting to a ton of (more) hardcoded magic. 
+                * 0: Wildcard lost-ground: no clean way to handle it without resorting to a ton of (more) hardcoded magic.
                 * Besides, most cases are already defined quite in detail; any room for abuse (and thus for bypasses) should be minimal.
                 */
-                || thisMove.touchedGroundWorkaround && !thisMove.couldStepUp
-               /*
-                * 0: After lostground_stepdown-to case, the vertical collision will interfere with the regular friction handling
-                * See: https://gyazo.com/c8b1959aacb00927a9c6122224c60cef
-                * Can be observed when bunnyhopping right before colliding horizontally with a block and landing on the very edge
-                */
-                || secondLastMove.toIsValid && lastMove.touchedGroundWorkaround && lastMove.yDistance < 0.0 && lastMove.setBackYDistance > 0.0
-                && !thisMove.touchedGroundWorkaround && thisMove.yDistance < 0.0 && thisMove.hDistance > 0.18
-                && MathUtil.inRange(0.001, Math.abs(thisMove.yDistance - predictedDistance), Magic.GRAVITY_MAX)
-                && data.ws.use(WRPT.W_M_SF_POST_LOSTGROUND_CASE)
-               /*
-                * 0: Allow the first move(s) bumping head with a block above.
-                * Here, the game will reset vertical speed to 0, then proceeds to apply gravity. The move we receive on the server is the latter, so speed can never be 0.
-                * The collision however will mess with speed as well, so this move is effectively "hidden" and cannot be predicted without reversing in much more detail what the game does.
-                * Solution: just be lenient when this happens, somehow. *Jumping* will use the overly-forgiving step-correction leniency method (see PlayerEnvelopes), but to allow the subsequent descending move(s) (or ascending, depending on how high the ceiling is), we demand the player to collide within a fixed distance.
-                * 0.2 is the result of testing (which covers the distance from eye position to the top of the player's AABB, roughly)
-                * Now, this workaround would be even more effective if we had a "distanceToBlock/Ground()" method that ray-traces the collision distance from the player's box to the block.
-                */
-                || (from.isHeadObstructed(0.2, false) && thisMove.yDistance != 0.0 || thisMove.headObstructed && Bridge1_13.isRiptiding(player)) // We need to be much more lenient when riptiding.
-                && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
+                || thisMove.touchedGroundWorkaround && !thisMove.couldStepUp // Handled by PlayerEnvelopes.canStep()
                /*
                 * 0: Allow the first move after teleport/set back/respawn on 1.7.10
                 */
