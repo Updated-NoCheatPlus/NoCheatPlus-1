@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -254,7 +253,7 @@ public class SurvivalFly extends Check {
 
         if (entityCollide != null) {
         	boolean onGroundNMS = entityCollide.getHandle().getOnGround(player);
-            Vector vec = entityCollide.getHandle().collide(player, new Vector(thisMove.xDistance, thisMove.yDistance, thisMove.zDistance), onGroundNMS, cc);
+            Vector vec = entityCollide.getHandle().collide(player, new Vector(thisMove.xDistance, thisMove.yDistance, thisMove.zDistance), onGroundNMS, cc, from.getAABBCopy());
             System.out.println("onGrd:" + onGroundNMS + " | " + vec + " | " + thisMove.xDistance + " " + thisMove.yDistance + " " + thisMove.zDistance);
         }
        
@@ -1203,31 +1202,8 @@ public class SurvivalFly extends Check {
             // Collision next.
             System.out.println("Before passing to the collide function: " + thisMove.yAllowedDistance);
             if (entityCollide != null) {
-                Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, thisMove.yAllowedDistance, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, cc);
-                if (thisMove.yAllowedDistance != collisionVector.getY()) {
-                    // Collided. Check special cases first.
-                    if (data.nextStuckInBlockVertical != 1.0 && !fromOnGround && !toOnGround) {
-                        // Ignore collision if the player has not yet landed on the ground.
-                        // The move just before the touch-down will get a cut off of speed to reach the ground, but speed gets throttled anyway to a static value (as though it was never applied))
-                        System.out.println("Ignore collision speed due to stuck-speed: " + thisMove.yAllowedDistance);
-                    }
-                    else if (collisionVector.getY() == 0.0 && from.isHeadObstructed(1.5, false)) { // If the resulting collision is 0.0, the player will end up on ground with the next move.
-                        // Fix for Minecraft skipping the "speed reset moment". Can be observed by jumping with head obstructed in a 2-blocks high area.
-                        // The function will set speed back to 0.0 here; friction will be applied on the very next tick, but the client never sends the "reset move" the server (instead we see the player immediately descending but with speed that is still based on 0 momentum)
-                        thisMove.yAllowedDistance = collisionVector.getY();
-                        // Must re-iterate gravity here.
-                        if (BridgeMisc.hasGravity(player)) {
-                            thisMove.yAllowedDistance -= !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
-                        }
-                        thisMove.yAllowedDistance *= data.lastFrictionVertical;
-                        System.out.println("Reiterated gravity after 0.0 collision: " + thisMove.yAllowedDistance);
-                    }
-                    else {
-                        // No special case happened.
-                        thisMove.yAllowedDistance = collisionVector.getY();
-                        System.out.println("Just passed to the collide function: " + collisionVector.getY());
-                    }
-                }
+                Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, thisMove.yAllowedDistance, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
+                System.out.println("Just passed to the collide function: " + collisionVector.getY());
             }
             // TODO: Needs to be adjusted for on ground pushing
             if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {

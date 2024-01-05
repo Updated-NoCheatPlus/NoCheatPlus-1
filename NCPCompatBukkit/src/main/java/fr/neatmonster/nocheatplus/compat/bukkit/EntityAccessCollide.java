@@ -29,9 +29,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class EntityAccessCollide implements IEntityAccessCollide{
 
     @Override
-    public Vector collide(Entity entity, Vector input, boolean onGround, MovingConfig cc) {
+    public Vector collide(Entity entity, Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
         net.minecraft.world.entity.Entity entityNMS = ((CraftEntity)entity).getHandle();
-        AxisAlignedBB bb = entityNMS.cG();
+        // We must use the last bounding box here. Unless specified otherwise.
+        AxisAlignedBB bb = ncpAABB == null ? entityNMS.cG() : new AxisAlignedBB(ncpAABB[0], ncpAABB[1], ncpAABB[2], ncpAABB[3], ncpAABB[4], ncpAABB[5]);
         Vec3D cInput = new Vec3D(input.getX(), input.getY(), input.getZ());
         List<VoxelShape> list = entityNMS.dL().c(entityNMS, bb.c(cInput));
         Vec3D vec3 = input.lengthSquared() == 0.0 ? cInput : net.minecraft.world.entity.Entity.a(entityNMS, cInput, bb, entityNMS.dL(), list);

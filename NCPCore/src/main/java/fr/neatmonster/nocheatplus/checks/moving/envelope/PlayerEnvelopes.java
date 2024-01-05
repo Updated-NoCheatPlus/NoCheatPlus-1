@@ -3,19 +3,16 @@ package fr.neatmonster.nocheatplus.checks.moving.envelope;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
-import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
-import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
@@ -206,7 +203,7 @@ public class PlayerEnvelopes {
         }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // This is for jumping with head obstructed.
-        Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class));
+        Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
         jumpGain = collisionVector.getY();
         return  
                 // 0: Jump phase condition... Demand a very low air time.
