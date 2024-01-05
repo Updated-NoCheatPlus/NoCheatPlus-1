@@ -1203,6 +1203,7 @@ public class SurvivalFly extends Check {
             System.out.println("Before passing to the collide function: " + thisMove.yAllowedDistance);
             if (entityCollide != null) {
                 Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, thisMove.yAllowedDistance, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
+                thisMove.yAllowedDistance = collisionVector.getY();
                 System.out.println("Just passed to the collide function: " + collisionVector.getY());
             }
             // TODO: Needs to be adjusted for on ground pushing
