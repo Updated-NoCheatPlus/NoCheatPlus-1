@@ -739,14 +739,14 @@ public class RichEntityLocation extends RichBoundsLocation {
 
     /**
      * Test if something solid/ground-like collides within the given margin
-     * above the eye height of the player.
+     * above the eye height of the player, using a correction method.
      *
      * @param marginAboveEyeHeight
      *            the margin above eye height
-     * @return true, if is head obstructed
+     * @return True, if is head obstructed
      */
-    public boolean isHeadObstructed(double marginAboveEyeHeight) {
-        return isHeadObstructed(marginAboveEyeHeight, true);
+    public boolean seekHeadObstruction(double marginAboveEyeHeight) {
+        return seekHeadObstruction(marginAboveEyeHeight, true);
     }
 
     /**
@@ -757,11 +757,11 @@ public class RichEntityLocation extends RichBoundsLocation {
      *            Must be greater than or equal zero.
      * @param stepCorrection
      *            If set to true, a correction method is used for leniency.
-     * @return true, if is head obstructed
+     * @return True, if is head obstructed
      * @throws IllegalArgumentException
      *             If marginAboveEyeHeight is smaller than 0.
      */
-    public boolean isHeadObstructed(double marginAboveEyeHeight, boolean stepCorrection) {
+    public boolean seekHeadObstruction(double marginAboveEyeHeight, boolean stepCorrection) {
         if (marginAboveEyeHeight < 0.0) {
             throw new IllegalArgumentException("marginAboveEyeHeight must be greater than 0.");
         }
@@ -789,13 +789,12 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Test if something solid/ground-like collides within a default
-     * margin/estimation above the eye height of the player.
+     * Test if something solid/ground-like collides above the eye height of the player, using a correction method.
      *
-     * @return true, if is head obstructed
+     * @return True, if is head obstructed
      */
-    public boolean isHeadObstructed() {
-        return isHeadObstructed(0.0, true);
+    public boolean seekHeadObstruction() {
+        return seekHeadObstruction(0.0, true);
     }
 
     /**

@@ -1479,7 +1479,7 @@ public class SurvivalFly extends Check {
             && BlockProperties.isLiquid(to.getTypeId()) 
             && BlockProperties.isLiquid(from.getTypeId())
             && !fromOnGround && !toOnGround
-            && !from.isHeadObstructed() && !to.isHeadObstructed() 
+            && !from.seekHeadObstruction() && !to.seekHeadObstruction()
             && !Bridge1_13.isSwimming(player)) {
             Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
             tags.add("liquidwalk");
@@ -1804,7 +1804,7 @@ public class SurvivalFly extends Check {
         final StringBuilder builder = new StringBuilder(500);
         builder.append(CheckUtils.getLogMessagePrefix(player, type));
         final String hVelUsed = hFreedom > 0 ? " / hVelUsed: " + StringUtil.fdec3.format(hFreedom) : "";
-        builder.append("\nOnGround: " + (from.isHeadObstructed(0.2, false) ? "(head obstr.) " : from.isSlidingDown() ? "(sliding down) " : "") + (thisMove.touchedGroundWorkaround ? "(lost ground) " : "") + (fromOnGround ? "onground -> " : (resetFrom ? "resetcond -> " : "--- -> ")) + (toOnGround ? "onground" : (resetTo ? "resetcond" : "---")) + ", jumpPhase: " + data.sfJumpPhase + ", LiftOff: " + data.liftOffEnvelope.name() + "(" + data.insideMediumCount + ")");
+        builder.append("\nOnGround: " + (from.seekHeadObstruction(0.2, false) ? "(head obstr.) " : from.isSlidingDown() ? "(sliding down) " : "") + (thisMove.touchedGroundWorkaround ? "(lost ground) " : "") + (fromOnGround ? "onground -> " : (resetFrom ? "resetcond -> " : "--- -> ")) + (toOnGround ? "onground" : (resetTo ? "resetcond" : "---")) + ", jumpPhase: " + data.sfJumpPhase + ", LiftOff: " + data.liftOffEnvelope.name() + "(" + data.insideMediumCount + ")");
         final String dHDist = lastMove.toIsValid ? "(" + StringUtil.formatDiff(hDistance, lastMove.hDistance) + ")" : "";
         final String dYDist = lastMove.toIsValid ? "(" + StringUtil.formatDiff(yDistance, lastMove.yDistance)+ ")" : "";
         builder.append("\n" + " hDist: " + StringUtil.fdec6.format(hDistance) + dHDist + " / offset: " + hDistDiffEx + " / predicted: " + StringUtil.fdec6.format(hAllowedDistance) + hVelUsed +

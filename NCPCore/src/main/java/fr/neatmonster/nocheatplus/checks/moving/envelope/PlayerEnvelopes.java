@@ -153,7 +153,7 @@ public class PlayerEnvelopes {
         if (!pData.isSneaking()) {
             return false;
         }
-        return from.isHeadObstructed(0.09, false) && from.isOnGround() && to.isOnGround();
+        return from.seekHeadObstruction(0.09, false) && from.isOnGround() && to.isOnGround();
     }
 
     /**
@@ -218,7 +218,7 @@ public class PlayerEnvelopes {
                     fromOnGround && !toOnGround
                     // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
                     // Usually happens when jumpin on the corners of blocks
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.isHeadObstructed(0.0, true)
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction(0.0, true)
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
