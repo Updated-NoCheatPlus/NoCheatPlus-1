@@ -48,6 +48,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
     public static final String W_M_SF_SBYTE_OVERFLOW = "m.sf.sbyte_overflow";
     public static final String W_M_SF_FIRST_MOVE_ASCNEDING_FROM_GROUND = "m.sf.1st_move_ascending";
     public static final String W_M_SF_PWDSNW_ASCEND = "m.sf.pwdsnow_ascend";
+    public static final String W_M_SF_BED_STEP_DOWN = "m.sf.bed_stepdown_1_20+";
 
     // Vehicle: oddInAirDescend
     /**
@@ -79,7 +80,8 @@ public class WRPT extends SimpleWorkaroundRegistry {
     /** WorkaroundSet: for use in MovingData. */
     public static final String WS_MOVING = "moving";
 
-    
+
+
     public WRPT() {
         // Fill in blueprints, groups, workaround sets.
 
@@ -112,6 +114,7 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 W_M_SF_POST_LOSTGROUND_CASE,
                 W_M_SF_NO_GRAVITY_GAP,
                 W_M_SF_INACCURATE_SPLIT_MOVE,
+                W_M_SF_BED_STEP_DOWN,
         };
         for (final String id : counters) {
             final WorkaroundCounter counter = new WorkaroundCounter(id);

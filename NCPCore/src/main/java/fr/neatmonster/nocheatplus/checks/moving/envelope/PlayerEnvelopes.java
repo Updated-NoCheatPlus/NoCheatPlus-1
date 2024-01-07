@@ -202,10 +202,14 @@ public class PlayerEnvelopes {
             return false;
         }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
-        // This is for jumping with head obstructed.
-        Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-        jumpGain = collisionVector.getY();
-        return  
+        if (entityCollide != null) {
+            // This is for jumping with head obstructed.
+            Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+            // Don't check for correct  motion. We are only interested in seeing if the player collided vertically above.
+            thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
+            jumpGain = collisionVector.getY();
+        }
+        return
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
                 // 0: Ground conditions... Demand players to be in a "leaving ground" state.
@@ -213,7 +217,8 @@ public class PlayerEnvelopes {
                     // 1: Ordinary lift-off.
                     fromOnGround && !toOnGround
                     // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && jumpGain == collisionVector.getY()
+                    // Usually happens when jumpin on the corners of blocks
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.isHeadObstructed(0.0, true)
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
@@ -228,7 +233,7 @@ public class PlayerEnvelopes {
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
-                        // This must be the current move, never the last one.
+                // This must be the current move, never the last one.
                 && MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
             ;
     }

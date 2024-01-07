@@ -90,12 +90,10 @@ public class MoveData {
     //////////////////////////////////////////////////////////
     // Properties involving the environment.
     /**
-     * Head is obstructed for a living entity, or can't/couldn't move up due to
+     * Head is obstructed for a living entity, or can't/couldn't move (further) up due to
      * being blocked somehow. Should expect descending next move, if in air.
      * <br>
-     * This check uses the player's vertical speed as a margin to seek for head obstruction, if the player is ascending.
-     * Otherwise, the "step-correction" margin is used
-     * (See: MovingListener, RichEntityLocation)
+     * Set in SurvivalFly with the collide() method.
      */
     public boolean headObstructed;
 

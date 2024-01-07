@@ -153,6 +153,7 @@ public class AirWorkarounds {
     	final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData secondLastMove = data.playerMoves.getSecondPastMove();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         final double yAcceleration = thisMove.yDistance - lastMove.yDistance;
 
         if (Bridge1_9.isGliding(player)) {
@@ -189,6 +190,14 @@ public class AirWorkarounds {
                 */
                 || PlayerEnvelopes.couldBeSetBackLoop(data)
                 && data.ws.use(WRPT.W_M_SF_COULD_BE_SETBACK_LOOP)
+                /*
+                 * 0: Very specific case appeared on 1.20 and above: on stepping down a bed, the first friction move has speed of -0.047607
+                 * instead of the regular (and predicted) gravity slope of -0.0784
+                 */
+                || lastMove.from.onBouncyBlock && !lastMove.from.onSlimeBlock && !fromOnGround && !toOnGround && thisMove.yDistance < 0.0
+                && lastMove.yDistance == 0.0 && MathUtil.inRange(-Magic.GRAVITY_ODD, thisMove.yDistance, -Magic.GRAVITY_VACC)
+                && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)
+                && data.ws.use(WRPT.W_M_SF_BED_STEP_DOWN)
                /*
                 * 0: Allow falling from high above into powder snow.
                 * Player is in powder snow (for NCP) but the game has this really odd mechanic where the block shape is smaller if fall distance is > 2.5.
