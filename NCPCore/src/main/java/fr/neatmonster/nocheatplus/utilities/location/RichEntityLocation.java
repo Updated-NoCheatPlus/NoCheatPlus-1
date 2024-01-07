@@ -878,9 +878,8 @@ public class RichEntityLocation extends RichBoundsLocation {
             eyeHeight = living.getEyeHeight();
             // Mojang added a new mechanic in 1.14: crouching will now actually contract the bounding box of the player.
             // On 1.13 and 1.9 the player's bounding box can change as well due to swimming and gliding
-            // 0.179999?
-            // TODO: What's the 0.179 magic value?
-            fullHeight = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) || Bridge1_9.isGliding(living) ? eyeHeight + 0.179 : Math.max(Math.max(fullHeight, eyeHeight), living.getEyeHeight(true));
+            // Backward compatibility when calling mcAccess.getHeight still return full height back then
+            fullHeight = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) || Bridge1_9.isGliding(living) ? eyeHeight + 0.1799999475479126 : Math.max(Math.max(fullHeight, eyeHeight), living.getEyeHeight(true));
         }
         else {
             isLiving = false;
