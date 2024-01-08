@@ -62,6 +62,8 @@ public class PlayerMoveData extends MoveData {
 	
     /**
      * The distance covered by a move from the setback point to the to.getY() point.
+     * Usually, this corresponds to the jump height, because the set back point is set on ground.<br>
+     * This could change in the future with set back policies changes (i.e.: force-fall)
      */
     public double setBackYDistance;
     
@@ -90,7 +92,6 @@ public class PlayerMoveData extends MoveData {
 
     /**
      * Vertical allowed distance estimated by checks.
-     * TODO: Get rid of yAllowedDistance and use this one instead for both checks.
      */
     public double yAllowedDistance;
 
@@ -111,14 +112,14 @@ public class PlayerMoveData extends MoveData {
 
     // Meta stuff.
     /**
-     * Due to the thresholds for moving events, there could have been other
-     * (micro-) moves by the player which could not be checked. One moving event
+     * Due to the thresholds and other subtitles with the PlayerMoveEvent, there could have been other
+     * (micro-) moves by the player which could not be checked, since Bukkit skipped them. One moving event
      * is split into several other moves, with a cap.
      */
     public int multiMoveCount;
     
     /**
-     * Mojang introduced a new mechanic in 1.17 which allows player to re-send their position on right clicking.
+     * Mojang introduced a new "mechanic" in 1.17 which allows player to re-send their position on right-clicking.
      * On Bukkit's side, this translates in a PlayerMoveEvent which doesn't actually have any movement change (PME.getFrom() and PME.getTo() contain the same location)
      * This moving event is skipped from being processed.
      * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
@@ -133,7 +134,7 @@ public class PlayerMoveData extends MoveData {
     public SimpleEntry verVelUsed = null;
     
     /**
-     * Signal that this movement has horizontal impulse: meaning, the player has actually pressed a WASD key.
+     * Signal that this movement has horizontal impulse: meaning, the player has actively pressed a WASD key.
      * Intention is to be able to differentiate when the player is actively moving VS being passively moved by other sources (i.e.: push and velocity)
      */
     public boolean hasImpulse;

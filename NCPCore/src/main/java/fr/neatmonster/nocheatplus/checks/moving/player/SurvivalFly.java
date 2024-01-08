@@ -679,7 +679,7 @@ public class SurvivalFly extends Check {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         /*
          * Order of operations is essential. Do not shuffle things around unless you know what you're doing.
-         * IMPORTANT: The 1.20 update fixes the 12 year old bug of walking/moving on the very edge blocks not applying the properties of said block
+         * IMPORTANT: The 1.20 update fixes the 12-year-old bug of walking/moving on the very edge blocks not applying the properties of said block
          *            - HoneyBlocks will now restrict jumping even if on the very edge
          *            - Same for slime and everything else
          *            
@@ -1102,8 +1102,8 @@ public class SurvivalFly extends Check {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
             // Technically, one could attempt to interpolate missed positions given the from and to locations... Just like for the 0.03 threshold, but what's the point? We are not paid to deal with this bullshit).
             // Besides, there's no need in predicting speed when movement has been slowed down to the point of being considered micro by Bukkit.
-            thisMove.xAllowedDistance = thisMove.to.getX() - thisMove.from.getX();
-            thisMove.zAllowedDistance = thisMove.to.getZ() - thisMove.from.getZ();
+            thisMove.xAllowedDistance = thisMove.xDistance;
+            thisMove.zAllowedDistance = thisMove.zDistance;
         }
         
         thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
@@ -1220,9 +1220,10 @@ public class SurvivalFly extends Check {
             }
             // Collision next.
             if (entityCollide != null) {
-                Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, thisMove.yAllowedDistance, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
-                // New definition of head obstruction. yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
-                thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && !fromOnGround;
+                // Include horizontal motion to account for stepping: there are cases where NCP's isStep definition fails to catch it.
+                // (In which case, isStep will return false and fall-back to friction here)
+                Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
+                thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
                 // Switch to descending phase after colliding above.
                 if (lastMove.headObstructed && !thisMove.headObstructed && yDirectionSwitch && thisMove.yDistance <= 0.0 && fullyInAir) {
                     // Fix for clients not sending the "speed reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
@@ -1235,7 +1236,12 @@ public class SurvivalFly extends Check {
                 }
                 else {
                     thisMove.yAllowedDistance = collisionVector.getY();
-                    System.out.println("Just passed to the collide function: " + collisionVector.getY());
+                    if ((thisMove.xDistance != collisionVector.getX() || thisMove.zDistance != collisionVector.getZ())
+                        && (fromOnGround || thisMove.touchedGroundWorkaround)
+                        && MathUtil.inRange(0.5, thisMove.yAllowedDistance, cc.sfStepHeight)) {
+                        // The player stepped up by Minecraft's definition.
+                        thisMove.canStep = true;
+                    }
                 }
             }
             // TODO: Needs to be adjusted for on ground pushing
@@ -1382,7 +1388,7 @@ public class SurvivalFly extends Check {
             hDistanceAboveLimit = res[1];
         }
         /*
-         * 2: Undetectable jump: player failed with the onGround flag, let's brute force with off-ground then.
+         * 2: Undetectable jump: player failed with the onGround flag, lets brute force with off-ground then.
          */
         if (PlayerEnvelopes.isVerticallyConstricted(from, to, pData) && hDistanceAboveLimit > 0.0) {
             double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
@@ -1804,7 +1810,7 @@ public class SurvivalFly extends Check {
         final StringBuilder builder = new StringBuilder(500);
         builder.append(CheckUtils.getLogMessagePrefix(player, type));
         final String hVelUsed = hFreedom > 0 ? " / hVelUsed: " + StringUtil.fdec3.format(hFreedom) : "";
-        builder.append("\nOnGround: " + (from.seekHeadObstruction(0.2, false) ? "(head obstr.) " : from.isSlidingDown() ? "(sliding down) " : "") + (thisMove.touchedGroundWorkaround ? "(lost ground) " : "") + (fromOnGround ? "onground -> " : (resetFrom ? "resetcond -> " : "--- -> ")) + (toOnGround ? "onground" : (resetTo ? "resetcond" : "---")) + ", jumpPhase: " + data.sfJumpPhase + ", LiftOff: " + data.liftOffEnvelope.name() + "(" + data.insideMediumCount + ")");
+        builder.append("\nOnGround: " + (thisMove.headObstructed ? "(head obstr.) " : from.isSlidingDown() ? "(sliding down) " : "") + (thisMove.touchedGroundWorkaround ? "(lost ground) " : "") + (fromOnGround ? "onground -> " : (resetFrom ? "resetcond -> " : "--- -> ")) + (toOnGround ? "onground" : (resetTo ? "resetcond" : "---")) + ", jumpPhase: " + data.sfJumpPhase + ", LiftOff: " + data.liftOffEnvelope.name() + "(" + data.insideMediumCount + ")");
         final String dHDist = lastMove.toIsValid ? "(" + StringUtil.formatDiff(hDistance, lastMove.hDistance) + ")" : "";
         final String dYDist = lastMove.toIsValid ? "(" + StringUtil.formatDiff(yDistance, lastMove.yDistance)+ ")" : "";
         builder.append("\n" + " hDist: " + StringUtil.fdec6.format(hDistance) + dHDist + " / offset: " + hDistDiffEx + " / predicted: " + StringUtil.fdec6.format(hAllowedDistance) + hVelUsed +

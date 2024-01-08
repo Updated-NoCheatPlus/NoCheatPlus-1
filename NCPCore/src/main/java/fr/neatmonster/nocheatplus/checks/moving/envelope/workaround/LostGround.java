@@ -50,8 +50,6 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  */
 public class LostGround {
 
-    // TODO: Cleanup signatures...
-
     /**
      * Check if touching the ground was lost.
      * (Client did not send / server did not put it through / false negatives on NCP's side / "Blip" glitch).
@@ -262,7 +260,11 @@ public class LostGround {
         thisMove.touchedGroundWorkaround = true;
         tags.add("lostground_" + tag);
         player.sendMessage("lostground_" + tag);
-        Improbable.update(player, System.currentTimeMillis());
+        if (thisMove.couldStepUp) {
+            // Couldstep is a risky workaround, but also very difficult to reproduce at will.
+            // Trying to exploit it "too much" will eventually set off Improbable.
+            Improbable.check(player, (float)Math.abs(thisMove.yDistance), System.currentTimeMillis(), "couldstep", DataManager.getPlayerData(player));
+        }
         return true;
     }
 

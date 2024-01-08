@@ -140,7 +140,7 @@ public class PlayerEnvelopes {
      * 
      * @param from
      * @param pData
-     * @return If onGround with ground-like blocks above within a margin of 0.001.
+     * @return If onGround with ground-like blocks above within a margin of 0.09
      */
     public static boolean isVerticallyConstricted(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData) {
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
@@ -180,10 +180,7 @@ public class PlayerEnvelopes {
      * NoCheatPlus' definition of a jump.<br>
      * (Minecraft does not offer a direct way to know if players could have jumped)
      * This is mostly intended for vertical motion, not for horizontal. Use PlayerEnvelopes#isBunnyhop() for that.
-     * 
-     * @param data
-     * @param hasLevitation
-     * @param jumpGain The jump speed.
+     *
      * @param fromOnGround Uses the BCT.
      * @param toOnGround Uses the BCT.
      * @return True if is a jump. 
@@ -199,6 +196,9 @@ public class PlayerEnvelopes {
             return false;
         }
         if (thisMove.isRiptiding) {
+            return false;
+        }
+        if (thisMove.isGliding) {
             return false;
         }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
@@ -217,19 +217,16 @@ public class PlayerEnvelopes {
                     // 1: Ordinary lift-off.
                     fromOnGround && !toOnGround
                     // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
-                    // Usually happens when jumpin on the corners of blocks
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction(0.0, true)
+                    // Usually happens when jumping on the corners of blocks
+                    // Technically, a lost ground case but not really, because the ground status is detected, but with a delay
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction()
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
                             lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
-                            // 2: With "lostground_stepdown-to": the last collision (above) is lost, so the player is seen as being in air for much longer.
+                            // 2: Plain ground miss on block's edges.
                             // TODO: check for abuses.
-                            // https://gyazo.com/a5c22069af8ba6a718308bf5b125659a
-                            || lastMove.touchedGroundWorkaround && !thisMove.touchedGroundWorkaround
-                            // 2: Second past move: 2 consecutive lost ground can happen. See: https://gyazo.com/1fbe521bf436fa2b45c196c2b4dc7ee3
-                            || thisMove.touchedGroundWorkaround && !thisMove.to.onGround 
-                            && lastMove.touchedGroundWorkaround 
+                            || thisMove.touchedGroundWorkaround && !lastMove.touchedGroundWorkaround
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
@@ -240,19 +237,14 @@ public class PlayerEnvelopes {
 
     /**
      * NoCheatPlus' definition of "step".<br>
-     * (Minecraft does not offer a direct way to know if players could have stepped up a block).
-     * Does not take into consideration lost-ground cases.
-     * 
-     * @param data
-     * @param stepHeight The step height (0.5, prior to 1.8, 0.6 from 1.8 and onwards)
+     *
      * @param fromOnGround Uses the BCT.
-     * @param toOnGround Uses the BCT.
-     * @return True if is a step up.
+     * @param toOnGround   Uses the BCT.
+     * @return True if is a step-up.
      */
     public static boolean isStep(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         if (thisMove.hasLevitation) {
             return false;
@@ -260,23 +252,15 @@ public class PlayerEnvelopes {
         if (thisMove.isRiptiding) {
             return false;
         }
+        if (thisMove.isGliding) {
+            return false;
+        }
         return  
                 // 0: NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
-                fromOnGround && toOnGround
-                && (
-                    // 1: Handle "excessive ground" cases. AKA: cases where the client leaves ground, but for NCP, the distance from ground is so small that it cannot distingush, resulting as if the player never left.
-                    // (Thus, in this case, the game correctly applies friction)
-                    thisMove.yDistance <= 0.0 && MathUtil.inRange(0.01, Math.abs(thisMove.yDistance), Magic.GRAVITY_MAX * 4.0)
-                    // 1: Otherwise, if motion is positive, we must check against the exact stepping motion; if we don't want abuses that is.
-                    || MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
-                )
+                fromOnGround && toOnGround && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
                 // 0: Wildcard couldstep
                 || thisMove.couldStepUp
-                // 0: ...Or having an extremely little air time from a ground status to a ground status (lastMove: from air/ground OR to air/ground thisMove: toOnGround.
-                || lastMove.yDistance >= -Math.max(Magic.GRAVITY_MAX / 2.0, Math.abs(thisMove.yDistance) * 1.3)
-                && lastMove.yDistance <= 0.0 && thisMove.yDistance > 0.0
-                && lastMove.touchedGround && lastMove.toIsValid && toOnGround
-                && MathUtil.inRange(0.01, thisMove.yDistance, cc.sfStepHeight)
+                // If the step-up movement doesn't fall into any of the criteria above, let the collide() function handle it instead.
             ;
     }
 
@@ -284,9 +268,7 @@ public class PlayerEnvelopes {
      * First move after set back / teleport. Originally has been found with
      * PaperSpigot for MC 1.7.10, however it also does occur on Spigot for MC
      * 1.7.10.
-     * 
-     * @param thisMove
-     * @param lastMove
+     *
      * @param data
      * @return
      */
@@ -311,7 +293,7 @@ public class PlayerEnvelopes {
     }
 
     /**
-     * Pre conditions: A slime block is underneath and the player isn't really
+     * Pre-conditions: A slime block is underneath and the player isn't really
      * sneaking (with negative motion with thisMove). This does not account for pistons pushing (slime) blocks.<br>
      * 
      * @param player
