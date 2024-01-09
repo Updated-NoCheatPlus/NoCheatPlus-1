@@ -100,11 +100,11 @@ public class PlayerMoveData extends MoveData {
     /** This move was a bunny hop. */
     public boolean bunnyHop;
    
-    /** The player can potentially step with this move. Set in SurvivalFly.check(vdistrel) */
-    public boolean canStep;
+    /** This move was a step-up. Set in SurvivalFLy */
+    public boolean isStepUp;
 
-    /** The player can potentially jump with this move. Set in SurvivalFly.check(vdistrel) */
-    public boolean canJump;
+    /** This move was a jump. Set in SurvivalFly. */
+    public boolean isJump;
     
     /** Highly uncertain movement: player might step up with this movement; we cannot know for sure. Set with lost-ground couldstep */
     public boolean couldStepUp;
@@ -155,8 +155,8 @@ public class PlayerMoveData extends MoveData {
         slowedByUsingAnItem = false;
         // Properties involving the environment.
         bunnyHop = false;
-        canStep = false;
-        canJump = false;
+        isStepUp = false;
+        isJump = false;
         couldStepUp = false;
         // Bounds set by checks.
         xAllowedDistance = 0.0;

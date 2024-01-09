@@ -73,8 +73,8 @@ public class SurvivalFly extends Check {
 
     private final boolean ServerIsAtLeast1_13 = ServerVersion.compareMinecraftVersion("1.13") >= 0;
     /** To join some tags with moving check violations. */
-    private final ArrayList<String> tags = new ArrayList<String>(15);
-    private final ArrayList<String> justUsedWorkarounds = new ArrayList<String>();
+    private final ArrayList<String> tags = new ArrayList<>(15);
+    private final ArrayList<String> justUsedWorkarounds = new ArrayList<>();
     private final BlockChangeTracker blockChangeTracker;
     /** Location for temporary use with getLocation(useLoc). Always call setWorld(null) after use. Use LocUtil.clone before passing to other API. */
     private final Location useLoc = new Location(null, 0, 0, 0);   
@@ -91,28 +91,20 @@ public class SurvivalFly extends Check {
 
     /**
      * Checks a player
-     * 
-     * @param player
-     * @param from
-     * @param to
+     *
      * @param multiMoveCount
      *            0: Ordinary, 1/2/(...): first/second/(...) part of a split move.
-     * @param data
-     * @param cc
-     * @param pData
-     * @param tick
-     * @param now
-     * @param useBlockChangeTracker
      * @param isNormalOrPacketSplitMove
      *           Flag to indicate if the packet-based split move mechanic is used instead of the Bukkit-based one (or the move was not split)
-     * @return
+     *
+     * @return The Location where to set back the player to. Null in case of no violation.
      */
     public Location check(final Player player, final PlayerLocation from, final PlayerLocation to, 
                           final int multiMoveCount, final MovingData data, final MovingConfig cc, 
                           final IPlayerData pData, final int tick, final long now, 
                           final boolean useBlockChangeTracker, final boolean isNormalOrPacketSplitMove) {
         /**
-         * TOOD: Ideally, all this data should really be set outside of SurvivalFly (in the MovingListener), since they can be useful
+         * TOOD: Ideally, all this data should really be set outside SurvivalFly (in the MovingListener), since they can be useful
          * for other checks / stuff.
          */
         tags.clear();
@@ -177,10 +169,10 @@ public class SurvivalFly extends Check {
         /////////////////////////////////////
         // Horizontal move                ///
         /////////////////////////////////////
-        double hAllowedDistance = 0.0, hDistanceAboveLimit = 0.0, hFreedom = 0.0;
+        double hAllowedDistance, hDistanceAboveLimit, hFreedom;
         double[] resGlide = elytraPredict(from, to, pData, data, player, isNormalOrPacketSplitMove, fromOnGround, toOnGround);
         // Set the allowed distance and determine the distance above limit
-        double[] hRes = Bridge1_9.isGliding(player) ? resGlide : hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, false);
+        double[] hRes = Bridge1_9.isGliding(player) ? resGlide : hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, false);
         hAllowedDistance = hRes[0];
         hDistanceAboveLimit = hRes[1];
         // Beyond limit? Check if there may have been a reason for this (and try to re-estimate if needed)
@@ -200,19 +192,19 @@ public class SurvivalFly extends Check {
         /////////////////////////////////////
         // Vertical move                  ///
         /////////////////////////////////////
-        double yAllowedDistance = 0.0, yDistanceAboveLimit = 0.0;
+        double yAllowedDistance, yDistanceAboveLimit = 0.0;
         // Step wild-card: allow step height from ground to ground.
         if (thisMove.yDistance >= 0.0 && thisMove.yDistance <= cc.sfStepHeight 
             && toOnGround && fromOnGround && !from.isOnClimbable() 
             && !to.isOnClimbable() && !thisMove.hasLevitation
             && !Bridge1_9.isGliding(player) && !Bridge1_13.isRiptiding(player)) {
             yAllowedDistance = cc.sfStepHeight;
-            thisMove.canStep = true;
+            thisMove.isStepUp = true;
             tags.add("groundstep");
         }
         else if (from.isOnClimbable()) {
             // They can technically be placed inside liquids.
-            final double[] res = vDistClimbable(player, from, to, fromOnGround, toOnGround, pData, thisMove, lastMove, thisMove.yDistance, data, cc);
+            final double[] res = vDistClimbable(player, from, to, pData, thisMove, lastMove, thisMove.yDistance, data, cc);
             yAllowedDistance = res[0];
             yDistanceAboveLimit = res[1];
         }
@@ -239,7 +231,7 @@ public class SurvivalFly extends Check {
         }
         else {
             final double[] res = vDistRel(now, player, from, fromOnGround, resetFrom, 
-                                          to, toOnGround, resetTo, hDistanceAboveLimit, thisMove.yDistance, isNormalOrPacketSplitMove,
+                                          to, toOnGround, resetTo, thisMove.yDistance, isNormalOrPacketSplitMove,
                                           multiMoveCount, lastMove, data, cc, pData, false);
             yAllowedDistance = res[0];
             yDistanceAboveLimit = res[1];
@@ -259,7 +251,7 @@ public class SurvivalFly extends Check {
         if (debug) {
             outputDebug(player, to, from, data, cc, thisMove.hDistance, hAllowedDistance, hFreedom, 
                         thisMove.yDistance, yAllowedDistance, fromOnGround, resetFrom, toOnGround, 
-                        resetTo, thisMove, yDistanceAboveLimit);
+                        resetTo, thisMove);
             tagsLength = tags.size();
             data.ws.setJustUsedIds(null);
         }
@@ -429,12 +421,7 @@ public class SurvivalFly extends Check {
      * A check to prevent players from bed-flying.
      * To be called on PlayerBedLeaveEvent(s)
      * (This increases VL and sets tag only. Setback is done in MovingListener).
-     * 
-     * @param player
-     *            the player
-     * @param pData
-     * @param cc
-     * @param data
+     *
      * @return If to prevent action (use the set back location of survivalfly).
      */
     public boolean checkBed(final Player player, final IPlayerData pData, final MovingConfig cc, final MovingData data) {
@@ -456,12 +443,6 @@ public class SurvivalFly extends Check {
 
     /**
      * Check for push/pull by pistons, alter data appropriately (blockChangeId).
-     * 
-     * @param yDistance
-     * @param from
-     * @param to
-     * @param data
-     * @return
      */
     private double[] getVerticalBlockMoveResult(final double yDistance, final PlayerLocation from, final PlayerLocation to, final int tick, final MovingData data) {
         /*
@@ -673,8 +654,7 @@ public class SurvivalFly extends Check {
                                  final PlayerLocation to, final PlayerLocation from, final boolean debug,
                                  final boolean fromOnGround, final boolean toOnGround, final boolean onGround) {
         final MovingData data = pData.getGenericInstance(MovingData.class);      
-        final CombinedData cData = pData.getGenericInstance(CombinedData.class); 
-        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);   
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         /*
@@ -863,9 +843,9 @@ public class SurvivalFly extends Check {
         float sinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
         float cosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
         /** List of predicted X distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double xTheoreticalDistance[] = new double[9];
+        double[] xTheoreticalDistance = new double[9];
         /** List of predicted Z distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double zTheoreticalDistance[] = new double[9];
+        double[] zTheoreticalDistance = new double[9];
         for (i = 0; i < 9; i++) {
             // Each slot in the array is initialized with the same momentum first.
             xTheoreticalDistance[i] = thisMove.xAllowedDistance;
@@ -995,14 +975,9 @@ public class SurvivalFly extends Check {
     /**
      * Finalize this speed processing: check if we should apply a workaround, if needed. Otherwise, just throw a violation.
      * (See AirWorkarounds class desc)
-     * 
-     * @param data
-     * @param pData
-     * @param player
+     *
      * @param xTheoreticalDistance The list of all 8 possible x distances.
      * @param zTheoreticalDistance The list of all 8 possible z distances.
-     * @param from
-     * @param to
      * @param inputsIdx Index of the array containing all theoretical directions (8 - left/forward/backward/right/b.left/b.right/f.right/f.left).
      */
     private void postPredictionProcessing(final MovingData data, final IPlayerData pData, final Player player, 
@@ -1047,11 +1022,10 @@ public class SurvivalFly extends Check {
      * @param forceSetOnGround Set to true on specific occasions where we need to re-estimate speed with the ground status, in case the player fails the check.
      * @param forceSetOffGround Set to true on specific occasions where we want to run the prediction without taking the ground status into consideration.
      */
-    private final double[] hDistRel(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final Player player, 
-                                    final MovingData data, final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingConfig cc,
-                                    final int tick, final boolean useBlockChangeTracker,
-                                    final boolean fromOnGround, final boolean toOnGround, final boolean debug, final int multiMoveCount, 
-                                    final boolean isNormalOrPacketSplitMove, boolean forceSetOnGround, boolean forceSetOffGround) {
+    private double[] hDistRel(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final Player player,
+                              final MovingData data, final PlayerMoveData thisMove, final PlayerMoveData lastMove,
+                              final boolean fromOnGround, final boolean toOnGround, final boolean debug, final int multiMoveCount,
+                              final boolean isNormalOrPacketSplitMove, boolean forceSetOnGround, boolean forceSetOffGround) {
         boolean onGround = forceSetOffGround ? false : (from.isOnGround() || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.from.onGround || forceSetOnGround); 
         double hDistanceAboveLimit = 0.0;
 
@@ -1129,8 +1103,8 @@ public class SurvivalFly extends Check {
      */
     private double[] vDistRel(final long now, final Player player, final PlayerLocation from, 
                               final boolean fromOnGround, final boolean resetFrom, final PlayerLocation to, 
-                              final boolean toOnGround, final boolean resetTo, 
-                              final double hDistance, final double yDistance, boolean isNormalOrPacketSplitMove,
+                              final boolean toOnGround, final boolean resetTo,
+                              final double yDistance, boolean isNormalOrPacketSplitMove,
                               final int multiMoveCount, final PlayerMoveData lastMove, 
                               final MovingData data, final MovingConfig cc, final IPlayerData pData, 
                               boolean forceResetMomentum) {
@@ -1157,12 +1131,12 @@ public class SurvivalFly extends Check {
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
             thisMove.yAllowedDistance = thisMove.yDistance;
-            thisMove.canStep = true;
+            thisMove.isStepUp = true;
             tags.add("step_env");
         }
         else if (PlayerEnvelopes.isJump(from, to, player, fromOnGround, toOnGround)) {
             thisMove.yAllowedDistance = thisMove.yDistance;
-            thisMove.canJump = true;
+            thisMove.isJump = true;
             data.jumpDelay = Magic.MAX_JUMP_DELAY;
             tags.add("jump_env");
         }
@@ -1236,11 +1210,11 @@ public class SurvivalFly extends Check {
                 }
                 else {
                     thisMove.yAllowedDistance = collisionVector.getY();
-                    if ((thisMove.xDistance != collisionVector.getX() || thisMove.zDistance != collisionVector.getZ())
+                    if ((thisMove.xAllowedDistance != collisionVector.getX() || thisMove.zAllowedDistance != collisionVector.getZ())
                         && (fromOnGround || thisMove.touchedGroundWorkaround)
                         && MathUtil.inRange(0.5, thisMove.yAllowedDistance, cc.sfStepHeight)) {
                         // The player stepped up by Minecraft's definition.
-                        thisMove.canStep = true;
+                        thisMove.isStepUp = true;
                     }
                 }
             }
@@ -1259,7 +1233,6 @@ public class SurvivalFly extends Check {
 
         /** Expected difference from current to allowed */       
         final double offset = thisMove.yDistance - thisMove.yAllowedDistance;
-        System.out.println("yDistance:"+ thisMove.yDistance + " " + thisMove.yAllowedDistance + ":allowedYDist");
         if (Math.abs(offset) < Magic.PREDICTION_EPSILON) {
             // Accuracy margin.
         }
@@ -1307,7 +1280,7 @@ public class SurvivalFly extends Check {
     /**
      * After failure checks of vertical distance.
      *
-     * @return
+     * @return yDistanceAboveLimit, yAllowedDistance.
      */
     private double[] vDistAfterFailure(final Player player, final IPlayerData pData, final MovingData data, boolean fromOnGround, boolean toOnGround,
                                        final PlayerLocation from, final PlayerLocation to, boolean isNormalOrPacketSplitMove, int multiMoveCount, 
@@ -1341,8 +1314,8 @@ public class SurvivalFly extends Check {
          */
         if (!thisMove.touchedGroundWorkaround && !thisMove.couldStepUp && lastMove.touchedGroundWorkaround && yDistanceAboveLimit > 0.0) {
             // Explicitly demand to not be having a lost ground case with this move.
-            double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo, 
-                                    thisMove.hDistance, thisMove.yDistance, isNormalOrPacketSplitMove, multiMoveCount, lastMove, 
+            double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo,
+                    thisMove.yDistance, isNormalOrPacketSplitMove, multiMoveCount, lastMove,
                                     data, cc, pData, true);
             yAllowedDistance = res[0];
             yDistanceAboveLimit = res[1];
@@ -1353,6 +1326,7 @@ public class SurvivalFly extends Check {
 
     /**
      * After-horizontal-failure checks.
+     *
      * @return hAllowedDistance, hDistanceAboveLimit, hFreedom
      */
     private double[] hDistAfterFailure(final Player player, final int multiMoveCount,
@@ -1372,8 +1346,8 @@ public class SurvivalFly extends Check {
             tags.add("itemresync");
             if (!BridgeMisc.isUsingItem(player) && hDistanceAboveLimit > 0.0) {
                 // Re-estimate with released item (if it still throws a VL, the player is actually cheating, if the item is still in use, then it wasn't desync'ed).
-                double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
-                                        fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, false);
+                double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove,
+                        fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, false);
                 hAllowedDistance = res[0];
                 hDistanceAboveLimit = res[1];
             }
@@ -1382,8 +1356,8 @@ public class SurvivalFly extends Check {
          * 1: Player failed with a concurrent lost ground case: force-set the ground status and re-estimate.
          */
         if ((thisMove.touchedGroundWorkaround || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.touchedGroundWorkaround) && hDistanceAboveLimit > 0.0) {
-            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
-                                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
+            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove,
+                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
             hAllowedDistance = res[0];
             hDistanceAboveLimit = res[1];
         }
@@ -1391,8 +1365,8 @@ public class SurvivalFly extends Check {
          * 2: Undetectable jump: player failed with the onGround flag, lets brute force with off-ground then.
          */
         if (PlayerEnvelopes.isVerticallyConstricted(from, to, pData) && hDistanceAboveLimit > 0.0) {
-            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
-                                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, true); 
+            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove,
+                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, false, true);
             hAllowedDistance = res[0];
             hDistanceAboveLimit = res[1];
         }
@@ -1403,8 +1377,8 @@ public class SurvivalFly extends Check {
             // Be sure to test this only if the player is seemingly off ground
             if (!from.isOnGround() && from.isOnGroundOpportune(cc.yOnGround, 0L, blockChangeTracker, data.blockChangeRef, tick)) {
                 tags.add("blockchange_h");
-                double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, cc, tick, useBlockChangeTracker, 
-                                        fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
+                double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove,
+                        fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
                 hAllowedDistance = res[0];
                 hDistanceAboveLimit = res[1];
             }
@@ -1458,12 +1432,7 @@ public class SurvivalFly extends Check {
      * Inside liquids vertical speed checking.<br> setFrictionJumpPhase must be set
      * externally.
      * TODO: Recode to a vDistRel-like implementation.
-     * 
-     * @param from
-     * @param to
-     * @param toOnGround
-     * @param yDistance
-     * @param data
+     *
      * @return yAllowedDistance, yDistanceAboveLimit
      */
     private double[] vDistLiquid(final PlayerMoveData thisMove, final PlayerLocation from, final PlayerLocation to, 
@@ -1621,23 +1590,12 @@ public class SurvivalFly extends Check {
     /**
      * Simple (limit-based, non-predictive) on-climbable vertical distance checking.
      * Handled in a separate method to reduce the complexity of vDistRel workarounds.
-     * 
-     * @param player
-     * @param from
-     * @param to
-     * @param fromOnGround 
-     * @param toOnGround 
-     * @param pData
-     * @param thisMove
-     * @param lastMove
-     * @param yDistance
-     * @param data
-     * @param cc
+     *
      * @return yAllowedDistance, yDistanceAboveLimit
      */
     private double[] vDistClimbable(final Player player, final PlayerLocation from, final PlayerLocation to,
-                                    final boolean fromOnGround, final boolean toOnGround, final IPlayerData pData,
-                                    final PlayerMoveData thisMove, final PlayerMoveData lastMove, 
+                                    final IPlayerData pData,
+                                    final PlayerMoveData thisMove, final PlayerMoveData lastMove,
                                     final double yDistance, final MovingData data, final MovingConfig cc) {
         data.clearActiveHorVel(); // Might want to clear ALL horizontal vel.
         double yDistanceAboveLimit = 0.0;
@@ -1705,14 +1663,8 @@ public class SurvivalFly extends Check {
 
     /**
      * Violation handling put here to have less code for the frequent processing of check.
-     * @param now
-     * @param result
-     * @param player
-     * @param from
-     * @param to
-     * @param data
-     * @param cc
-     * @return
+     *
+     * @return The Location where the player will be set backed to.
      */
     private Location handleViolation(final long now, final double result, 
                                     final Player player, final PlayerLocation from, final PlayerLocation to, 
@@ -1744,10 +1696,6 @@ public class SurvivalFly extends Check {
     
     /**
      * Hover violations have to be handled in this check, because they are handled as SurvivalFly violations (needs executeActions).
-     * @param player
-     * @param loc
-     * @param cc
-     * @param data
      */
     public final void handleHoverViolation(final Player player, final PlayerLocation loc, final MovingConfig cc, final MovingData data) {
         data.survivalFlyVL += cc.sfHoverViolation;
@@ -1781,19 +1729,6 @@ public class SurvivalFly extends Check {
 
     /**
      * Debug output.
-     * @param player
-     * @param to
-     * @param data
-     * @param cc
-     * @param hDistance
-     * @param hAllowedDistance
-     * @param hFreedom
-     * @param yDistance
-     * @param yAllowedDistance
-     * @param fromOnGround
-     * @param resetFrom
-     * @param toOnGround
-     * @param resetTo
      */
     private void outputDebug(final Player player, final PlayerLocation to, final PlayerLocation from,
                              final MovingData data, final MovingConfig cc, 
@@ -1801,7 +1736,7 @@ public class SurvivalFly extends Check {
                              final double yDistance, final double yAllowedDistance,
                              final boolean fromOnGround, final boolean resetFrom, 
                              final boolean toOnGround, final boolean resetTo,
-                             final PlayerMoveData thisMove, double yDistanceAboveLimit) {
+                             final PlayerMoveData thisMove) {
 
         // TODO: Show player name once (!)
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();

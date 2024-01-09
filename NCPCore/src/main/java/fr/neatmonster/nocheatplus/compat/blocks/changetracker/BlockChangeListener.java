@@ -128,17 +128,6 @@ public class BlockChangeListener implements Listener {
                 }
             }
         },
-        new MiniListener<BlockBreakEvent>() {
-            // Include cancelled events, due to the use-block part.
-            @EventHandler(ignoreCancelled = false, priority = EventPriority.MONITOR)
-            @RegisterMethodWithOrder(tag = defaultTag)
-            @Override
-            public void onEvent(BlockBreakEvent event) {
-                if (enabled) {
-                    onBreakingBlocks(event);
-                }
-            }
-        },
         new MiniListener<BlockFormEvent>() {
             @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
             @RegisterMethodWithOrder(tag = defaultTag)
@@ -320,14 +309,6 @@ public class BlockChangeListener implements Listener {
             }
         }
     }
-
-    private void onBreakingBlocks(BlockBreakEvent event) {
-        // Lag-compensate block breaking. Experimental
-        if (event.getBlock() != null) {
-            tracker.addBlocks((event.getBlock()));
-        }
-    }
-
 
     private void onInteractPhysical(final PlayerInteractEvent event) {
         final Block block = event.getClickedBlock();
