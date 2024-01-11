@@ -29,9 +29,10 @@ public interface IEntityAccessCollide {
      *                 Otherwise, a modified vector containing the "obstructed" speed is returned. <br>
      *                 (Thus, if you wish to know if the player collided with something: desiredXYZ != collidedXYZ)
      * @param onGround The "on ground" status of the player. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground and mismatches must be taken into account.
+     *                 Used to determine whether the player will be able to step up with the given motion.
      * @param cc
      * @param ncpAABB The AABB of the player at the position they moved from (in other words, the last AABB of the player).
-     *                Only makes sense if you call this method during PlayerMoveEvent, because the bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
+     *                Only makes sense if you call this method during PlayerMoveEvent, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
      *                If null, the default NMS bounding box will be used instead.
      *
      * @return A Vector containing the collision components (collisionXYZ)

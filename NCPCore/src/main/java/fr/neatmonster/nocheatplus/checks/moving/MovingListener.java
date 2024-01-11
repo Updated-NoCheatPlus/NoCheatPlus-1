@@ -243,7 +243,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
     
-        if (pData.isCheckActive(CheckType.MOVING_SURVIVALFLY, player) && survivalFly.checkBed(player, pData, cc, data)) {
+        if (pData.isCheckActive(CheckType.MOVING_SURVIVALFLY, player) && survivalFly.checkBed(player, cc, data)) {
             // Check if the player has to be reset.
             // To "cancel" the event, we teleport the player.
             Location newTo = null;

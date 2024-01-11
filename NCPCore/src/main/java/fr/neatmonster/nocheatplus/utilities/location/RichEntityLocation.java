@@ -365,7 +365,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         // Is the player actually in the block?
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
             // Legacy clients don't have such block.
-            // This will allow "jumping" on it but won't solve legacy players "floating" mid air due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
+            // This will allow "jumping" on it but won't solve legacy players "floating" midair due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
             // We'd need per-player blocks for such.
             onHoneyBlock = false;
             return onHoneyBlock;
@@ -757,7 +757,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      *            Must be greater than or equal zero.
      * @param stepCorrection
      *            If set to true, a correction method is used for leniency.
-     * @return True, if is head obstructed
+     * @return True, if head is obstructed
      * @throws IllegalArgumentException
      *             If marginAboveEyeHeight is smaller than 0.
      */

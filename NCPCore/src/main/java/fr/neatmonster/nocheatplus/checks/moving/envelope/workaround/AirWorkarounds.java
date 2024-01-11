@@ -94,14 +94,14 @@ public class AirWorkarounds {
      * @param fromOnGround
      * @return True, if a workaround applies
      */
-    private static boolean oddLevitation(final MovingData data, final Player player, final PlayerLocation from, final boolean fromOnGround, boolean isNormalOrPacketSplitMove) {
+    private static boolean oddLevitation(final MovingData data, final Player player, final PlayerLocation from, final boolean fromOnGround, boolean isNormalOrPacketSplitMove, boolean toOnGround) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         return  
 
                /*
-                * 0: Don't predict if the movement has messed up coordiantes.
+                * 0: Don't predict if the movement has messed up coordinates.
                 */
                 !isNormalOrPacketSplitMove && thisMove.yDistance > 0.0
                 && data.ws.use(WRPT.W_M_SF_INACCURATE_SPLIT_MOVE)
@@ -115,8 +115,14 @@ public class AirWorkarounds {
                 * 0: The first move is -most of the time- mispredicted due to... Whatever. Micro moves?
                 * TODO: test if this is actually due to micro-moves and remove it. We have a proper way of handling split moves now.
                 */
-                || fromOnGround && !thisMove.to.onGround 
-                && thisMove.yDistance < data.liftOffEnvelope.getJumpGain(Bridge1_9.getLevitationAmplifier(player) - 1, data.nextStuckInBlockVertical) * data.lastFrictionVertical
+                || (
+                     // 1: First move that actually leaves the ground
+                     fromOnGround && !thisMove.to.onGround
+                     && thisMove.yDistance < data.liftOffEnvelope.getJumpGain(Bridge1_9.getLevitationAmplifier(player) - 1, data.nextStuckInBlockVertical) * data.lastFrictionVertical
+                     // 1: Don't know what's going on here: when receiving levitation, the client "stalls" server-side for a tick. They'll begin to levitate on the next tick.
+                     // https://gyazo.com/9ea2d76301bcfd5bc10dca2c6db77e63
+                     || thisMove.hasLevitation && !lastMove.hasLevitation && fromOnGround && toOnGround && thisMove.yDistance == 0.0
+                )
                 && data.ws.use(WRPT.W_M_SF_FIRST_MOVE_ASCNEDING_FROM_GROUND)
                /*
                 * 0: Sbyte overflow. Still not fixed by Mojang (!!)
@@ -128,7 +134,7 @@ public class AirWorkarounds {
                 && data.ws.use(WRPT.W_M_SF_SBYTE_OVERFLOW)
                /*
                 * 0: Let older clients on newer servers ascend with protocol-hack plugins emulating levitation.
-                * Not going to put up with server adminstrators who want compatibility AND ACCURACY/CHEAT PROTECTION for every client under the rainbow (including 10+ year old ones)
+                * Not going to put up with server administrators who want compatibility AND ACCURACY/CHEAT PROTECTION for every client under the rainbow (including 10+ year old ones)
                 */
                 || pData.getClientVersion().isOlderThan(ClientVersion.V_1_9) && thisMove.yDistance > 0.0 && ServerVersion.compareMinecraftVersion("1.9") >= 0
                 && data.ws.use(WRPT.W_M_SF_LEVITATION_1_8_CLIENT)
@@ -160,7 +166,7 @@ public class AirWorkarounds {
             return oddGliding(data, player, from, fromOnGround, to, toOnGround, isNormalOrPacketSplitMove);
         }
         if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
-            return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove);
+            return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove, toOnGround);
         }
         
         return
@@ -181,12 +187,9 @@ public class AirWorkarounds {
                 && lastMove.toIsValid && thisMove.hDistance > 0.18 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0
                 && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*
-                * 0: Wildcard lost-ground: no clean way to handle it without resorting to a ton of (more) hardcoded magic.
-                * Besides, most cases are already defined quite in detail; any room for abuse (and thus for bypasses) should be minimal.
-                */
-                || thisMove.touchedGroundWorkaround && !thisMove.couldStepUp // Handled by PlayerEnvelopes.canStep()
-               /*
                 * 0: Allow the first move after teleport/set back/respawn on 1.7.10
+                * TODO: ... Time to drop support for 1.6 and 1.7 as well?
+                *  Please Mojang, release that PvP update already so that we can finally kill off 1.8.
                 */
                 || PlayerEnvelopes.couldBeSetBackLoop(data)
                 && data.ws.use(WRPT.W_M_SF_COULD_BE_SETBACK_LOOP)

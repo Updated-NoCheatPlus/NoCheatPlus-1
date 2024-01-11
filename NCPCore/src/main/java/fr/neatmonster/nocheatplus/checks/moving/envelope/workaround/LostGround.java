@@ -24,7 +24,6 @@ import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.checks.moving.player.Passable;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
@@ -37,7 +36,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
-import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -53,7 +51,7 @@ public class LostGround {
     /**
      * Check if touching the ground was lost.
      * (Client did not send / server did not put it through / false negatives on NCP's side / "Blip" glitch).
-     * 
+     *
      * @param player
      * @param from
      * @param to
@@ -63,7 +61,7 @@ public class LostGround {
      * @param lastMove
      * @param data
      * @param cc
-     * @param useBlockChangeTracker 
+
      * @param tags
      * @return True, if the ground collision was lost.
      */
@@ -83,7 +81,7 @@ public class LostGround {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         // Very specific case with players jumping with head obstructed by lanterns or after respawning
         if (hDistance <= 0.03 && from.isOnGround(0.03) 
-            && (thisMove.headObstructed && MaterialUtil.LANTERNS.contains(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 0.1), from.getBlockZ())) || data.joinOrRespawn)) {
+            && (MaterialUtil.LANTERNS.contains(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 2.0), from.getBlockZ())) || data.joinOrRespawn)) {
             return applyLostGround(player, from, true, thisMove, data, "0.03", tags);
         }
 
@@ -116,14 +114,18 @@ public class LostGround {
                 // No need for interpolation in this case: the player likely has just landed on the ground, though there may be cases with missed from, but detected to.
                 return false;
             }
-            // Try interpolating the ground collision from this-from to last-from.
-            if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_lastMove", tags, data, 
+            // Try interpolating the ground collision from last-from to this-from.
+            // Usually, corresponds to a missed "fromOnGround" position with the *next* move (with last missing a ground collision too, but with the "to" position).
+            // (In other words AIR -> TO LOST GROUND(AIR)   |   FROM LOST GROUND(AIR) -> AIR
+            if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_from", tags, data,
                                  from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
+                thisMove.fromLostGround = true;
                 return true;
             }
-            // Try interpolating the ground collision from this-to to this-from.
-            if (interpolateGround(player, to.getBlockCache(), to.getWorld(), to.getMCAccess(), tags, "_thisMove", data, 
+            // Try interpolating the ground collision from this-from to this-to.
+            if (interpolateGround(player, to.getBlockCache(), to.getWorld(), to.getMCAccess(), tags, "_to", data,
                                   to.getX(), to.getY(), to.getZ(), from.getX(), from.getY(), from.getZ(), thisMove.hDistance, to.getBoxMarginHorizontal(), to.getyOnGround())) {
+                thisMove.toLostGround = true;
                 return true;
             }
         }
@@ -253,18 +255,13 @@ public class LostGround {
         data.sfJumpPhase = 0;
         // Update the jump amplifier because we assume the player to be able to jump here.
         data.jumpAmplifier = MovingUtil.getJumpAmplifier(player, mcAccess);
-        // Update speed factors the the speed estimation.
+        // Update speed factors the speed estimation.
         data.adjustMediumProperties(player.getLocation(), DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class), player, data.playerMoves.getCurrentMove());
         // Tell NoFall that we assume the player to have been on ground somehow.
         thisMove.touchedGround = true;
         thisMove.touchedGroundWorkaround = true;
         tags.add("lostground_" + tag);
         player.sendMessage("lostground_" + tag);
-        if (thisMove.couldStepUp) {
-            // Couldstep is a risky workaround, but also very difficult to reproduce at will.
-            // Trying to exploit it "too much" will eventually set off Improbable.
-            Improbable.check(player, (float)Math.abs(thisMove.yDistance), System.currentTimeMillis(), "couldstep", DataManager.getPlayerData(player));
-        }
         return true;
     }
 

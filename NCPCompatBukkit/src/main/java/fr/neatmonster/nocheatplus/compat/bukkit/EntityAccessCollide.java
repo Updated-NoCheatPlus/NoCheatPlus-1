@@ -18,39 +18,50 @@ import java.util.List;
 
 import org.bukkit.craftbukkit.v1_20_R2.entity.CraftEntity;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
-import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
 import net.minecraft.world.phys.AxisAlignedBB;
 import net.minecraft.world.phys.Vec3D;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class EntityAccessCollide implements IEntityAccessCollide{
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
+
+public class EntityAccessCollide implements IEntityAccessCollide {
 
     @Override
     public Vector collide(Entity entity, Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
-        net.minecraft.world.entity.Entity entityNMS = ((CraftEntity)entity).getHandle();
+        net.minecraft.world.entity.Entity entityNMS = ((CraftEntity) entity).getHandle();
         // We must use the last bounding box here. Unless specified otherwise.
-        AxisAlignedBB bb = ncpAABB == null ? entityNMS.cG() : new AxisAlignedBB(ncpAABB[0], ncpAABB[1], ncpAABB[2], ncpAABB[3], ncpAABB[4], ncpAABB[5]);
+        AxisAlignedBB AABB = ncpAABB == null ? entityNMS.cG() : new AxisAlignedBB(ncpAABB[0], ncpAABB[1], ncpAABB[2], ncpAABB[3], ncpAABB[4], ncpAABB[5]);
         Vec3D cInput = new Vec3D(input.getX(), input.getY(), input.getZ());
-        List<VoxelShape> list = entityNMS.dL().c(entityNMS, bb.c(cInput));
-        Vec3D vec3 = input.lengthSquared() == 0.0 ? cInput : net.minecraft.world.entity.Entity.a(entityNMS, cInput, bb, entityNMS.dL(), list);
+        List<VoxelShape> list = entityNMS.dL().c(entityNMS, AABB.c(cInput));
+        Vec3D vec3 = input.lengthSquared() == 0.0 ? cInput : net.minecraft.world.entity.Entity.a(entityNMS, cInput, AABB, entityNMS.dL(), list);
         boolean collideX = cInput.c != vec3.c;
         boolean collideY = cInput.d != vec3.d;
         boolean collideZ = cInput.e != vec3.e;
         boolean touchGround = onGround || collideY && vec3.d < 0.0;
         //cc.sfStepHeight > 0.0
         if (entityNMS.dF() > 0.0 && touchGround && (collideX || collideZ)) {
-            Vec3D vec31 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), entityNMS.dF(), input.getZ()), bb, entityNMS.dL(), list);
-            Vec3D vec32 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, entityNMS.dF(), 0.0), bb.c(input.getX(), 0.0, input.getZ()), entityNMS.dL(), list);
-            if (vec32.d < entityNMS.dF()) {
-                Vec3D vec33 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), 0.0, input.getZ()), bb.c(vec32), entityNMS.dL(), list).e(vec32);
-                if (vec33.i() > vec31.i()) vec31 = vec33;
+            Vec3D vec31 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), entityNMS.dF(), input.getZ()), AABB, entityNMS.dL(), list);
+            Vec3D vec32 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, entityNMS.dF(), 0.0), AABB.c(input.getX(), 0.0, input.getZ()), entityNMS.dL(), list);
+            IPlayerData pData = DataManager.getPlayerData((Player) entity);
+            if (vec32.d < entityNMS.dF() && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_8)) {
+                // 1.7 and below don't have this step fix.
+                Vec3D vec33 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), 0.0, input.getZ()), AABB.c(vec32), entityNMS.dL(), list).e(vec32);
+                if (vec33.i() > vec31.i()) {
+                    // Stepped up
+                    vec31 = vec33;
+                }
             }
-            
+
             if (vec31.i() > vec3.i()) {
-                Vec3D tmp = vec31.e(net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, -vec31.d + cInput.d, 0.0), bb.c(vec31), entityNMS.dL(), list));
+                // Stepped up.
+                Vec3D tmp = vec31.e(net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, -vec31.d + cInput.d, 0.0), AABB.c(vec31), entityNMS.dL(), list));
                 return new Vector(tmp.c, tmp.d, tmp.e);
             }
         }
@@ -59,7 +70,7 @@ public class EntityAccessCollide implements IEntityAccessCollide{
 
     @Override
     public boolean getOnGround(Entity entity) {
-        net.minecraft.world.entity.Entity entityNMS = ((CraftEntity)entity).getHandle();
+        net.minecraft.world.entity.Entity entityNMS = ((CraftEntity) entity).getHandle();
         return entityNMS.aA();
     }
 }

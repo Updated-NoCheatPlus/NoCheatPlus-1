@@ -708,7 +708,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             inLava = false;
             final int iMinX = MathUtil.floor(minX + 0.001);
             final int iMaxX = MathUtil.ceil(maxX - 0.001);
-            final int iMinY = MathUtil.floor(minY + 0.001); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMinY = MathUtil.floor(minY + 0.001);
             final int iMaxY = MathUtil.ceil(maxY - 0.001);
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
@@ -748,7 +748,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
             final int iMinX = MathUtil.floor(minX + 0.001);
             final int iMaxX = MathUtil.ceil(maxX - 0.001);
-            final int iMinY = MathUtil.floor(minY + 0.001); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMinY = MathUtil.floor(minY + 0.001);
             final int iMaxY = MathUtil.ceil(maxY - 0.001);
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
@@ -781,7 +781,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * @return true, if is in iquid
+     * @return true, if is in liquid
      */
     public boolean isInLiquid() {
         if (!isInWaterLogged() && blockFlags != null && (blockFlags.longValue() & BlockFlags.F_LIQUID) == 0) {

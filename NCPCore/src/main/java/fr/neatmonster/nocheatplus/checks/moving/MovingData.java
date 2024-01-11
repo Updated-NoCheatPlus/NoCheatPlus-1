@@ -84,6 +84,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     /** Delay (in ticks) from jump to back on ground */
     public int jumpDelay;
+    public double lastLevitationLevel;
     /** Count set back (re-) setting. */
     private int playerMoveCount = 0;
     /** setBackResetCount (incremented) at the time of (re-) setting the ordinary set back. */

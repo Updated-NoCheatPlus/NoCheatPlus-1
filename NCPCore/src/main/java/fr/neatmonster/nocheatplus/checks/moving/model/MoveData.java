@@ -108,7 +108,7 @@ public class MoveData {
     /**
      * The player touched ground by the means of a lost-ground workaround exclusively
      */
-    public boolean touchedGroundWorkaround;    
+    public boolean touchedGroundWorkaround, fromLostGround, toLostGround;
     
     // Meta stuff
     /**
@@ -160,6 +160,8 @@ public class MoveData {
         headObstructed = false;
         touchedGround = false;
         touchedGroundWorkaround = false;
+        fromLostGround = false;
+        toLostGround = false;
         // Done.
         valid = true;
     }

@@ -183,7 +183,7 @@ public class PlayerEnvelopes {
      *
      * @param fromOnGround Uses the BCT.
      * @param toOnGround Uses the BCT.
-     * @return True if is a jump. 
+     * @return True, if the player is leaving ground with Minecraft's assigned jump speed.
      */
     public static boolean isJump(final PlayerLocation from, final PlayerLocation to, final Player player, boolean fromOnGround, boolean toOnGround) {
         final IPlayerData pData = DataManager.getPlayerData(player);
@@ -205,7 +205,7 @@ public class PlayerEnvelopes {
         if (entityCollide != null) {
             // This is for jumping with head obstructed.
             Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-            // Don't check for correct  motion. We are only interested in seeing if the player collided vertically above.
+            // Don't check for correct motion. We are only interested in seeing if the player collided vertically above.
             thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
             jumpGain = collisionVector.getY();
         }
@@ -226,7 +226,7 @@ public class PlayerEnvelopes {
                             lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
                             // 2: Plain ground miss on block's edges.
                             // TODO: check for abuses.
-                            || thisMove.touchedGroundWorkaround && !lastMove.touchedGroundWorkaround
+                            || (thisMove.touchedGroundWorkaround && !lastMove.touchedGroundWorkaround || thisMove.touchedGroundWorkaround && lastMove.touchedGroundWorkaround && !thisMove.to.onGround)
                     ) 
                 )
                 // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
@@ -240,7 +240,7 @@ public class PlayerEnvelopes {
      *
      * @param fromOnGround Uses the BCT.
      * @param toOnGround   Uses the BCT.
-     * @return True if is a step-up.
+     * @return True if this movement is from and to ground with positive yDistance, as determined by the CachedConfig.sfStepHeight parameter.
      */
     public static boolean isStep(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
         final MovingData data = pData.getGenericInstance(MovingData.class);

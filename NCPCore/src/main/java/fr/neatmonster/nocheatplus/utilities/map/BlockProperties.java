@@ -4162,8 +4162,9 @@ public class BlockProperties {
     }
 
     /**
-     * Like isOnGround, just with minimum and maximum coordinates in arbitrary
-     * order.
+     * An isOnGround check that takes coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
+     * For the minXYZ arguments, the minimum value between the given coordinates is used.
+     * For the maxXYZ arguments, the maximum value between the given coordinates is used.
      *
      * @param access
      *            the access
@@ -4222,7 +4223,7 @@ public class BlockProperties {
     }
 
     /**
-     * An isOnGround check that takes arbitrary coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
+     * An isOnGround check that takes coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
      * For the minXYZ arguments, the minimum value between the given coordinates is used.
      * For the maxXYZ arguments, the maximum value between the given coordinates is used.
      *
