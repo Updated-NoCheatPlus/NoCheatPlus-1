@@ -758,19 +758,8 @@ public class SurvivalFly extends Check {
         // This essentially represents the momentum of the player.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.xDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
-        if (entityCollide != null) {
-            // TODO: How to lastMove.from.getAABBCopy ? This hack only for demontration purpose
-            double halfWidth = from.getWidth() / 2f;
-            double height = from.getHeight();
-            double[] lastFromBB = new double[] {lastMove.from.getX() - halfWidth, lastMove.from.getY(), lastMove.from.getZ() - halfWidth, lastMove.from.getX() + halfWidth, lastMove.from.getY() + height, lastMove.from.getZ() + halfWidth};
-            Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(thisMove.xAllowedDistance, lastMove.yDistance, thisMove.zAllowedDistance), onGround, pData.getGenericInstance(MovingConfig.class), lastFromBB);
-            if (!MathUtil.equal(lastMove.xDistance, collisionVector.getX())) {
-                thisMove.xAllowedDistance = 0.0;
-            }
-            if (!MathUtil.equal(lastMove.zDistance, collisionVector.getZ())) {
-                thisMove.zAllowedDistance = 0.0;
-            }
-        }
+        if (lastMove.collideX) thisMove.xAllowedDistance = 0.0;
+        if (lastMove.collideZ) thisMove.zAllowedDistance = 0.0;
         // (The game calls a checkFallDamage() function, which, as you can imagine, handles fall damage. But also handles liquids' flow force, thus we need to apply this 2 times.)
         if (from.isInWater() && !lastMove.from.inWater) {
             Vector liquidFlowVector = from.getLiquidPushingVector(thisMove.xAllowedDistance, thisMove.zAllowedDistance, BlockFlags.F_WATER);
@@ -868,8 +857,10 @@ public class SurvivalFly extends Check {
         float cosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
         /** List of predicted X distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
         double xTheoreticalDistance[] = new double[9];
+        boolean[] collideX = new boolean[9];
         /** List of predicted Z distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
         double zTheoreticalDistance[] = new double[9];
+        boolean[] collideZ = new boolean[9];
         for (i = 0; i < 9; i++) {
             // Each slot in the array is initialized with the same momentum first.
             xTheoreticalDistance[i] = thisMove.xAllowedDistance;
@@ -931,6 +922,8 @@ public class SurvivalFly extends Check {
         if (entityCollide != null) {
             for (i = 0; i < 9; i++) {
                 Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]), onGround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+                if (xTheoreticalDistance[i] != collisionVector.getX()) collideX[i] = true;
+                if (zTheoreticalDistance[i] != collisionVector.getZ()) collideZ[i] = true;
                 xTheoreticalDistance[i] = collisionVector.getX();
                 zTheoreticalDistance[i] = collisionVector.getZ();
             }
@@ -985,6 +978,8 @@ public class SurvivalFly extends Check {
             }
             if (found) {
                 // Found a candidate to set in this move.
+                thisMove.collideX = collideX[i];
+                thisMove.collideZ = collideZ[i];
                 break;
             }
         }
