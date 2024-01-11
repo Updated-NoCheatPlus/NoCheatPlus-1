@@ -79,11 +79,15 @@ public class PlayerMoveData extends MoveData {
      * Estimated X distance only. Set in SurvivalFly.
      */
     public double xAllowedDistance;
+    
+    public boolean collideX;
 
     /**
      * Estimated Z distance only. Set in SurvivalFly.
      */
     public double zAllowedDistance;
+    
+    public boolean collideZ;
 
     /**
      * Combined XZ distance. Set in SurvivalFly.
@@ -163,6 +167,8 @@ public class PlayerMoveData extends MoveData {
         yAllowedDistance = 0.0;
         zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
+        collideX = false;
+        collideZ = false;
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;
