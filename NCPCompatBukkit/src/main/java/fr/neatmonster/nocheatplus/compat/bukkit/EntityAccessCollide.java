@@ -34,17 +34,17 @@ public class EntityAccessCollide implements IEntityAccessCollide{
         // We must use the last bounding box here. Unless specified otherwise.
         AxisAlignedBB bb = ncpAABB == null ? entityNMS.cG() : new AxisAlignedBB(ncpAABB[0], ncpAABB[1], ncpAABB[2], ncpAABB[3], ncpAABB[4], ncpAABB[5]);
         Vec3D cInput = new Vec3D(input.getX(), input.getY(), input.getZ());
-        List<VoxelShape> list = entityNMS.dL().c(entityNMS, bb.c(cInput));
+        List<VoxelShape> list = entityNMS.dL().c(entityNMS, bb.b(cInput));
         Vec3D vec3 = input.lengthSquared() == 0.0 ? cInput : net.minecraft.world.entity.Entity.a(entityNMS, cInput, bb, entityNMS.dL(), list);
         boolean collideX = cInput.c != vec3.c;
         boolean collideY = cInput.d != vec3.d;
         boolean collideZ = cInput.e != vec3.e;
         boolean touchGround = onGround || collideY && vec3.d < 0.0;
-        //cc.sfStepHeight > 0.0
-        if (entityNMS.dF() > 0.0 && touchGround && (collideX || collideZ)) {
-            Vec3D vec31 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), entityNMS.dF(), input.getZ()), bb, entityNMS.dL(), list);
-            Vec3D vec32 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, entityNMS.dF(), 0.0), bb.c(input.getX(), 0.0, input.getZ()), entityNMS.dL(), list);
-            if (vec32.d < entityNMS.dF()) {
+        // TODO: Not only cc.sfStepHeight (0.6), change on vehicle(boats:0.0, other vehicle 1.0)
+        if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
+            Vec3D vec31 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), cc.sfStepHeight, input.getZ()), bb, entityNMS.dL(), list);
+            Vec3D vec32 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, cc.sfStepHeight, 0.0), bb.b(input.getX(), 0.0, input.getZ()), entityNMS.dL(), list);
+            if (vec32.d < cc.sfStepHeight) {
                 Vec3D vec33 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), 0.0, input.getZ()), bb.c(vec32), entityNMS.dL(), list).e(vec32);
                 if (vec33.i() > vec31.i()) vec31 = vec33;
             }

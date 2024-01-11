@@ -758,14 +758,18 @@ public class SurvivalFly extends Check {
         // This essentially represents the momentum of the player.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.xDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
-         if (entityCollide != null) {
-             Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(thisMove.xAllowedDistance, lastMove.yDistance, thisMove.zAllowedDistance), onGround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-             if (!MathUtil.equal(lastMove.xDistance, collisionVector.getX())) {
-                 thisMove.xAllowedDistance = 0.0;
-             }
-             if (!MathUtil.equal(lastMove.zDistance, collisionVector.getZ())) {
-                 thisMove.zAllowedDistance = 0.0;
-             }
+        if (entityCollide != null) {
+            // TODO: How to lastMove.from.getAABBCopy ? This hack only for demontration purpose
+            double halfWidth = from.getWidth() / 2f;
+            double height = from.getHeight();
+            double[] lastFromBB = new double[] {lastMove.from.getX() - halfWidth, lastMove.from.getY(), lastMove.from.getZ() - halfWidth, lastMove.from.getX() + halfWidth, lastMove.from.getY() + height, lastMove.from.getZ() + halfWidth};
+            Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(thisMove.xAllowedDistance, lastMove.yDistance, thisMove.zAllowedDistance), onGround, pData.getGenericInstance(MovingConfig.class), lastFromBB);
+            if (!MathUtil.equal(lastMove.xDistance, collisionVector.getX())) {
+                thisMove.xAllowedDistance = 0.0;
+            }
+            if (!MathUtil.equal(lastMove.zDistance, collisionVector.getZ())) {
+                thisMove.zAllowedDistance = 0.0;
+            }
         }
         // (The game calls a checkFallDamage() function, which, as you can imagine, handles fall damage. But also handles liquids' flow force, thus we need to apply this 2 times.)
         if (from.isInWater() && !lastMove.from.inWater) {
