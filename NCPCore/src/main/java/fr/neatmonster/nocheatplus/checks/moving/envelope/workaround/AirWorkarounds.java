@@ -103,7 +103,7 @@ public class AirWorkarounds {
                /*
                 * 0: Don't predict if the movement has messed up coordinates.
                 */
-                !isNormalOrPacketSplitMove && thisMove.yDistance > 0.0
+                !isNormalOrPacketSplitMove && thisMove.yDistance >= 0.0
                 && data.ws.use(WRPT.W_M_SF_INACCURATE_SPLIT_MOVE)
                /*
                 * 0: Players can still press the space bar in powder snow to boost ascending speed.
@@ -198,7 +198,7 @@ public class AirWorkarounds {
                  * instead of the regular (and predicted) gravity slope of -0.0784
                  */
                 || lastMove.from.onBouncyBlock && !lastMove.from.onSlimeBlock && !fromOnGround && !toOnGround && thisMove.yDistance < 0.0
-                && lastMove.yDistance == 0.0 && MathUtil.inRange(-Magic.GRAVITY_ODD, thisMove.yDistance, -Magic.GRAVITY_VACC)
+                && lastMove.yDistance == 0.0 && MathUtil.inRange(-Magic.GRAVITY_ODD, thisMove.yDistance, -Magic.GRAVITY_VACC) && thisMove.hDistance > 0.1
                 && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)
                 && data.ws.use(WRPT.W_M_SF_BED_STEP_DOWN)
                /*

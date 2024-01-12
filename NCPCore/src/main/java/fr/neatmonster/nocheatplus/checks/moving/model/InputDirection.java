@@ -14,6 +14,9 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
+/**
+* Meant to carry information regarding the player's key presses (WASD)
+*/
 public class InputDirection {
     
     /** (A/D keys, left = 1, right = -1. A value of 0.0 means no strafe movement) */
@@ -26,9 +29,9 @@ public class InputDirection {
     private StrafeDirection sdir;
     
     /**
-     * Compose a new instance meant to represent the player's key polling.
+     * Compose a new instance meant to represent the player's key presses.
      * 
-     * @param strafe Represents sideway movement.
+     * @param strafe Represents sideways movement.
      * @param forward Represents forward and backward movement.
      */
     public InputDirection(float strafe, float forward) {

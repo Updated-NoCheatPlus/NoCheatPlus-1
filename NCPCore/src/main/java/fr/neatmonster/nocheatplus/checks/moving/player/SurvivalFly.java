@@ -737,8 +737,12 @@ public class SurvivalFly extends Check {
         // This essentially represents the momentum of the player.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.xDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
-        if (lastMove.collideX) thisMove.xAllowedDistance = 0.0;
-        if (lastMove.collideZ) thisMove.zAllowedDistance = 0.0;
+        if (lastMove.collideX) {
+            thisMove.xAllowedDistance = 0.0;
+        }
+        if (lastMove.collideZ) {
+            thisMove.zAllowedDistance = 0.0;
+        }
         // (The game calls a checkFallDamage() function, which, as you can imagine, handles fall damage. But also handles liquids' flow force, thus we need to apply this 2 times.)
         if (from.isInWater() && !lastMove.from.inWater) {
             Vector liquidFlowVector = from.getLiquidPushingVector(thisMove.xAllowedDistance, thisMove.zAllowedDistance, BlockFlags.F_WATER);
@@ -815,11 +819,8 @@ public class SurvivalFly extends Check {
             }
         }
         // Sprint-jumping...
-        /* 
-         * NOTE: here you must use to.getYaw not from. To is the most recent rotation.
-         *       Using From lags behind a few ticks, causing false positives when switching looking direction.
-         *       This does not apply for locations (from.(...) correctly reflects the player's current position)
-         */
+        // NOTE: here you must use to.getYaw not from. To is the most recent rotation. Using from lags behind a few ticks, causing false positives when switching looking direction.
+        // This does not apply for locations (from.(...) correctly reflects the player's current position)
         if (PlayerEnvelopes.isBunnyhop(from, to, pData, fromOnGround, toOnGround, player)) {
             thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
             thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST); 
@@ -827,21 +828,16 @@ public class SurvivalFly extends Check {
             tags.add("bunnyhop");
         }
         // Transform theoretical inputs to acceleration vectors (getInputVector, entity.java)
-        /* 
-         * NOTE: here you must use to.getYaw not from. To is the most recent rotation.
-         *       Using from lags behind a few ticks, causing false positives when switching looking direction.
-         *       This does not apply for locations (from.(...) correctly reflects the player's current position)
-         */
+        // NOTE: [See above]
         float sinYaw = TrigUtil.sin(to.getYaw() * TrigUtil.toRadians);
         float cosYaw = TrigUtil.cos(to.getYaw() * TrigUtil.toRadians);
-
         /* List of predicted X distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double xTheoreticalDistance[] = new double[9];
-        /* To keep track which theoretical speed would result in a collision */
+        double[] xTheoreticalDistance = new double[9];
+        /* To keep track which theoretical speed would result in a collision on the X axis */
         boolean[] collideX = new boolean[9];
         /* List of predicted Z distances. Size is the number of possible inputs (left/right/backwards/forward etc...) */
-        double zTheoreticalDistance[] = new double[9];
-        /* To keep track which theoretical speed would result in a collision */
+        double[] zTheoreticalDistance = new double[9];
+        /* To keep track which theoretical speed would result in a collision on the Z axis */
         boolean[] collideZ = new boolean[9];
         for (i = 0; i < 9; i++) {
             // Each slot in the array is initialized with the same momentum first.
@@ -903,9 +899,14 @@ public class SurvivalFly extends Check {
         // TODO: Optimize. Brute forcing collisions with all 9 speed combinations will tank performance.
         if (entityCollide != null) {
             for (i = 0; i < 9; i++) {
+                // TODO: Uh-oh... Is it safe to pass the unchecked(= not predicted) yDistance here?
                 Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]), onGround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-                if (xTheoreticalDistance[i] != collisionVector.getX()) collideX[i] = true;
-                if (zTheoreticalDistance[i] != collisionVector.getZ()) collideZ[i] = true;
+                if (xTheoreticalDistance[i] != collisionVector.getX()) {
+                    collideX[i] = true;
+                }
+                if (zTheoreticalDistance[i] != collisionVector.getZ()) {
+                    collideZ[i] = true;
+                }
                 xTheoreticalDistance[i] = collisionVector.getX();
                 zTheoreticalDistance[i] = collisionVector.getZ();
             }
@@ -933,16 +934,9 @@ public class SurvivalFly extends Check {
             // Calculate all possible hDistances
             double theoreticalHDistance = MathUtil.dist(xTheoreticalDistance[i], zTheoreticalDistance[i]);
             if (strict) {
-                if (MathUtil.almostEqual(to.getX()-from.getX(), xTheoreticalDistance[i], Magic.PREDICTION_EPSILON) 
-                    && MathUtil.almostEqual(to.getZ()-from.getZ(), zTheoreticalDistance[i], Magic.PREDICTION_EPSILON)) {
-
-                    if (pData.isSprinting() && inputs[i].getForwardDir() != ForwardDirection.FORWARD && inputs[i].getStrafeDir() != StrafeDirection.NONE) {
-                        // Assume cheating; if sprinting sideways or backwards, this speed is no candidate to set in thisMove.
-                        tags.add("illegalsprint");
-                        Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.illegalsprint", pData);
-                        forceViolation = true;
-                    } 
-                    else if (cData.isHackingRI) {
+                if (MathUtil.almostEqual(thisMove.xDistance, xTheoreticalDistance[i], Magic.PREDICTION_EPSILON)
+                    && MathUtil.almostEqual(thisMove.zDistance, zTheoreticalDistance[i], Magic.PREDICTION_EPSILON)) {
+                    if (cData.isHackingRI) {
                         // Blatant cheat attempt, do not set speed.
                         tags.add("noslowpacket");
                         cData.isHackingRI = false;
@@ -996,8 +990,8 @@ public class SurvivalFly extends Check {
             inputsIdx = 4;   
             // Check for workarounds, unless the move has been judged to be illegal already.
             if (!forceViolation) {
-                x_idx = MathUtil.closestIndex(xTheoreticalDistance, to.getX() - from.getX());
-                z_idx = MathUtil.closestIndex(zTheoreticalDistance, to.getZ() - from.getZ());
+                x_idx = MathUtil.closestIndex(xTheoreticalDistance, thisMove.xDistance);
+                z_idx = MathUtil.closestIndex(zTheoreticalDistance, thisMove.zDistance);
                 if (HorizontalUncertainty.applyEntityPushingGrace(player, pData, xTheoreticalDistance, zTheoreticalDistance, x_idx, z_idx, to)) {
                     // Set the highest predicted speed instead of the one with the smallest epsilon.
                     isPredictable = false;
@@ -1007,8 +1001,11 @@ public class SurvivalFly extends Check {
         // Finally, set in this move.
         thisMove.xAllowedDistance = xTheoreticalDistance[!isPredictable ? x_idx : inputsIdx];
         thisMove.zAllowedDistance = zTheoreticalDistance[!isPredictable ? z_idx : inputsIdx];
+        // Set more edge data useful for other stuff.
         // TODO: How can we know the impulse if the move is uncertain? ...
         thisMove.hasImpulse = inputs[isPredictable ? inputsIdx : x_idx].getForwardDir() != ForwardDirection.NONE && inputs[isPredictable ? inputsIdx : z_idx].getStrafeDir() != StrafeDirection.NONE;
+        thisMove.strafeImpulse = inputs[isPredictable ? inputsIdx : z_idx].getStrafeDir();
+        thisMove.forwardImpulse = inputs[isPredictable ? inputsIdx : x_idx].getForwardDir();
         // Debug and also set a flag, useful for other checks / contexts.
         if (debug) {
             player.sendMessage("[SurvivalFly] (postPredict) " + (!isPredictable ? "Uncertain" : "Predicted") + " direction: " + inputs[isPredictable ? inputsIdx : x_idx].getForwardDir() +" | "+ inputs[isPredictable ? inputsIdx : x_idx].getStrafeDir());
@@ -1027,7 +1024,6 @@ public class SurvivalFly extends Check {
                               final MovingData data, final PlayerMoveData thisMove, final PlayerMoveData lastMove,
                               final boolean fromOnGround, final boolean toOnGround, final boolean debug,
                               final boolean isNormalOrPacketSplitMove, boolean forceSetOnGround, boolean forceSetOffGround) {
-        Vector collisionVector = null;
         boolean onGround = !forceSetOffGround && (from.isOnGround() || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.from.onGround || forceSetOnGround);
         double hDistanceAboveLimit = 0.0;
 
@@ -1179,7 +1175,7 @@ public class SurvivalFly extends Check {
                 // Negligible speed reset.
                 thisMove.yAllowedDistance = 0.0;
             }
-            if (lastMove.hasLevitation) { // The first "normal" move still has levitation motion.
+            if (lastMove.hasLevitation || thisMove.hasLevitation) { // The first "normal" move still has levitation motion.
                 // Levitation forces players to ascend and does not work in liquids, so thankfully we don't have to account for that, other than stuck-speed.
                 thisMove.yAllowedDistance += (0.05 * data.lastLevitationLevel - lastMove.yAllowedDistance) * 0.2;
             }
@@ -1346,10 +1342,10 @@ public class SurvivalFly extends Check {
         }
         /*
          * 1: Player failed with a concurrent lost ground case: force-set the ground status and re-estimate.
+         * TODO: Would be best to not brute force lostground with horizontal motion...
          */
         if ((thisMove.touchedGroundWorkaround || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.touchedGroundWorkaround) && hDistanceAboveLimit > 0.0) {
-            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove,
-                    fromOnGround, toOnGround, debug, multiMoveCount, isNormalOrPacketSplitMove, true, false);
+            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, isNormalOrPacketSplitMove, true, false);
             hAllowedDistance = res[0];
             hDistanceAboveLimit = res[1];
         }

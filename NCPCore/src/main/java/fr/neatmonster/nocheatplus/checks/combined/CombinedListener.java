@@ -14,6 +14,8 @@
  */
 package fr.neatmonster.nocheatplus.checks.combined;
 
+import javax.xml.crypto.Data;
+
 import org.bukkit.Location;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -43,6 +45,7 @@ import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.model.InputDirection;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
@@ -90,7 +93,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     private final AuxMoving aux = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(AuxMoving.class);
 
     @SuppressWarnings("unchecked")
-    public CombinedListener(){
+    public CombinedListener() {
         super(CheckType.COMBINED);
 
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
@@ -119,7 +122,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 public void onEventlessToggleGlide(final PlayerMoveEvent event) {
                     final PlayerMoveData lastMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getFirstPastMove();
                     final PlayerMoveData thisMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
-                    // Assumption: we consider players toggle gliding on if they were not gliding before and they now are.
+                    // Assumption: we consider players toggle gliding on if they were not gliding before, and they now are.
                     if (shouldDenyGlidingStart(event.getPlayer(), thisMove.isGliding && !lastMove.isGliding, false)) {
                         // Force-stop.
                         event.getPlayer().setGliding(false);
@@ -199,7 +202,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     public void onGlidingPhase(final PlayerMoveEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        if (!Bridge1_9.isGliding(event.getPlayer()) /*&& lastMove.isGliding*/) {
+        if (!Bridge1_9.isGliding(event.getPlayer())) {
             // No gliding, no deal.
             return;
         }
@@ -353,6 +356,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onToggleSprint(final PlayerToggleSprintEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        final PlayerMoveData thisMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
         if (!event.isSprinting()) {
             // Player was sprinting and they now toggled it off.
             pData.setSprinting(false);
@@ -366,7 +370,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         // Player toggled sprinting on: ensure that it is legit (Bukkit does not check).
         // TODO: This stuff might need to be latency compensated.
-        if (event.getPlayer().getFoodLevel() <= 5) {
+        if (event.getPlayer().getFoodLevel() <= 5 || event.getPlayer().isFlying()) {
             pData.setSprinting(false);
             return;
         }
@@ -376,8 +380,10 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             pData.setSprinting(false);
             return;
         }
-        // TODO: Account for sprint reset on facing a wall?
-        // NOTE: For the moment, omnidirectional sprinting is integreated as a subcheck in Sf.
+        if (thisMove.forwardImpulse != InputDirection.ForwardDirection.FORWARD) {
+            // Cannot sprint into any other direction besides forward.
+            pData.setSprinting(false);
+        }
         pData.setSprinting(true);
     }
     

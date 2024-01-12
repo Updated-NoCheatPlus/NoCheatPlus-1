@@ -18,10 +18,15 @@ import java.util.List;
 
 import org.bukkit.craftbukkit.v1_20_R2.entity.CraftEntity;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
+
 import net.minecraft.world.phys.AxisAlignedBB;
 import net.minecraft.world.phys.Vec3D;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -44,7 +49,9 @@ public class EntityAccessCollide implements IEntityAccessCollide{
         if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
             Vec3D vec31 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), cc.sfStepHeight, input.getZ()), bb, entityNMS.dL(), list);
             Vec3D vec32 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(0.0, cc.sfStepHeight, 0.0), bb.b(input.getX(), 0.0, input.getZ()), entityNMS.dL(), list);
-            if (vec32.d < cc.sfStepHeight) {
+            final IPlayerData pData = DataManager.getPlayerData((Player)(entity));
+            // 1.7 and below don't have this "step up fix".
+            if (vec32.d < cc.sfStepHeight && !pData.getClientVersion().isOlderThan(ClientVersion.V_1_8)) {
                 Vec3D vec33 = net.minecraft.world.entity.Entity.a(entityNMS, new Vec3D(input.getX(), 0.0, input.getZ()), bb.c(vec32), entityNMS.dL(), list).e(vec32);
                 if (vec33.i() > vec31.i()) vec31 = vec33;
             }

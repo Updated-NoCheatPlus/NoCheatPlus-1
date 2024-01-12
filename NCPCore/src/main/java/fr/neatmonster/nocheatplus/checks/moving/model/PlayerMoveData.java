@@ -79,14 +79,22 @@ public class PlayerMoveData extends MoveData {
      * Estimated X distance only. Set in SurvivalFly.
      */
     public double xAllowedDistance;
-    
+
+    /**
+     *  The theoretical collision that has been set in this movement by SurvivalFly. This is set only if a theoretical speed is actually found
+     *  (In other words, only if the player isn't cheating)
+     */
     public boolean collideX;
 
     /**
      * Estimated Z distance only. Set in SurvivalFly.
      */
     public double zAllowedDistance;
-    
+
+    /**
+     *  The theoretical collision that has been set in this movement by SurvivalFly. This is set only if a theoretical speed is actually found
+     *  (In other words, only if the player isn't cheating)
+     */
     public boolean collideZ;
 
     /**
@@ -142,7 +150,13 @@ public class PlayerMoveData extends MoveData {
      * Intention is to be able to differentiate when the player is actively moving VS being passively moved by other sources (i.e.: push and velocity)
      */
     public boolean hasImpulse;
-    
+
+    /** Signal the direction of this strafing movement (LEFT/RIGHT/NONE) */
+    public InputDirection.StrafeDirection strafeImpulse;
+
+    /** Signal the direction of this forward movement (FORWARD/BACKWARD/NONE) */
+    public InputDirection.ForwardDirection forwardImpulse;
+
 
     @Override
     protected void resetBase() {
@@ -157,6 +171,8 @@ public class PlayerMoveData extends MoveData {
     	isSneaking = false;
     	isSwimming = false;
         slowedByUsingAnItem = false;
+        forwardImpulse = InputDirection.ForwardDirection.NONE;
+        strafeImpulse = InputDirection.StrafeDirection.NONE;
         // Properties involving the environment.
         bunnyHop = false;
         isStepUp = false;
