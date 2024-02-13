@@ -475,4 +475,38 @@ public class LocUtil {
         return "x=" + block.getBlockX() + ",y=" + block.getBlockY() + ",z=" + block.getBlockZ();
     }
 
+    /**
+     * Random base offset for collision shape of some block in Java
+     * 
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    public static long randomSeedJava(int x, int y, int z) {
+        // Taken from NMS - Offset/Noise
+        long i = (x * 3129871L) ^ z * 116129781L ^ y;
+        i = i * i * 42317861L + i * 11L;
+        i = i >> 16;
+        return i;
+    }
+
+    /**
+     * Random base offset for collision shape of some block in Bedrock
+     * 
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    public static long randomSeedBedrock(int x, int y, int z) {
+        // Reverse engineering, not sure if optimised but work
+        long a1 = x * 3129871 & 0xFFFFFFFFL;
+        long a2 = z * 116129781 & 0xFFFFFFFFL;
+        a2 ^= a1;
+        a2 ^= y;
+        a1 = a2 * 42317861 & 0xFFFFFFFFL;
+        a1 += 11;
+        return a1 * a2 & 0xFFFFFFFFL;
+    }
 }
