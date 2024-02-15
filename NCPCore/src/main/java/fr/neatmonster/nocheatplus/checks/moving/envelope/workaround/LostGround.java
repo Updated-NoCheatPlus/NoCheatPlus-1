@@ -36,6 +36,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
@@ -80,7 +81,7 @@ public class LostGround {
 
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         // Very specific case with players jumping with head obstructed by lanterns or after respawning
-        if (hDistance <= 0.03 && from.isOnGround(0.03) 
+        if (hDistance <= Magic.Minecraft_minMoveSqDistance && from.isOnGround(Magic.Minecraft_minMoveSqDistance)
             && (MaterialUtil.LANTERNS.contains(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 2.0), from.getBlockZ())) || data.joinOrRespawn)) {
             return applyLostGround(player, from, true, thisMove, data, "0.03", tags);
         }

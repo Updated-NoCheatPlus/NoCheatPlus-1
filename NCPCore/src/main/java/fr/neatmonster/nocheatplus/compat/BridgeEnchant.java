@@ -397,10 +397,10 @@ public final class BridgeEnchant {
             y *= force / distance;
             z *= force / distance;
             if (from.isOnGround()) {
-                x += 1.1999999f;
+                x += 1.1999999284744263f;
             }
             return new Vector(x, y, z);
         }
-        return new Vector(0.0, 0.0, 0.0);
+        return new Vector();
     }
 }

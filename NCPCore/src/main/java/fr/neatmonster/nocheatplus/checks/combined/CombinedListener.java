@@ -14,8 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.checks.combined;
 
-import javax.xml.crypto.Data;
-
 import org.bukkit.Location;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -106,7 +104,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                     final IPlayerData pData = DataManager.getPlayerData((Player)event.getEntity());
                     final MovingData data = pData.getGenericInstance(MovingData.class);
                     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-                    // Always fake use velocity here to smoothen the transition between glide->no glide or no no glide->glide transitions.
+                    // Always fake use velocity here to smoothen the transition between glide->no glide or no glide->glide transitions.
                     data.addVelocity((Player)event.getEntity(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
                     if (shouldDenyGlidingStart((Player)event.getEntity(), event.isGliding(), true)) {
                         event.setCancelled(true);
@@ -241,7 +239,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         // This is needed because of the discrepancy on what "sneaking" means between Bukkit and Minecraft. And we need to know the exact status to determine if we should enforce slower speed on players.
         // For Bukkit: sneaking= shift key press. Both player#isSneaking() and PlayerToggleSneakEvents are fired with action packets (PRESS/RELEASE_SHIFT_KEY).
-        // For Minecraft: sneaking= being in crouch pose or in crawl pose (added in 1.14. Check "isMovingSlowly()" method in client code).
+        // For Minecraft: sneaking= being in crouch pose or in "crawl" pose (the latter added in 1.14. Check "isMovingSlowly()" method in client code).
         // Historically (up until Minecraft 1.14), a player could have entered the crouching pose by tapping the shift key only, thus, Bukkit's coincidence of SNEAKING == SHIFTING was okay.
         // This coincidence however is no longer true, because of the aforementioned version introducing two new mechanics related to poses/sneaking.
         //  -> The bounding box is contracted if sneaking, allowing players to enter 1.5 blocks-high areas and STAY in crouch pose, REGARDLESS of shift key presses (until they get out).
@@ -370,7 +368,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         // Player toggled sprinting on: ensure that it is legit (Bukkit does not check).
         // TODO: This stuff might need to be latency compensated.
-        if (event.getPlayer().getFoodLevel() <= 5 || event.getPlayer().isFlying()) {
+        if (event.getPlayer().getFoodLevel() <= 5) {
             pData.setSprinting(false);
             return;
         }

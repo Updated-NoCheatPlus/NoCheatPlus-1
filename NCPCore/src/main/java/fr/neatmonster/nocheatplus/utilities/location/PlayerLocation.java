@@ -30,7 +30,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
-// TODO: Auto-generated Javadoc
 /**
  * Lots of content for a location a player is supposed to be at. Constructors
  * for convenient use.
@@ -77,7 +76,7 @@ public class PlayerLocation extends RichEntityLocation {
             onGround = false;
             // Powder snow below without boots: no candidate for ground.
             // Standing in between max and min isn't possible with or without boots.
-            // Standing on a block different than powder snow will fallback to the usual onGround logic (will return true).
+            // Standing on a block different from powder snow will fallback to the usual onGround logic (will return true).
             return onGround;
         }   
         return super.isOnGround();
@@ -107,7 +106,7 @@ public class PlayerLocation extends RichEntityLocation {
      * This assumes that you have checked for preconditions already (!) <br>
      * [Pre-requisites are: the player must be _shifting_(not sneaking); must be above ground; must have negative or 0 y-distance; must not be flying]
      * 
-     * @param Vector
+     * @param vector
      * @return the modified vector
      */
     public Vector maybeBackOffFromEdge(Vector vector) {

@@ -28,7 +28,8 @@ public interface IAttributeAccess {
 
     /**
      * Generic speed modifier as a multiplier.
-     * 
+     * This is global, meaning it contains every single speed modifier (slowness, speed, sprint, powder snow, soul speed etc...), unless specified otherwise.
+     *
      * @param player
      * @return A multiplier for the allowed speed, excluding the sprint boost
      *         modifier (!). If not possible to determine, it should

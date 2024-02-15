@@ -94,6 +94,8 @@ public class MoveData {
      * being blocked somehow. Should expect descending next move, if in air.
      * <br>
      * Set in SurvivalFly with the collide() method.
+     * <li>NOTE: This is much stricter than RichEntityLocation#seekHeadObstruction().<br>
+     * This only considers the exact moment of collision, the latter is much more lenient.</li>
      */
     public boolean headObstructed;
 

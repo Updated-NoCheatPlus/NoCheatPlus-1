@@ -33,15 +33,15 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 
 /**
- * Aim of this class is to provide a quick'n'dirty way of handling movements that cannot be predicted through ordinary means (not necessarily elegance), thus resorting to hard-coded magic. <br>
+ * Aim of this class is to provide a quick'n'dirty way of handling movements that cannot be predicted through ordinary means (not necessarily elegance), thus resorting to hard-coded magic.<br>
  * A few things to keep in mind:<br>
- *  - Before adding any workaround, you should attempt to handle the movement in the way the client intends it (or at least to the closest possible estimate that NCP's infrastructure will allow): falling back to a workaround sould be the last resort.<br>
- *  - Each workaround has to have proper documentation. Emphasis on "why" the workaround is needed in the first place.  <br>
- *  - Our aim is to nerf / limit what cheaters can do, not catching every single kind of cheat implementation. <br>
- *    From this premise, a workaround should then have limited room for exploitation: we prefer players not having to deal with false positives, than catching low-level cheat types in this instance.
- *    (If possible, do give an example on which kind of exploits might be possible with the intended workaround in place)<br>
- *  - Avoid adding too many [and nested, more than 2] conditions (like it was prior to the vDistRel rework).
- *  - To keep a better track / overview of workarounds, do make use of the workaround registry (append the "use" after all conditions. See the doc for it)
+ * <li> Before adding any workaround, you should attempt to handle the movement in the way the client intends it (or at least to the closest possible estimate that NCP's infrastructure will allow): falling back to a workaround sould be the last resort.</li>
+ * <li> Each workaround has to have proper documentation. Emphasis on "why" the workaround is needed in the first place.</li>
+ * <li> Our aim is to nerf / limit what cheaters can do, not catching every single kind of cheat implementation. </li>
+ * From this premise, a workaround should then have limited room for exploitation: we prefer players not having to deal with false positives, than catching low-level cheats in this instance.
+ *    (If possible, do give an example on what kind of exploits might be enabled by the workaround)</li>
+ * <li> Avoid adding too many [and nested, more than 2] conditions (like it was prior to the vDistRel rework). </li>
+ * <li> To keep a better track / overview of workarounds, do make use of the workaround registry (append the "use" after all conditions. See the doc for it) </li>
  */ 
 public class AirWorkarounds {
 
@@ -80,7 +80,7 @@ public class AirWorkarounds {
                /*
                 * 0: Boosting against a ceiling.
                 */
-               || data.fireworksBoostDuration > 0 && thisMove.headObstructed && thisMove.yDistance != 0.0
+               || data.fireworksBoostDuration > 0 && from.seekHeadObstruction()
                && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
         ;
     }
@@ -143,7 +143,7 @@ public class AirWorkarounds {
 
 
     /**
-     * Several non-predictable moves. Mostly involving collision.
+     * Several non-predictable moves.
      * Some workarounds in here may be more 'structural' (read as: not intended to be a temporary solution, but rather a definitive "fix") than others.
      * 
      * @param data
@@ -197,9 +197,9 @@ public class AirWorkarounds {
                  * 0: Very specific case appeared on 1.20 and above: on stepping down a bed, the first friction move has speed of -0.047607
                  * instead of the regular (and predicted) gravity slope of -0.0784
                  */
-                || lastMove.from.onBouncyBlock && !lastMove.from.onSlimeBlock && !fromOnGround && !toOnGround && thisMove.yDistance < 0.0
+                || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)
+                && lastMove.from.onBouncyBlock && !lastMove.from.onSlimeBlock && !fromOnGround && !toOnGround && thisMove.yDistance < 0.0
                 && lastMove.yDistance == 0.0 && MathUtil.inRange(-Magic.GRAVITY_ODD, thisMove.yDistance, -Magic.GRAVITY_VACC) && thisMove.hDistance > 0.1
-                && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)
                 && data.ws.use(WRPT.W_M_SF_BED_STEP_DOWN)
                /*
                 * 0: Allow falling from high above into powder snow.

@@ -56,20 +56,9 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
 /**
- * A check designed for people that are exposed to particular effects, flying
- * or gliding. The complement to the "SurvivalFly" check, which is for ordinary gameplay.
+ *  A check designed for player that are either in Creative or Spectator mode
  */
 public class CreativeFly extends Check {
-
-   /*
-    * TODO: This check is a fucking mess. 
-    * Move slowfalling and levitation to SurvivalFly once the hSpeed rework is finished, reason being:
-    * 1) It only changes vertical movement not horizontal, which still uses the NMS method
-    * 2) Prevents possible bypasses with Fly checks switches.
-    * ^ Done.
-    * Leave here: Spectator, Flying.
-
-    */
 
     private final List<String> tags = new LinkedList<String>();
     private final BlockChangeTracker blockChangeTracker;

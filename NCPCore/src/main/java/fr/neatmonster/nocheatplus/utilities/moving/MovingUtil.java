@@ -120,7 +120,7 @@ public class MovingUtil {
     }
 
     /**
-     * To be called on EntityToggleGligeEvent(s). If the event is absent, this must be called after checking for lift-off assumption conditions.
+     * To be called on EntityToggleGlideEvent(s). If the event is absent, this must be called after checking for lift-off assumption conditions.
      * (CB: on ground is done wrongly, inWater is probably NOT correct, web is not checked).
      * 
      * @param player

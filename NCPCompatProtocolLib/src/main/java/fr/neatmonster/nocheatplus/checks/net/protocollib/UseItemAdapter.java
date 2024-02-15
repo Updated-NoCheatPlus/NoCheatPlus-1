@@ -65,7 +65,9 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 /**
  * Adapter for listening to packets and Bukkit events relevant for item-use.<br>
  * On 1.17 and above, the adapter will only register events tied to a specific item-use exploit, since Bukkit does
- * provide us with a getItemInUse() method.
+ * provide us with a getItemInUse() method.<br>
+ * On 1.12 and above, all listener will be registered since Bukkit doesn't provide a way of knowing <em>which</em> item is in use (we only get to know if the
+ * player is using an item via isHandRaised)
  * 
  */
 public class UseItemAdapter extends BaseAdapter {
@@ -148,7 +150,7 @@ public class UseItemAdapter extends BaseAdapter {
                 api.addComponent(listener, false);
             }
         }
-        // Always register this event, because it is used to fix a MC/Bukkit glitch, not for item-use setting.
+        // Always register this event, because it is used to fix an MC/Bukkit glitch, not for item-use setting.
         final MiniListener<?> respawningListener = new MiniListener<PlayerRespawnEvent>() {
             @EventHandler(priority = EventPriority.MONITOR)
             @RegisterMethodWithOrder(tag = dftag)

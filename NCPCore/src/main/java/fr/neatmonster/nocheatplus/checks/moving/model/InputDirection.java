@@ -58,15 +58,15 @@ public class InputDirection {
     /**
      * Run an operation with strafeMult and forwardMult.
      * 
-     * @param strafeMult Factor to use with the strafe value
-     * @param forwardMult Factor to use with the forward value
-     * @param operationtype The operation to execute with strafeMult and forwardMult <br>
-     *                      0 = Sets the enum direction to NONE and resets values for both strafe and forward.
-     *                      1 = Multiply strafe and forward by strafeMult and forwardMult respectively
-     *                      2 = Divide strafe and forward by strafeMult and forwardMult respectively
+     * @param strafeFactor Factor to use with the strafe value
+     * @param forwardFactor Factor to use with the forward value
+     * @param operation     The operation to execute with strafeMult and forwardMult <br>
+     *                      0 = Sets the enum direction to NONE and resets values for both strafe and forward.<br>
+     *                      1 = Multiply strafe and forward by strafeMult and forwardMult respectively.<br>
+     *                      2 = Divide strafe and forward by strafeMult and forwardMult respectively.
      */
-    public void calculateDir(double strafeMult, double forwardMult, int operationtype) {
-        switch (operationtype) {
+    public void runOperation(double strafeFactor, double forwardFactor, int operation) {
+        switch (operation) {
             case 0:
                 strafe = 0f;
                 forward = 0f;
@@ -74,12 +74,12 @@ public class InputDirection {
                 sdir = StrafeDirection.NONE;
                 break;
             case 1:
-                strafe *= strafeMult;
-                forward *= forwardMult;
+                strafe *= strafeFactor;
+                forward *= forwardFactor;
                 break;
             case 2:
-                strafe /= strafeMult;
-                forward /= forwardMult;
+                strafe /= strafeFactor;
+                forward /= forwardFactor;
                 break;
             default: 
                 return;

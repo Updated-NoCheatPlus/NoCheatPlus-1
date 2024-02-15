@@ -119,7 +119,7 @@ public class BridgeMisc {
     }
     
     /**
-     * @param Player
+     * @param player
      * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()
      */
     public static boolean isUsingItem(final Player player) {
@@ -153,10 +153,24 @@ public class BridgeMisc {
         return hasIsFrozen;
     }
 
-    public static int getFreezeSeconds(final Player player) {
-        if (!hasIsFrozen()) return 0;
-        // Capped at 140ticks (=7s)
-        return Math.min(7, (player.getFreezeTicks() / 20));
+    public static float getPercentFrozen(Player player) {
+        if (!hasIsFrozen()) {
+            return 0.0f;
+        }
+        if (!canFreeze(player)) {
+            return 0.0f;
+        }
+        int MAX_TICKS = player.getMaxFreezeTicks();
+
+        return (float) Math.min(player.getFreezeTicks(), MAX_TICKS) / (float) MAX_TICKS;
+    }
+
+    public static float getPowderSnowSlowdown(Player player) {
+        return (-0.05F * getPercentFrozen(player));
+    }
+
+    public static boolean isFullyFrozen(Player player) {
+        return player.getFreezeTicks() >= player.getMaxFreezeTicks();
     }
 
     /**
@@ -166,7 +180,7 @@ public class BridgeMisc {
      * @param player
      * @return
      */
-    public static boolean isImmuneToFreezing(final Player player) {
+    public static boolean canFreeze(final Player player) {
         if (!hasIsFrozen()) {
             return false;
         }
@@ -175,10 +189,10 @@ public class BridgeMisc {
         for (int i = 0; i < contents.length; i++){
             final ItemStack armor = contents[i];
             if (armor != null && armor.getType().toString().startsWith("LEATHER")) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     /**

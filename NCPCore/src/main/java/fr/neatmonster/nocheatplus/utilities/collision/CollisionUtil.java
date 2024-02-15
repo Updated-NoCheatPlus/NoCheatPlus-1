@@ -28,10 +28,12 @@ import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
+import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
@@ -47,6 +49,34 @@ public class CollisionUtil {
 
     /** Temporary use, setWorld(null) once finished. */
     private static final Location useLoc = new Location(null, 0, 0, 0);
+
+
+    /**
+     * A function taken from NMS to judge if the horizontal collision is to be considered as negligible. <br>
+     * Used to determine whether the sprinting status needs to be reset on colliding with a wall (if this returns true, sprinting won't be reset then).
+     *
+     * @param collisionVector
+     * @param to The location where the player has moved to. Used for rotations.
+     * @param strafeImpulse The player's sideways input force represented as a double (see InputDirection.java)
+     * @param forwardImpulse The player's forward input force represented as a double (see InputDirection.java)
+     * @return True, if the collision's angle is less than 0.13962633907794952.
+     */
+    public static boolean isHorizontalCollisionNegligible(Vector collisionVector, final PlayerLocation to, double strafeImpulse, double forwardImpulse) {
+        float radYaw = to.getYaw() * TrigUtil.toRadians;
+        double sinYaw = (double)TrigUtil.sin(radYaw);
+        double cosYaw = (double)TrigUtil.cos(radYaw);
+        // NOTE: xxa = strafe, zza = forward
+        double var7 = (double)strafeImpulse * cosYaw - (double)forwardImpulse * sinYaw;
+        double var9 = (double)forwardImpulse * cosYaw + (double)strafeImpulse * sinYaw;
+        double var11 = MathUtil.square(var7) + MathUtil.square(var9);
+        double var13 = MathUtil.square(collisionVector.getX()) + MathUtil.square(collisionVector.getZ());
+        if (!(var11 < 9.999999747378752E-6D) && !(var13 < 9.999999747378752E-6D)) {
+            double var15 = var7 * collisionVector.getX() + var9 * collisionVector.getZ();
+            double collisionAngle = Math.acos(var15 / Math.sqrt(var11 * var13));
+            return collisionAngle < 0.13962633907794952D; // MINOR_COLLISION_ANGLE_THRESHOLD_RADIAN
+        }
+        return false;
+    }
 
     /**
      * Check if a player looks at a target of a specific size, with a specific
@@ -855,18 +885,9 @@ public class CollisionUtil {
         return nBMin <= lBMin && lBMax <=nBMax || lBMin <= nBMin && nBMax <= lBMax;
     }
 
-    public static class RichAxisData {
-        public Axis priority;
-        public Direction exclude;
-        public RichAxisData(Axis priority, Direction exclude) {
-            this.priority = priority;
-            this.exclude = exclude;
-        }
-    }
-    
     /**
      * Test if the absolute difference between two values is small enough to be considered equal.
-     * 
+     *
      * @param a The minuend
      * @param b The subtrahend
      * @param c Absolute(!) value to compare the difference with
@@ -876,5 +897,14 @@ public class CollisionUtil {
     public static boolean equal(double a, double b, double c) {
        if (c < 0.0) return false;
        return Math.abs(a-b) <= c;
+    }
+    
+    public static class RichAxisData {
+        public Axis priority;
+        public Direction exclude;
+        public RichAxisData(Axis priority, Direction exclude) {
+            this.priority = priority;
+            this.exclude = exclude;
+        }
     }
 }

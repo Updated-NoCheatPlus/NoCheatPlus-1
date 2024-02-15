@@ -47,7 +47,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 public class RichEntityLocation extends RichBoundsLocation {
     
     /*
-     * TODO: HumanEntity default with + height (1.11.2): elytra 0.6/0.6,
+     * NOTE: HumanEntity default with + height (1.11.2): elytra 0.6/0.6,
      * sleeping 0.2/0.2, sneaking 0.6/1.65, normal 0.6/1.8 - head height is 0.4
      * with elytra, 0.2 with sleeping, height - 0.08 otherwise.
      */
@@ -172,10 +172,10 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Whether the entity is on a slime block; always false for 1.7 and below
      */
     public boolean isOnSlimeBlock() {
-    	if (onSlimeBlock != null) {
-    		return onSlimeBlock;
-    	}
-    	final Player p = (Player) entity;
+        if (onSlimeBlock != null) {
+            return onSlimeBlock;
+        }
+        final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_8)) {
             // Does not exist.
@@ -183,14 +183,14 @@ public class RichEntityLocation extends RichBoundsLocation {
             return onSlimeBlock;
         }
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-        	final Material typeId = getTypeIdBelow();
+            final Material typeId = getTypeIdBelow();
             final long thisFlags = BlockFlags.getBlockFlags(typeId);
             onSlimeBlock = isOnGround() && (thisFlags & BlockFlags.F_SLIME) != 0;
-        	return onSlimeBlock;
+            return onSlimeBlock;
         }
         // Not a legacy client.
         return super.isOnSlimeBlock();
-    	
+
     }
     
     /**
@@ -199,16 +199,16 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Whether the entity is on a ice-like block.
      */
     public boolean isOnIce() {
-    	if (onIce != null) {
-    		return onIce;
-    	}
-    	final Player p = (Player) entity;
+        if (onIce != null) {
+            return onIce;
+        }
+        final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-        	// MC applies ice properties only with at least half the box on the block
+            // MC applies ice properties only with at least half the box on the block
             final double xzMargin = getBoxMarginHorizontal();
             onIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_ICE);
-        	return onIce;
+            return onIce;
         }
         // Not a legacy client.
         return super.isOnIce();
@@ -220,10 +220,10 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Whether the entity is on blue ice. Always false for 1.12 and below (in which case, the onIce field is changed instead).
      */
     public boolean isOnBlueIce() {
-    	if (onBlueIce != null) {
-    		return onBlueIce;
-    	}
-    	final Player p = (Player) entity;
+        if (onBlueIce != null) {
+            return onBlueIce;
+        }
+        final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
             // Does not exist.
@@ -233,7 +233,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             return onIce;
         }
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-        	// MC applies ice properties only with at least half the box on the block
+            // MC applies ice properties only with at least half the box on the block
             final double xzMargin = getBoxMarginHorizontal();
             onBlueIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_BLUE_ICE);
             return onBlueIce;
@@ -246,13 +246,13 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Always false for 1.12 and below clients.
      */
     public boolean isInWaterLogged() {
-    	if (inWaterLogged != null) {
-    		return inWaterLogged;
-    	}
-    	final Player p = (Player) entity;
+        if (inWaterLogged != null) {
+            return inWaterLogged;
+        }
+        final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-        	// Waterlogged blocks don't exist for older clients.
+            // Waterlogged blocks don't exist for older clients.
             inWaterLogged = false;
             return inWaterLogged;
         }
@@ -265,9 +265,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if the player is in lava
      */
     public boolean isInLava() {
-    	if (inLava != null) {
-    		return inLava;
-    	}
+        if (inLava != null) {
+            return inLava;
+        }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         // 1.13 and below clients use this no-sense method to check if the player is in lava
@@ -315,9 +315,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if is in water
      */
     public boolean isInWater() {
-    	if (inWater != null) {
-    		return inWater;
-    	}
+        if (inWater != null) {
+            return inWater;
+        }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
@@ -357,9 +357,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Whether the entity is on a honey block; always false for 1.14 and below.
      */
     public boolean isOnHoneyBlock() {
-    	if (onHoneyBlock != null) {
-    		return onHoneyBlock;
-    	}
+        if (onHoneyBlock != null) {
+            return onHoneyBlock;
+        }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         // Is the player actually in the block?
@@ -372,8 +372,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             // Only if in the block and at the center.
-        	onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
-        	return onHoneyBlock;
+            onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
+            return onHoneyBlock;
         }
         // Not a legacy client.
         return super.isOnHoneyBlock();
@@ -385,9 +385,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Whether the entity is in a soul sand block.
      */
     public boolean isInSoulSand() {
-    	if (inSoulSand != null) {
-    		return inSoulSand;
-    	}
+        if (inSoulSand != null) {
+            return inSoulSand;
+        }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
@@ -403,9 +403,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Always false for 1.13 and below
      */
     public boolean isInBerryBush() {
-    	if (inBerryBush != null) {
-    		return inBerryBush;
-    	}
+        if (inBerryBush != null) {
+            return inBerryBush;
+        }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {

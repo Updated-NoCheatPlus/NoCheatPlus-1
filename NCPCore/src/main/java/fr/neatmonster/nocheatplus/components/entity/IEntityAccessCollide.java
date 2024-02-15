@@ -22,17 +22,19 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 public interface IEntityAccessCollide {
 
     /**
-     * Retrieve the collision Vector of the entity from NMS.
+     * Make the entity collide with the given speed.
      *
-     * @param input    Meant to represent the desired speed to seek for collisions with.
-     *                 If no collision can't be found within the given speed, the method will return the unmodified input Vector as a result.
+     * @param entity   The entity to test collisions with.
+     * @param input    Meant to represent the desired speed to seek for collisions with.<br>
+     *                 If no collision can be found within the given speed, the method will return the unmodified input Vector as a result.
      *                 Otherwise, a modified vector containing the "obstructed" speed is returned. <br>
      *                 (Thus, if you wish to know if the player collided with something: desiredXYZ != collidedXYZ)
-     * @param onGround The "on ground" status of the player. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground and mismatches must be taken into account.
-     *                 Used to determine whether the player will be able to step up with the given motion.
+     * @param onGround The "on ground" status of the entity. Can be NCP's or Minecraft's. Used to determine whether the entity will be able to step up with the given motion;
+     *                 if the given onGround status is false, the function will attempt to estimate the ground collision by using the given vertical motion. <br>
+     *                 Do mind that if using NCP's, lost ground and mismatches must be taken into account.
      * @param cc
-     * @param ncpAABB The AABB of the player at the position they moved from (in other words, the last AABB of the player).
-     *                Only makes sense if you call this method during PlayerMoveEvent, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
+     * @param ncpAABB The AABB of the entity at the position they moved from (in other words, the last AABB of the entity); may be null.<br>
+     *                Only makes sense if you intend to call this method during PlayerMoveEvents, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
      *                If null, the default NMS bounding box will be used instead.
      *
      * @return A Vector containing the collision components (collisionXYZ)

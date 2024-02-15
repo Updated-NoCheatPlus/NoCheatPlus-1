@@ -99,8 +99,8 @@ public class Magic {
     public static final double CraftBukkit_minMoveSqDist = 1f / 256;
     /** Minimum looking direction change for bukkit to fire PlayerMoveEvents. PlayerConnection.java */
     public static final float CraftBukkit_minLookChange = 10f;
-    /** The minimum squared root distance for clients to send flying packets to the server (EntityPlayerSP.java): movements smaller than this are not sent. (Thanks Mojang!) */
-    public static final double Minecraft_minMoveSqrtDistance = 0.03;
+    /** The minimum squared distance for clients to send flying packets to the server (EntityPlayerSP/LocalPlayer.java, sendPosition()): movements smaller than this are not sent. (Thanks Mojang!) */
+    public static final double Minecraft_minMoveSqDistance = 0.03;
     
 
     
@@ -232,23 +232,6 @@ public class Magic {
     public static double swimBaseSpeedV(boolean isSwimming) {
         // TODO: Does this have to be the dynamic walk speed (refactoring)?
         return isSwimming ? WALK_SPEED * modSwim[2] + 0.1 : WALK_SPEED * modSwim[0] + 0.07; // 0.244
-    }
-
-    /**
-     * Simplistic check for past lift off states done via the past move tracking.
-     * Does not check if players may be able to lift off at all (i.e: in liquid)
-     * @return
-     */
-    public static boolean isValidLiftOffAvailable(int limit, final MovingData data) {
-        limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
-            if (pastMove.from.onGround && !pastMove.to.onGround 
-                && pastMove.toIsValid && pastMove.yDistance > LiftOffEnvelope.NORMAL.getJumpGain(data.jumpAmplifier) - GRAVITY_MAX - Y_ON_GROUND_MIN) {
-                return true;
-            }
-        }
-        return false;
     }
     
     public static boolean recentlyInBubbleStream(int limit, MovingData data) {

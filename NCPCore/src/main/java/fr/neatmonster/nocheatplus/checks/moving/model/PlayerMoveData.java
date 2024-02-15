@@ -124,8 +124,8 @@ public class PlayerMoveData extends MoveData {
 
     // Meta stuff.
     /**
-     * Due to the thresholds and other subtitles with the PlayerMoveEvent, there could have been other
-     * (micro-) moves by the player which could not be checked, since Bukkit skipped them. One moving event
+     * Due to the thresholds and other subtleties with the PlayerMoveEvent, there could have been other
+     * (micro-) moves by the player which could not be checked, because Bukkit skipped them. One moving event
      * is split into several other moves, with a cap.
      */
     public int multiMoveCount;
@@ -134,7 +134,7 @@ public class PlayerMoveData extends MoveData {
      * Mojang introduced a new "mechanic" in 1.17 which allows player to re-send their position on right-clicking.
      * On Bukkit's side, this translates in a PlayerMoveEvent which doesn't actually have any movement change (PME.getFrom() and PME.getTo() contain the same location)
      * This moving event is skipped from being processed.
-     * Do note that players cannot send duplicate packets in a row, there has to be a non-duplicate packet in between each duplicate one.
+     * Do note that players cannot send duplicate packets in a row: after we receive an "empty" PlayerMoveEvent, the next one incoming must have the actual movement change.
      * (Sequence is: normal PME -> duplicate PME -> normal PME(...))
      */
     public boolean duplicateEvent;

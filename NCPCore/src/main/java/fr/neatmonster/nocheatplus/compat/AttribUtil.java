@@ -27,9 +27,9 @@ public class AttribUtil {
     /** The Constant ID_SPRINT_BOOST. */
     public static final UUID ID_SPRINT_BOOST = IdUtil.UUIDFromString("662A6B8D-DA3E-4C1C-8813-96EA6097278D");
     /** The Constant ID_SOUL_SPEED. */
-    private static final UUID ID_SOUL_SPEED = IdUtil.UUIDFromString("87f46a96-686f-4796-b035-22e16ee9e038");
-    /** The Constant ID_POWDER_SNOW_. */
-    private static final UUID ID_POWDER_SNOW = IdUtil.UUIDFromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
+    public static final UUID ID_SOUL_SPEED = IdUtil.UUIDFromString("87f46a96-686f-4796-b035-22e16ee9e038");
+    /** The Constant ID_POWDER_SNOW. */
+    public static final UUID ID_POWDER_SNOW = IdUtil.UUIDFromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
 
     /**
      * Get a multiplier for an AttributeModifier.

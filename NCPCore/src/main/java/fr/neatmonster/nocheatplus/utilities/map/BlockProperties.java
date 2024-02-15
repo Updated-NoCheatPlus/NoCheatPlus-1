@@ -709,7 +709,7 @@ public class BlockProperties {
             stuckInFactor = 0.8D;
         }
         else if (pLoc.isInPowderSnow()) {
-            stuckInFactor = 0.89D;
+            stuckInFactor = 0.8999999761581421D;
         }
         blockCache.cleanup();
         pLoc.cleanup();
