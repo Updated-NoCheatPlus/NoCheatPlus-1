@@ -22,12 +22,13 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
-import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
-import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
-import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
+import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
+import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 
 /**
  * A check to see if players try to attack entities while performing something else
@@ -58,7 +59,10 @@ public class ImpossibleHit extends Check {
 
         boolean cancel = false;
         boolean violation = false;
+        final long currentEventTime = System.currentTimeMillis();
+        boolean slientCancel = false;
         List<String> tags = new LinkedList<String>();
+        final MovingData mData = pData.getGenericInstance(MovingData.class);
         final BlockInteractData biData = pData.getGenericInstance(BlockInteractData.class);
         
         // Meta check: Fight.direction passed, blockinteract.direction failed ->
@@ -72,15 +76,13 @@ public class ImpossibleHit extends Check {
             tags.add("look_mismatch");
         }
         // Can't attack with inventory open.
-        else if (InventoryUtil.hasAnyInventoryOpen(player) && !InventoryUtil.hasOpenedInvRecently(player, 1200)) {
-            // Skip only if the player has opened the inventory for 1.2 secs.
-            // TODO: Maybe move this one to the InventoryListener as an Open subcheck: simply closing on attacking is less invasive than cancelling the hit, gameplay-wise.
+        else if (InventoryUtil.hasAnyInventoryOpen(player)) {
             violation = true;
             tags.add("inventoryopen");
-            player.closeInventory();
+            slientCancel = true;
         }
         // Blocking/Using item and attacking
-        else if (BridgeMisc.isUsingItem(player) && !resetActiveItem) {
+        else if ((mData.isUsingItem || player.isBlocking()) && !resetActiveItem) {
             violation = true;
             tags.add("using/blocking");
         }
@@ -94,6 +96,10 @@ public class ImpossibleHit extends Check {
             final ViolationData vd = new ViolationData(this, player, data.impossibleHitVL, 1D, cc.impossibleHitActions);
             if (vd.needsParameters()) vd.setParameter(ParameterName.TAGS, StringUtil.join(tags, "+"));
             cancel = executeActions(vd).willCancel();
+            if (slientCancel && cancel) {
+                cancel = false;
+                player.closeInventory();
+            }
         }
         // Cooldown
         else {

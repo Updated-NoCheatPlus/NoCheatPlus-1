@@ -83,7 +83,6 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
         // Shulker boxes.
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
             BlockFlags.addFlags(mat, BlockFlags.F_XZ100 | BlockFlags.SOLID_GROUND);
-            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 2f));
         }
         
         for (Material mat : MaterialUtil.INFESTED_BLOCKS) {

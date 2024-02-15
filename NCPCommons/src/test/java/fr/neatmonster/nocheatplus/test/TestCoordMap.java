@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
+import java.util.SplittableRandom;
 
 import org.junit.Test;
 
@@ -74,7 +74,7 @@ public class TestCoordMap {
     private final boolean extraTesting = BuildParameters.testLevel > 0;
     private final int suggestedSamples = extraTesting ? 40000 : 1250;
 
-    public int[][] getRandomCoords(int n, int max, Random random) {
+    private static int[][] getRandomCoords(int n, int max, SplittableRandom random) {
         final int [][] coords = new int[n][3];
         for (int i = 0; i < n; i++){
             for (int j = 0; j < 3 ; j++){
@@ -84,7 +84,7 @@ public class TestCoordMap {
         return coords;
     }
 
-    public int[][] getUniqueRandomCoords(int n, int max, Random random) {
+    private static int[][] getUniqueRandomCoords(int n, int max, SplittableRandom random) {
         Set<Pos> present = new HashSet<Pos>();
         int failures = 0;
         final int [][] coords = new int[n][3];
@@ -311,7 +311,7 @@ public class TestCoordMap {
     @Test
     public void testIntegrity() {
 
-        final Random random = new Random(System.nanoTime() - (System.currentTimeMillis() % 2 == 1 ? 37 : 137));
+        final SplittableRandom random = new SplittableRandom();
 
         final int n = suggestedSamples; // Number of coordinates.
         final int max = 800; // Coordinate maximum.
@@ -333,7 +333,7 @@ public class TestCoordMap {
     @Test
     public void testLinkedCoordHashMap() {
 
-        final Random random = new Random(System.nanoTime() - (System.currentTimeMillis() % 2 == 1 ? 37 : 137));
+        final SplittableRandom random = new SplittableRandom();
 
         final int n = suggestedSamples; // Number of coordinates.
         final int max = 800; // Coordinate maximum.

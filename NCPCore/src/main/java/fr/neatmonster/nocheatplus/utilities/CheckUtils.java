@@ -15,7 +15,6 @@
 package fr.neatmonster.nocheatplus.utilities;
 
 import java.util.Arrays;
-import java.util.Random;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -174,17 +173,6 @@ public class CheckUtils {
             base += "[" + playerName + "] ";
         }
         return base;
-    }
-
-    /**
-     * Convenience method to get a Random instance from the generic registry
-     * (NoCheatPlusAPI).
-     *
-     * @return the random
-     */
-    // TODO: Move official stuff to some static direct access API.
-    public static Random getRandom() {
-        return NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(Random.class);
     }
 
 }

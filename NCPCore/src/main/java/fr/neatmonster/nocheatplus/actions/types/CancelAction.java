@@ -33,7 +33,7 @@ public class CancelAction<D extends ActionData, L extends AbstractActionList<D, 
 
     // TODO: Deprecate this (let it extend penalty.CancelAction)?
 
-    private static final PenaltyNode node = new PenaltyNode(null, CancelPenalty.CANCEL);
+    private static final PenaltyNode node = new PenaltyNode(CancelPenalty.CANCEL);
 
     /**
      * Default cancel action.

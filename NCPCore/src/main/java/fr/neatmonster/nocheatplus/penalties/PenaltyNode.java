@@ -15,7 +15,7 @@
 package fr.neatmonster.nocheatplus.penalties;
 
 import java.util.Collection;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Internal data representation, managing probabilities, and complex decisions
@@ -30,9 +30,6 @@ public class PenaltyNode {
 
     // TODO: Might add a parsing method (recursive).
 
-
-    /** Random instance to use. May be null, in case probability is 1. */
-    private final Random random;
     /** The probability for this node to apply. */
     public final double probability;
     /** Penalty to apply when this node applies. */
@@ -46,26 +43,23 @@ public class PenaltyNode {
 
     /**
      * Convenience: Simple penalty that always applies with no child nodes.
-     * @param random
      * @param penalty
      */
-    public PenaltyNode(Random random, IPenalty<?> penalty) {
-        this(random, 1.0, penalty, null, false);
+    public PenaltyNode(IPenalty<?> penalty) {
+        this(1.0, penalty, null, false);
     }
 
     /**
      * Convenience: Simple penalty with no child nodes.
-     * @param random
      * @param probability
      * @param penalty
      */
-    public PenaltyNode(Random random, double probability, IPenalty<?> penalty) {
-        this(random, probability, penalty, null, false);
+    public PenaltyNode(double probability, IPenalty<?> penalty) {
+        this(probability, penalty, null, false);
     }
 
     /**
      * 
-     * @param random
      * @param probability
      * @param penalty
      *            Note that child penalties are still evaluated, if penalty is
@@ -75,9 +69,8 @@ public class PenaltyNode {
      * @param abortOnApply
      *            Evaluating child nodes: abort as soon as a child node applies.
      */
-    public PenaltyNode(Random random, double probability, IPenalty<?> penalty,
+    public PenaltyNode(double probability, IPenalty<?> penalty,
             Collection<PenaltyNode> childNodes, boolean abortOnApply) {
-        this.random = random;
         this.probability = probability;
         this.penalty = penalty;
         this.childNodes = childNodes == null ? new PenaltyNode[0] : childNodes.toArray(new PenaltyNode[childNodes.size()]);
@@ -94,7 +87,7 @@ public class PenaltyNode {
      */
     public final boolean evaluate(final IPenaltyList results) {
         // (Set final to ensure return behavior.)
-        if (probability < 1.0 && random.nextDouble() > probability) {
+        if (probability < 1.0 && ThreadLocalRandom.current().nextDouble() > probability) {
             // This node does not apply
             return false;
         }
@@ -131,7 +124,7 @@ public class PenaltyNode {
      * @param results
      */
     protected void evaluateChildrenFCFS(final IPenaltyList results) {
-        final double ref = random.nextDouble(); // No scale contained yet.
+        final double ref = ThreadLocalRandom.current().nextDouble(); // No scale contained yet.
         double floor = 0.0;
         for (int i = 0 ; i < childNodes.length; i++) {
             final PenaltyNode childNode = childNodes[i];

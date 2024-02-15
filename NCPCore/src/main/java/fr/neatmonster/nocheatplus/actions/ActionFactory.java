@@ -23,7 +23,6 @@ import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.penalties.CancelPenalty;
 import fr.neatmonster.nocheatplus.penalties.PenaltyNode;
-import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 
 /**
  * Helps with creating Actions out of text string definitions.
@@ -63,10 +62,9 @@ public class ActionFactory extends AbstractActionFactory<ViolationData, ActionLi
                         && probability > 0.0) {
                     // TODO: parsing via factory, store implicit penalties there too.
                     return new PenaltyAction<ViolationData, ActionList>(
-                            "imp_" + actionDefinition, new PenaltyNode(
-                                    CheckUtils.getRandom(), // TODO: store earlier once.
-                                    probability / 100.0, 
-                                    CancelPenalty.CANCEL));
+                        "imp_" + actionDefinition, new PenaltyNode(
+                        probability / 100.0,
+                        CancelPenalty.CANCEL));
                 }
             }
             catch (NumberFormatException e) {

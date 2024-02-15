@@ -799,7 +799,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         if (onClimbable == null) {
             // Early return with flags set and no climbable nearby.
             final Material typeId = getTypeId();
-            if (blockFlags != null && (blockFlags & BlockFlags.F_CLIMBABLE) == 0) {
+            if (blockFlags != null && (blockFlags & BlockFlags.F_CLIMBABLE) == 0 && !MaterialUtil.ALL_TRAP_DOORS.contains(typeId)) {
                 onClimbable = false;
                 return false;
             }

@@ -81,13 +81,13 @@ public class BlockCacheBukkit extends BlockCache {
             for (final Entity other : entity.getNearbyEntities(2.0, 2.0, 2.0)){
                 final EntityType type = other.getType();
                 if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(other instanceof Minecart)) 
-                    continue; 
+                    continue;
                 }
                 final double locY = entity.getLocation(useLoc).getY();
                 useLoc.setWorld(null);
                 if (Math.abs(locY - minY) < 0.7){
                     // TODO: A "better" estimate is possible, though some more tolerance would be good. 
-                    return true; 
+                    return true;
                 }
                 else return false;
             }

@@ -16,7 +16,7 @@ package fr.neatmonster.nocheatplus.test;
 
 import static org.junit.Assert.fail;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
@@ -30,8 +30,6 @@ import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 public class TestRayTracing {
 
     // TODO: Add a test that fails if going beyond target block coordinate.
-
-    protected static final Random random = new Random(System.nanoTime() + 13391);
 
     protected static double maxFactor = 9.0;
 
@@ -61,7 +59,7 @@ public class TestRayTracing {
     public static double[] randomCoords(double max) {
         double[] res = new double[6];
         for (int i = 0; i < 6 ; i++) {
-            res[i] = (random.nextDouble() * 2.0 - 1.0 ) * max;
+            res[i] = (ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * max;
         }
         return res;
     }
@@ -69,7 +67,7 @@ public class TestRayTracing {
     public static double[] randomBlockCoords(int max) {
         double[] res = new double[6];
         for (int i = 0; i < 6 ; i++) {
-            res[i] = random.nextInt(max * 2 + 1) -  max;
+            res[i] = ThreadLocalRandom.current().nextInt(max * 2 + 1) - max;
         }
         return res;
     }

@@ -1996,7 +1996,7 @@ public class BlockProperties {
 
         // Shulker boxes
         for (Material mat : MaterialUtil.SHULKER_BOXES) {
-            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 6f));
+            BlockProperties.setBlockProps(mat, new BlockProps(BlockProperties.woodPickaxe, 2f));
             BlockFlags.setBlockFlags(mat, BlockFlags.F_SOLID | BlockFlags.F_GROUND);
         }
 

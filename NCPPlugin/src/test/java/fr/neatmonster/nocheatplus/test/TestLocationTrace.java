@@ -17,7 +17,7 @@ package fr.neatmonster.nocheatplus.test;
 import static org.junit.Assert.fail;
 
 import java.util.Iterator;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Test;
 
@@ -28,8 +28,6 @@ import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.
 
 
 public class TestLocationTrace {
-
-    protected static final Random random = new Random(System.nanoTime() + 133345691);
 
     /**
      * +- radius around 0.0.
@@ -47,7 +45,7 @@ public class TestLocationTrace {
      * @return
      */
     public static double rand(double center, double radius) {
-        return center + 2.0 * radius * (random.nextDouble() - 0.5);
+        return center + 2.0 * radius * (ThreadLocalRandom.current().nextDouble() - 0.5);
     }
 
     /**
@@ -57,7 +55,7 @@ public class TestLocationTrace {
      * @return
      */
     public static double randStep(double center, double step) {
-        return center + (random.nextBoolean() ? step : -step);
+        return center + (ThreadLocalRandom.current().nextBoolean() ? step : -step);
     }
 
     // TODO: Test pool as well.
