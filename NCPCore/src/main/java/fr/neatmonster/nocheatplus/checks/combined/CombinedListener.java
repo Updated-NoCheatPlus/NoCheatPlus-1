@@ -253,8 +253,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         if (newPose.equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround)) {
             // isVisuallyCrawling()...
             pData.setSneaking(true);
-            // Cannot sprint here 
-            pData.setSprinting(false);
             return;
         }
         if (newPose.equals(Pose.SNEAKING)) {

@@ -242,7 +242,7 @@ public class PlayerEnvelopes {
      * @param toOnGround   Uses the BCT.
      * @return True if this movement is from and to ground with positive yDistance, as determined by the CachedConfig.sfStepHeight parameter.
      */
-    public static boolean isStep(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
+    public static boolean isStepUpByNCPDefinition(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);

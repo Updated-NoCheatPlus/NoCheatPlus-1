@@ -25,6 +25,7 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.blockinteract.BlockInteractData;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
@@ -82,7 +83,7 @@ public class ImpossibleHit extends Check {
             slientCancel = true;
         }
         // Blocking/Using item and attacking
-        else if ((mData.isUsingItem || player.isBlocking()) && !resetActiveItem) {
+        else if (BridgeMisc.isUsingItem(player) && !resetActiveItem) {
             violation = true;
             tags.add("using/blocking");
         }

@@ -43,7 +43,8 @@ public class Captcha extends Check implements ICaptcha{
             data.reset();
             data.captchaStarted = false;
             player.sendMessage(ColorUtil.replaceColors(cc.captchaSuccess));
-        } else {
+        } 
+        else {
             // Increment their tries number counter.
             data.captchTries++;
             data.captchaVL ++;
@@ -53,7 +54,6 @@ public class Captcha extends Check implements ICaptcha{
                 executeActions(player, data.captchaVL, 1, cc.captchaActions);
                 // (Resetting captcha tries is done on quit/kick).
             }
-
             // Display the question again (if not kicked).
             if (player.isOnline()) {
                 sendCaptcha(player, cc, data);
@@ -74,8 +74,7 @@ public class Captcha extends Check implements ICaptcha{
         if (reset) data.captchTries = 0;
         final char[] chars = new char[cc.captchaLength];
         for (int i = 0; i < cc.captchaLength; i++) {
-            chars[i] = cc.captchaCharacters.charAt(
-                ThreadLocalRandom.current().nextInt(cc.captchaCharacters.length()));
+            chars[i] = cc.captchaCharacters.charAt(ThreadLocalRandom.current().nextInt(cc.captchaCharacters.length()));
         }
         data.captchaGenerated = new String(chars);
     }
@@ -90,18 +89,16 @@ public class Captcha extends Check implements ICaptcha{
     }
 
     @Override
-    public void resetCaptcha(Player player, ChatConfig cc, ChatData data, IPlayerData pData){
+    public void resetCaptcha(Player player, ChatConfig cc, ChatData data, IPlayerData pData) {
         data.captchTries = 0;
-        if (shouldCheckCaptcha(player, cc, data, pData) 
-                || shouldStartCaptcha(player, cc, data, pData)){
+        if (shouldCheckCaptcha(player, cc, data, pData) || shouldStartCaptcha(player, cc, data, pData)){
             generateCaptcha(cc, data, true);
         }
     }
 
     @Override
     public void sendCaptcha(Player player, ChatConfig cc, ChatData data) {
-        player.sendMessage(ColorUtil.replaceColors(cc.captchaQuestion.replace("[captcha]",
-                data.captchaGenerated)));
+        player.sendMessage(ColorUtil.replaceColors(cc.captchaQuestion.replace("[captcha]", data.captchaGenerated)));
     }
 
     @Override
@@ -115,5 +112,4 @@ public class Captcha extends Check implements ICaptcha{
         // TODO: Only call if IWorldData.isCheckActive(CHAT_CAPTCHA) has returned true?
         return data.captchaStarted  && pData.isCheckActive(CheckType.CHAT_CAPTCHA, player);
     }
-
 }

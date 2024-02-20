@@ -476,21 +476,6 @@ public class RichEntityLocation extends RichBoundsLocation {
     public boolean standsOnEntity(final double yOnGround, final double xzMargin, final double yMargin) {
         return blockCache.standsOnEntity(entity, minX - xzMargin, minY - yOnGround - yMargin, minZ - xzMargin, maxX + xzMargin, minY + yMargin, maxZ + xzMargin);
     }
-    
-    // /**
-    //  * Check if the entity is on ground according to lost ground workarounds.
-    //  * Assuming this gets called after the regular isOnGround (or isOnGroundOpportune) returns false.
-    //  * @return true, if a lost ground workaround can apply.
-    //  */
-    // public boolean isOnGroundApproximate() {
-    //     final Player p = (Player) entity;
-    //     final IPlayerData pData = DataManager.getPlayerData(p);
-    //     final MovingData data = pData.getGenericInstance(MovingData.class);
-    //     final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-    //     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-    //     return LostGround.lostGround(player, thisMove.from, thisMove.to, thisMove.hDistance, thisMove.yDistance, false, lastMove, data, cc, null, null);
-    // 
-    // }
 
     /**
      * Checks if the player may be on ground due to an entity.
@@ -636,7 +621,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     
     /**
      * Minecraft's function to calculate the liquid's flow force.
-     * FlowingFluid.java, getFlow()
+     * 'FlowingFluid'.java / FluidTypeFlowing.java, getFlow()
      * 
      * @param access
      * @param x

@@ -165,7 +165,7 @@ public class SurvivalFly extends Check {
         // Horizontal move                ///
         /////////////////////////////////////
         double hAllowedDistance, hDistanceAboveLimit, hFreedom;
-        double[] resGlide = elytraPredict(from, to, pData, data, player, isNormalOrPacketSplitMove, fromOnGround, toOnGround);
+        double[] resGlide = processGliding(from, to, pData, data, player, isNormalOrPacketSplitMove, fromOnGround, toOnGround);
         // Set the allowed distance and determine the distance above limit
         double[] hRes = Bridge1_9.isGliding(player) ? resGlide : hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, isNormalOrPacketSplitMove, false, false);
         hAllowedDistance = hRes[0];
@@ -487,8 +487,8 @@ public class SurvivalFly extends Check {
      *
      * @return the allowed xyz distances + distances above limit.
      */
-    private double[] elytraPredict(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final MovingData data,
-                                   final Player player, boolean isNormalOrPacketSplitMove, final boolean fromOnGround, final boolean toOnGround) {
+    private double[] processGliding(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, final MovingData data,
+                                    final Player player, boolean isNormalOrPacketSplitMove, final boolean fromOnGround, final boolean toOnGround) {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         double yDistanceAboveLimit = 0.0, hDistanceAboveLimit = 0.0;
@@ -1123,7 +1123,7 @@ public class SurvivalFly extends Check {
         // Estimate the allowed yDistance (per-move distance check)                      //
         ///////////////////////////////////////////////////////////////////////////////////
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
-        if (PlayerEnvelopes.isStep(pData, fromOnGround, toOnGround)) {
+        if (PlayerEnvelopes.isStepUpByNCPDefinition(pData, fromOnGround, toOnGround)) {
             thisMove.yAllowedDistance = thisMove.yDistance;
             thisMove.isStepUp = true;
             tags.add("step_env");
@@ -1154,7 +1154,6 @@ public class SurvivalFly extends Check {
                 if (lastMove.yDistance < 0.0 && collisionVector.getY() != thisMove.yAllowedDistance) {
                     if ((from.getBlockFlags() & BlockFlags.F_SLIME) != 0L) {
                         // The effect works by inverting the distance.
-                        // However, this move is hidden because of Minecraft's collision function.
                         thisMove.yAllowedDistance = -thisMove.yAllowedDistance;
                     }
                     else {
@@ -1207,7 +1206,7 @@ public class SurvivalFly extends Check {
                 thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && from.seekHeadObstruction() && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
                 // Switch to descending phase after colliding above.
                 if (lastMove.headObstructed && !thisMove.headObstructed && yDirectionSwitch && thisMove.yDistance <= 0.0 && fullyInAir) {
-                    // Fix for clients not sending the "speed reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
+                    // Fix for clients not sending the "speed reset move" to the server: player collides vertically with a ceiling above, then proceeds to descend.
                     // Normally, speed is set back to 0.0 and then gravity is applied. The former move however is never actually sent: what we see on the server-side is the player immediately descending but with speed that is still based on a previous move of 0.0 speed.
                     thisMove.yAllowedDistance = 0.0; // Simulate what the client should be doing here and re-iterate gravity
                     if (BridgeMisc.hasGravity(player)) {

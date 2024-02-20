@@ -73,13 +73,17 @@ public enum ClientVersion {
 
     V_1_19(759), V_1_19_1(760), V_1_19_3(761), V_1_19_4(762),
     /**
-     * 1.20.1 has the same protocol version of 1.20
+     * 1.20 / 1.20.1 have the same protocol version.
      */
     V_1_20(763), V_1_20_2(764),
+    /**
+     * 1.20.3 / 1.20.4 have the same protocol version.
+     */
+    V_1_20_3(765),
 
 
     LOWER_THAN_KNOWN_VERSIONS(V_1_7_2.protocolID - 1, false),
-    HIGHER_THAN_KNOWN_VERSIONS(V_1_20_2.protocolID + 1, false),
+    HIGHER_THAN_KNOWN_VERSIONS(V_1_20_3.protocolID + 1, false),
     UNKNOWN(-1, false);
 
     private final int protocolID;
@@ -173,7 +177,7 @@ public enum ClientVersion {
      * @param versionHigh
      *            Upper version
      * @param includeHigh
-     *            If to check for equality with the higher version (>=)
+     *            If to check for equality with the higher version (<=)
      * @return true if the client version is in given range
      */
     public boolean isVersionBetween(ClientVersion versionLow, boolean includeLow, ClientVersion versionHigh, boolean includeHigh) {
