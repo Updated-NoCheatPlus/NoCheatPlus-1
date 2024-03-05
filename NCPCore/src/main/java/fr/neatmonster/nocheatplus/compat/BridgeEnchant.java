@@ -28,7 +28,7 @@ import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 public final class BridgeEnchant {
 
     @SuppressWarnings("deprecation")
-    private static final Enchantment parseEnchantment(final String name) {
+    private static Enchantment parseEnchantment(final String name) {
         try {
             return Enchantment.getByName(name);
         } catch (Exception e) {
@@ -378,13 +378,14 @@ public final class BridgeEnchant {
     
     /**
      * Get the riptiding force. Not context-aware.
-     * 
+     *
      * @param player
      * @param to
      * @param from
+     * @param onGround
      * @return A Vector containing the riptiding force's components (x,y,z).
      */
-    public static Vector getTridentPropellingForce(final Player player, final PlayerLocation to, final PlayerLocation from) {
+    public static Vector getTridentPropellingForce(final Player player, final PlayerLocation to, final PlayerLocation from, boolean onGround) {
         final double RiptideLevel = getRiptideLevel(player);
         if (RiptideLevel > 0.0) {
             // Compute the force of the push
@@ -396,7 +397,7 @@ public final class BridgeEnchant {
             x *= force / distance;
             y *= force / distance;
             z *= force / distance;
-            if (from.isOnGround()) {
+            if (onGround) {
                 x += 1.1999999284744263f;
             }
             return new Vector(x, y, z);

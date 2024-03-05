@@ -598,7 +598,7 @@ public class SurvivalFly extends Check {
         // Yes, players can glide and riptide at the same time, increasing speed at a faster rate than chunks can load...
         // Surely a questionable decision on Mojang's part.
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
-            final Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from);
+            final Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, fromOnGround);
             // Fortunately, we do not have to account for onGround push here, as gliding does not work on ground.
             thisMove.xAllowedDistance += propellingForce.getX();
             thisMove.yAllowedDistance += propellingForce.getY();
@@ -669,8 +669,8 @@ public class SurvivalFly extends Check {
          *    -> Negligible speed(0.003) - 10
          *    -> LivingEntity.jumpFromGround() - 11
          * - Begin running LivingEntity.travel() - 12
-         *    - Call Entity.moveRelative() from LivingEntity.travel() (apply acceleration [!]) - 13
-         *    - Call Entity.move() from LivingEntity.travel()
+         *    - Call Entity.moveRelative() (apply acceleration, getInputVector() [!]) - 13
+         *    - Call Entity.move()
          *       -> Stuck speed multiplier 14
          *       -> maybeBackOffFromEdge - 15
          *       -> wall collision(Entity.collide()) - 16 [Speed is cut off and the collision flag is set.]
@@ -691,7 +691,7 @@ public class SurvivalFly extends Check {
          *
          * - Repeat
          *
-         * From the order above, we will start from horizontalCollision, essentially reversing the calculations the client is doing: first all stuff that is done in the next tick by the client, then all the stuff done in the current tick.
+         * From the order above, we will start from horizontalCollision: first all calculations done by the client on the next tick, then the last
          */
 
         // Because Minecraft does not offer any way to listen to player's inputs, we brute force through all combinations and see which input combo matches the current speed of the player.
@@ -888,7 +888,7 @@ public class SurvivalFly extends Check {
         }
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
             // Riptide works by propelling the player after releasing the trident (the effect only pushes the player, unless is on ground)
-            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from);
+            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, lastMove.touchedGround);
             for (i = 0; i < 9; i++) {
                 xTheoreticalDistance[i] += propellingForce.getX();
                 zTheoreticalDistance[i] += propellingForce.getZ();
@@ -1192,7 +1192,7 @@ public class SurvivalFly extends Check {
             // TODO: Needs to be adjusted for on ground pushing
             if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
                 // Riptide works by propelling the player in air after releasing the trident (the effect only pushes the player, unless is on ground)
-                thisMove.yAllowedDistance += BridgeEnchant.getTridentPropellingForce(player, to, from).getY();
+                thisMove.yAllowedDistance += BridgeEnchant.getTridentPropellingForce(player, to, from, lastMove.touchedGround).getY();
                 player.sendMessage("Trident propel(v): " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.yAllowedDistance));
             }
             // Collision next.

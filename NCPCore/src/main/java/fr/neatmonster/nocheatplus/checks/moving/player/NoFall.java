@@ -23,6 +23,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.type.PointedDripstone;
 import org.bukkit.block.data.type.TurtleEgg;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -82,10 +83,11 @@ public class NoFall extends Check {
 
     /**
      * Calculate the damage in hearts from the given fall distance.
+     * 
      * @param fallDistance
      * @return
      */
-    public static final double getDamage(final float fallDistance) {
+    public static double getDamage(final float fallDistance) {
         return fallDistance - Magic.FALL_DAMAGE_DIST;
     }
 
@@ -104,13 +106,11 @@ public class NoFall extends Check {
     private void handleOnGround(final Player player, final double y, final double previousSetBackY,
                                 final boolean reallyOnGround, final MovingData data, final MovingConfig cc,
                                 final IPlayerData pData) {
-        // Damage to be dealt.
-        final float fallDist = (float) getApplicableFallHeight(player, y, previousSetBackY, data);
-        // Get the damage and apply all possible modifiers.
+        // Get the fall distance and modify it accordingly to the fallen on block (currently only related to pointed dripstone)
+        float fallDist = fallOn(player, y, previousSetBackY, data);
+        // Calculate damage and apply all possible modifiers.
         double maxDamage = getDamage(fallDist);
-        maxDamage = applyFeatherFalling(player, applyBlockModifier(player, data, maxDamage), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
-        // Decide what to do with the fallen on block (i.e.: farmland)
-        fallOn(player, fallDist);
+        maxDamage = applyFeatherFalling(player, applyBlockDamageModifier(player, data, maxDamage), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
         if (maxDamage >= Magic.FALL_DAMAGE_MINIMUM) {
             // Check skipping conditions.
             if (cc.noFallSkipAllowFlight && player.getAllowFlight()) {
@@ -137,29 +137,27 @@ public class NoFall extends Check {
 
 
     /**
-     * Change the state of some blocks when players fall on them. <br>
-     * This is to workaround the issue described above.
-     * 
-     * @param player
-     * @param fallDist
-     * 
-     * @return if allow to change the block
+     * Get the applicable fall-distance for the given data and run some tasks related to fall-distance specifically. <br>
+     * (I.e.: altering the block the player fell on (farmland, turtle eggs) or modify the fall-distance (stalagmites))
      */
-    private void fallOn(final Player player, final double fallDist) {
+    private float fallOn(final Player player, double y, double previousSetBackY, final MovingData data) {
+        // Base fall-distance
+        float fallDist = (float) getApplicableFallHeight(player, y, previousSetBackY, data);
         // TODO: Need move data pTo, this location isn't updated
         Block block = player.getLocation(useLoc2).subtract(0.0, 1.0, 0.0).getBlock();
+        // Falling on farmland has a chance of trampling it (wasn't always the case. On legacy versions, just walking on crops would have been enough to trample them :) )
         if (block.getType() == BridgeMaterial.FARMLAND && fallDist > 0.5 && ThreadLocalRandom.current().nextFloat() < fallDist - 0.5) {
             final BlockState newState = block.getState();
             newState.setType(Material.DIRT);
-            //if (Bridge1_13.hasIsSwimming()) newState.setBlockData(Bukkit.createBlockData(newState.getType()));
             if (canChangeBlock(player, block, newState, true, true, true)) {
-                // Move up a little bit in order not to stuck in a block
+                // Move up a little bit in order not to get stuck in the block
                 player.setVelocity(new Vector(player.getVelocity().getX() * -1, 0.062501, player.getVelocity().getZ() * -1));
                 block.setType(Material.DIRT);
             }
             useLoc2.setWorld(null);
-            return;
+            return fallDist;
         }
+        // 1.13+ Falling on turtle eggs has a chance of breaking them.
         if (Bridge1_13.hasIsSwimming() && block.getType() == Material.TURTLE_EGG && ThreadLocalRandom.current().nextInt(3) == 0) {
             final TurtleEgg egg = (TurtleEgg) block.getBlockData();
             final BlockState newState = block.getState();
@@ -167,15 +165,33 @@ public class NoFall extends Check {
                 if (egg.getEggs() - 1 > 0) {
                     egg.setEggs(egg.getEggs() - 1);
                 } 
-                else block.setType(Material.AIR);
+                else block.setType(Material.AIR); // What about Cave air? (i.e.: with eggs being inside of a cave)
+            }
+            useLoc2.setWorld(null);
+            return fallDist;
+        }
+        // 1.17+ Falling on stalagmites will multiply the fall DISTANCE (not DAMAGE) by x2, making the player vulnerable to fall damage even by just jumping on such a block
+        final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
+        if (BridgeMisc.hasIsFrozen() && validMove != null && validMove.toIsValid && fallDist > 0.0) {
+            final Block fallenOnBlock = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ()));
+            if (fallenOnBlock.getBlockData() instanceof PointedDripstone) {
+                PointedDripstone stalagmite = (PointedDripstone) fallenOnBlock.getBlockData();
+                // Only if the pointed dripstone block is the tip (not the base or frustum) and is facing up.
+                if (stalagmite.getThickness().equals(PointedDripstone.Thickness.TIP) && stalagmite.getVerticalDirection().equals(BlockFace.UP)) {
+                    // Source of the formula: PointedDripstoneBlock.java -> fallOn() -> calculateFallDamage()
+                    fallDist = (fallDist + 0.5f) * 2.0f; // 0.5 is the offset, vanilla's would be 2.0 actually. We use 0.5 because we do not ceil the final fall damage, like vanilla does.
+                    useLoc2.setWorld(null);
+                    return fallDist;
+                }
             }
         }
         useLoc2.setWorld(null);
+        return fallDist;
     }
     
 
     /**
-     * Artificially fire some events to see if other plugins allow to change the state of the block we want to change.
+     * Artificially fire some events to see if other plugins allow to change the state of the block we want to modify.
      * 
      * @param player
      * @param block
@@ -257,14 +273,15 @@ public class NoFall extends Check {
     
 
     /**
-     * Reduce the given fall damage according to what block the player fell on.
+     * Modify the given fall-damage according to what block the player fell on.<br>
+     * (Not to be confused with fallOn(), which is related to fall-distance)
      *
      * @param player
      * @param data
      * @param damage The fall damage to correct.
-     * @return Reduced damage.
+     * @return Modified damage.
      */
-    public static double applyBlockModifier(final Player player, final MovingData data, final double damage) {
+    public static double applyBlockDamageModifier(final Player player, final MovingData data, final double damage) {
         final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
         if (validMove != null && validMove.toIsValid) {
             // TODO: Need move data pTo, this location isn't updated
@@ -296,10 +313,8 @@ public class NoFall extends Check {
      * @return
      */
     private static double getApplicableFallHeight(final Player player, final double y, final double previousSetBackY, final MovingData data) {
-        //return getDamage(Math.max((float) (data.noFallMaxY - y), Math.max(data.noFallFallDistance, player.getFallDistance())));
         final double yDistance = Math.max(data.noFallMaxY - y, data.noFallFallDistance);
-        if (yDistance > 0.0 && data.jumpAmplifier > 0.0 
-            && previousSetBackY != Double.NEGATIVE_INFINITY) {
+        if (yDistance > 0.0 && data.jumpAmplifier > 0.0 && previousSetBackY != Double.NEGATIVE_INFINITY) {
             // Fall height counts below previous set-back-y.
             // TODO: Likely updating the amplifier after lift-off doesn't make sense.
             // TODO: In case of velocity... skip too / calculate max exempt height?
@@ -333,6 +348,7 @@ public class NoFall extends Check {
         return getDamage((float) getApplicableFallHeight(player, y, previousSetBackY, data)) - Magic.FALL_DAMAGE_DIST >= Magic.FALL_DAMAGE_MINIMUM;
     }
 
+
     /**
      * 
      * @param player
@@ -359,6 +375,9 @@ public class NoFall extends Check {
     }
 
 
+    /**
+     * Deal the given fall damage through NMS or a Bukkit event
+     */
     private void dealFallDamage(final Player player, final double damage) {
         if (mcAccess.getHandle().dealFallDamageFiresAnEvent().decide()) {
             // TODO: Better decideOptimistically?
@@ -396,6 +415,7 @@ public class NoFall extends Check {
         //        data.clearNoFallData();
         player.setFallDistance(0);
     }
+
 
     /**
      * Checks a player. Expects from and to using cc.yOnGround.
@@ -508,6 +528,7 @@ public class NoFall extends Check {
         }
     }
 
+
     /**
      * Called during check.
      * 
@@ -527,6 +548,7 @@ public class NoFall extends Check {
         else adjustFallDistance(player, minY, true, data, cc);
     }
 
+
     /**
      * Set yOnGround for from and to, if needed, should be obsolete.
      */
@@ -539,11 +561,11 @@ public class NoFall extends Check {
         }
     }
 
+
     /**
      * Quit or kick: adjust fall distance if necessary.
      */
-    public void onLeave(final Player player, final MovingData data, 
-            final IPlayerData pData) {
+    public void onLeave(final Player player, final MovingData data, final IPlayerData pData) {
         final float fallDistance = player.getFallDistance();
         // TODO: Might also detect too high mc fall dist.
         if (data.noFallFallDistance > fallDistance) {
@@ -557,8 +579,6 @@ public class NoFall extends Check {
                 data.noFallMaxY = playerY;
             } 
             else {
-                // Might use tolerance, might log, might use method (compare: MovingListener.onEntityDamage).
-                // Might consider triggering violations here as well.
                 final float yDiff = (float) (data.noFallMaxY - playerY);
                 // TODO: Consider to only use one accounting method (maxY). 
                 final float maxDist = Math.max(yDiff, data.noFallFallDistance);
@@ -566,6 +586,7 @@ public class NoFall extends Check {
             }
         }
     }
+
 
     /**
      * This is called if a player fails a check and gets set back, to avoid using that to avoid fall damage the player might be dealt damage here.

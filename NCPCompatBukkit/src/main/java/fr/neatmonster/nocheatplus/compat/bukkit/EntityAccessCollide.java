@@ -39,7 +39,9 @@ public class EntityAccessCollide implements IEntityAccessCollide {
         // We must use the last bounding box here. Unless specified otherwise.
         AxisAlignedBB AABB = ncpAABB == null ? entityNMS.cG() : new AxisAlignedBB(ncpAABB[0], ncpAABB[1], ncpAABB[2], ncpAABB[3], ncpAABB[4], ncpAABB[5]);
         Vec3D inputToVec3 = new Vec3D(input.getX(), input.getY(), input.getZ());
+        // getEntityCollisions (we don't know what the function does, judging from some tests however, it seems to always return an empty list, so one could ignore it altogether)
         List<VoxelShape> list = entityNMS.dL().c(entityNMS, AABB.b(inputToVec3));
+        // Entity.a() -> collideBoundingBox()
         Vec3D collisionVector = input.lengthSquared() == 0.0 ? inputToVec3 : net.minecraft.world.entity.Entity.a(entityNMS, inputToVec3, AABB, entityNMS.dL(), list);
         boolean collideX = inputToVec3.c != collisionVector.c;
         boolean collideY = inputToVec3.d != collisionVector.d;
@@ -63,7 +65,7 @@ public class EntityAccessCollide implements IEntityAccessCollide {
                 return new Vector(tmp.c, tmp.d, tmp.e);
             }
         }
-        return new Vector(collisionVector.c, collisionVector.d, collisionVector.e);
+        return new Vector(collisionVector.c, collisionVector.d, collisionVector.e); // xyz...
     }
 
     @Override

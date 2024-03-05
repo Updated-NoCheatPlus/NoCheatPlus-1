@@ -2207,7 +2207,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                                      : NoFall.getDamage(Math.max(yDiff, Math.max(data.noFallFallDistance, fallDistance))) + (allowReset ? 0.0 : Magic.FALL_DAMAGE_DIST);
         if (maxD > damage) {
             // TODO: respect dealDamage ?
-            double featherFallingCorrection = NoFall.applyFeatherFalling(player, NoFall.applyBlockModifier(player, data, maxD), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
+            double featherFallingCorrection = NoFall.applyFeatherFalling(player, NoFall.applyBlockDamageModifier(player, data, maxD), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
             BridgeHealth.setRawDamage(event, featherFallingCorrection);
             if (debug) {
                 debug(player, "Adjust fall damage to: " + (featherFallingCorrection != maxD ? featherFallingCorrection : maxD));
