@@ -15,10 +15,13 @@
 package fr.neatmonster.nocheatplus.utilities.collision;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.WorldBorder;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -26,7 +29,15 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
@@ -36,7 +47,6 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
-import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 
 
 /**
@@ -48,6 +58,9 @@ import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 public class CollisionUtil {
 
     /** Temporary use, setWorld(null) once finished. */
+    private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
+    public static final double COLLISION_EPSILON = 1.0E-7;
+    private final static boolean serverHigherOEqual1_8 = ServerVersion.compareMinecraftVersion("1.8") >=0;
     private static final Location useLoc = new Location(null, 0, 0, 0);
 
 
@@ -561,7 +574,8 @@ public class CollisionUtil {
      */
     public static List<Entity> getCollidingEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
         List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
-        entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity) || !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
+        // isValid() somehow broken???
+        entities.removeIf(e -> e.isDead() || !(e instanceof LivingEntity) || !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
         return entities;
     }
     
@@ -656,6 +670,8 @@ public class CollisionUtil {
         int dy = y - lastBlock.getY();
         int dx = x - lastBlock.getX();
         int dz = z - lastBlock.getZ();
+        // TODO: This is wrong, liguid should have no bound but still have height. But instead of messing up entire collision system, this hack work well
+        mightEdgeInteraction |= (BlockFlags.getBlockFlags(blockCache.getType(lastBlock.getX(), lastBlock.getY(), lastBlock.getZ())) & BlockFlags.F_LIQUID) != 0;
         // Door and trap door
         double[] lastBounds = blockCache.getBounds(lastBlock.getX(), lastBlock.getY(), lastBlock.getZ());
         //final Material lastmat = blockCache.getType(lastBlock.getX(), lastBlock.getY(), lastBlock.getZ());
@@ -885,9 +901,18 @@ public class CollisionUtil {
         return nBMin <= lBMin && lBMax <=nBMax || lBMin <= nBMin && nBMax <= lBMax;
     }
 
+    public static class RichAxisData {
+        public Axis priority;
+        public Direction exclude;
+        public RichAxisData(Axis priority, Direction exclude) {
+            this.priority = priority;
+            this.exclude = exclude;
+        }
+    }
+    
     /**
      * Test if the absolute difference between two values is small enough to be considered equal.
-     *
+     * 
      * @param a The minuend
      * @param b The subtrahend
      * @param c Absolute(!) value to compare the difference with
@@ -899,12 +924,342 @@ public class CollisionUtil {
        return Math.abs(a-b) <= c;
     }
     
-    public static class RichAxisData {
-        public Axis priority;
-        public Direction exclude;
-        public RichAxisData(Axis priority, Direction exclude) {
-            this.priority = priority;
-            this.exclude = exclude;
+    /**
+     * Retrieve the collision Vector of the entity.
+     * 
+     * @param blockCache
+     * @param input    Meant to represent the desired speed to seek for collisions with.
+     *                 If no collision can't be found within the given speed, the method will return the unmodified input Vector as a result.
+     *                 Otherwise, a modified vector containing the "obstructed" speed is returned. <br>
+     *                 (Thus, if you wish to know if the player collided with something: desiredXYZ != collidedXYZ)
+     * @param onGround The "on ground" status of the player. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground and mismatches must be taken into account.
+     *                 Used to determine whether the player will be able to step up with the given motion.
+     * @param cc
+     * @param ncpAABB The AABB of the player at the position they moved from (in other words, the last AABB of the player).
+     *                Only makes sense if you call this method during PlayerMoveEvent, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
+     *                If null, the default NMS bounding box will be used instead.
+     *
+     * @return A Vector containing the collision components (collisionXYZ)
+     */
+    public static Vector collide(BlockCache blockCache, Entity entity, Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
+        if (input.getX() == 0 && input.getY() == 0 && input.getZ() == 0) return new Vector();
+        double[] tAABB = ncpAABB.clone();
+        if (tAABB == null) {
+            final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f;
+            final double height = mcAccess.getHandle().getHeight(entity);
+            final Location loc = entity.getLocation();
+            tAABB = new double[] {loc.getX() - halfWidth, loc.getY(), loc.getZ() - halfWidth, loc.getX() + halfWidth, loc.getY() + height, loc.getZ() + halfWidth};
         }
+        
+        List<double[]> collisionBoxes = new ArrayList<>();
+        getCollisionBoxes(blockCache, entity, expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
+        Vector vec3 = input.lengthSquared() == 0.0 ? input : collideBoundingBox(input, tAABB, collisionBoxes);
+        boolean collideX = input.getX() != vec3.getX();
+        boolean collideY = input.getY() != vec3.getY();
+        boolean collideZ = input.getZ() != vec3.getZ();
+        boolean touchGround = onGround || collideY && vec3.getY() < 0.0;
+        // TODO: Not only cc.sfStepHeight (0.6), change on vehicle(boats:0.0, other vehicle 1.0)
+        if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
+            Vector vec31 = collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
+            boolean hasStepFix = entity instanceof Player ? !DataManager.getPlayerData((Player)(entity)).getClientVersion().isOlderThan(ClientVersion.V_1_8) : serverHigherOEqual1_8;
+            if (hasStepFix) {
+                Vector vec32 = collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
+                if (vec32.getY() < cc.sfStepHeight) {
+                    Vector vec33 = collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), move(tAABB, vec32.getX(), vec32.getY(), vec32.getZ()), collisionBoxes).add(vec32);
+                    if (distanceSquare(vec33) > distanceSquare(vec31)) vec31 = vec33;
+                }
+            }
+            if (distanceSquare(vec31) > distanceSquare(vec3)) {
+                return vec31.add(collideBoundingBox(new Vector(0.0, -vec31.getY() + input.getY(), 0.0), move(tAABB, vec31.getX(), vec31.getY(), vec31.getZ()), collisionBoxes));
+            }
+        }
+        return vec3;
+    }
+    
+    private static double distanceSquare(Vector vector) {
+        return vector.getX() * vector.getX() + vector.getZ() * vector.getZ();
+    }
+
+    private static double[] move(double[] AABB, double x, double y, double z) {
+        if (AABB.length % 6 == 0) {
+            double[] tAABB = AABB.clone();
+            for (int i = 1; i <= (int)tAABB.length / 6; i++) {
+                tAABB[i*6-6] += x;
+                tAABB[i*6-3] += x;
+                tAABB[i*6-5] += y;
+                tAABB[i*6-2] += y;
+                tAABB[i*6-4] += z;
+                tAABB[i*6-1] += z;
+            }
+            return tAABB;
+        }
+        return AABB;
+    }
+
+    private static Vector collideBoundingBox(Vector toCollide, double[] AABB, List<double[]> collisionBoxes) {
+        double[] tAABB = AABB.clone();
+        double x = toCollide.getX();
+        double y = toCollide.getY();
+        double z = toCollide.getZ();
+        if (y != 0.0) {
+            for (double[] cb : collisionBoxes) {
+                y = collideY(cb, tAABB, y);
+            }
+            tAABB[1] += y; tAABB[4] += y;
+        }
+        boolean flag = Math.abs(x) < Math.abs(y);
+        if (flag && z != 0.0) {
+            for (double[] cb : collisionBoxes) {
+                z = collideZ(cb, tAABB, z);
+            }
+            tAABB[2] += z; tAABB[5] += z;
+        }
+        if (x != 0.0) {
+            for (double[] cb : collisionBoxes) {
+                x = collideX(cb, tAABB, x);
+            }
+            tAABB[0] += x; tAABB[3] += x;
+        }
+        if (!flag && z != 0.0) {
+            for (double[] cb : collisionBoxes) {
+                z = collideZ(cb, tAABB, z);
+            }
+            tAABB[2] += z; tAABB[5] += z;
+        }
+        return new Vector(x, y, z);
+    }
+
+    public static double[] expandToCoordinate(double[] AABB, double x, double y, double z) {
+        double[] tAABB = AABB.clone();
+        if (x < 0.0D) {
+            tAABB[0] += x;
+        } else {
+            tAABB[3] += x;
+        }
+
+        if (y < 0.0D) {
+            tAABB[1] += y;
+        } else {
+            tAABB[4] += y;
+        }
+
+        if (z < 0.0D) {
+            tAABB[2] += z;
+        } else {
+            tAABB[5] += z;
+        }
+        return tAABB;
+    } 
+
+    private static boolean getCollisionBoxes(BlockCache blockCache, Entity entity, double[] AABB, List<double[]> collisionBoxes, boolean onlyCheckCollide) {
+        boolean collided = addWorldBorder(entity, AABB, collisionBoxes, onlyCheckCollide);
+        if (onlyCheckCollide && collided) return true;
+        
+        int minBlockX = (int) Math.floor(AABB[0] - COLLISION_EPSILON) - 1;
+        int maxBlockX = (int) Math.floor(AABB[3] + COLLISION_EPSILON) + 1;
+        int minBlockY = (int) Math.floor(AABB[1] - COLLISION_EPSILON) - 1;
+        int maxBlockY = (int) Math.floor(AABB[4] + COLLISION_EPSILON) + 1;
+        int minBlockZ = (int) Math.floor(AABB[2] - COLLISION_EPSILON) - 1;
+        int maxBlockZ = (int) Math.floor(AABB[5] + COLLISION_EPSILON) + 1;
+        for (int y = minBlockY; y < maxBlockY; y++) {
+            for (int x = minBlockX; x <= maxBlockX; x++) {
+                for (int z = minBlockZ; z <= maxBlockZ; z++) {
+                    Material mat = blockCache.getType(x, y, z);
+                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) continue;
+
+                    int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
+                            ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
+                            ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
+
+                    if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0)
+                            && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
+                        // Don't add to a list if we only care if the player intersects with the block
+                        //if (!onlyCheckCollide) {
+                            double[] multiAABB = move(blockCache.fetchBounds(x, y, z), x, y, z);
+                            collisionBoxes.addAll(splitIntoSingle(multiAABB));
+                        //} else if (CollisionData.getData(data.getType()).getMovementCollisionBox(player, player.getClientVersion(), data, x, y, z).isCollided(wantedBB)) {
+                        //    return true;
+                        //}
+                    }
+                }
+            }
+        }
+        
+//        final int minSection = blockCache.getMinBlockY() >> 4;
+//        final int minBlock = minSection << 4;
+//        final int maxBlock = blockCache.getMaxBlockY() - 1;
+//
+//        int minChunkX = minBlockX >> 4;
+//        int maxChunkX = maxBlockX >> 4;
+//
+//        int minChunkZ = minBlockZ >> 4;
+//        int maxChunkZ = maxBlockZ >> 4;
+//
+//        int minYIterate = Math.max(minBlock, minBlockY);
+//        int maxYIterate = Math.min(maxBlock, maxBlockY);
+//        for (int currChunkZ = minChunkZ; currChunkZ <= maxChunkZ; ++currChunkZ) {
+//            int minZ = currChunkZ == minChunkZ ? minBlockZ & 15 : 0; // coordinate in chunk
+//            int maxZ = currChunkZ == maxChunkZ ? maxBlockZ & 15 : 15; // coordinate in chunk
+//
+//            for (int currChunkX = minChunkX; currChunkX <= maxChunkX; ++currChunkX) {
+//                int minX = currChunkX == minChunkX ? minBlockX & 15 : 0; // coordinate in chunk
+//                int maxX = currChunkX == maxChunkX ? maxBlockX & 15 : 15; // coordinate in chunk
+//
+//                int chunkXGlobalPos = currChunkX << 4;
+//                int chunkZGlobalPos = currChunkZ << 4;
+//
+//                if (!entity.getWorld().isChunkLoaded(currChunkX, currChunkZ)) continue;
+//                for (int y = minYIterate; y <= maxYIterate; ++y) {
+//                    for (int currZ = minZ; currZ <= maxZ; ++currZ) {
+//                        for (int currX = minX; currX <= maxX; ++currX) {
+//                            int x = currX | chunkXGlobalPos;
+//                            int z = currZ | chunkZGlobalPos;
+//                            Material mat = blockCache.getType(x, y, z);
+//                            if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) continue;
+//
+//                            int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
+//                                    ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
+//                                    ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
+//
+//                            if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0)
+//                                    && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
+//                                // Don't add to a list if we only care if the player intersects with the block
+//                                //if (!onlyCheckCollide) {
+//                                    double[] multiAABB = move(blockCache.fetchBounds(x, y, z), x, y, z);
+//                                    collisionBoxes.addAll(splitIntoSingle(multiAABB));
+//                                //} else if (CollisionData.getData(data.getType()).getMovementCollisionBox(player, player.getClientVersion(), data, x, y, z).isCollided(wantedBB)) {
+//                                //    return true;
+//                                //}
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+        return false;
+    }
+    
+    private static List<double[]> splitIntoSingle(double[] multiAABB) {
+        List<double[]> a = new ArrayList<>();
+        if (multiAABB.length % 6 == 0) {
+            for (int i = 1; i <= (int)multiAABB.length / 6; i++) {
+                a.add(new double[] {multiAABB[i*6-6], multiAABB[i*6-5], multiAABB[i*6-4], multiAABB[i*6-3], multiAABB[i*6-2], multiAABB[i*6-1]});
+            }
+        }
+        return a;
+    }
+
+    private static boolean addWorldBorder(Entity entity, double[] AABB, List<double[]> collisionBoxes,
+            boolean onlyCheckCollide) {
+        if (serverHigherOEqual1_8) {
+            WorldBorder border = entity.getWorld().getWorldBorder();
+            Location tloc = border.getCenter();
+            double centerX = tloc.getX();
+            double centerZ = tloc.getZ();
+
+            double size = border.getSize() / 2;
+            double absoluteMaxSize = 29999984;
+
+            double minX = Math.floor(MathUtil.clamp(centerX - size, -absoluteMaxSize, absoluteMaxSize));
+            double minZ = Math.floor(MathUtil.clamp(centerZ - size, -absoluteMaxSize, absoluteMaxSize));
+            double maxX = Math.ceil(MathUtil.clamp(centerX + size, -absoluteMaxSize, absoluteMaxSize));
+            double maxZ = Math.ceil(MathUtil.clamp(centerZ + size, -absoluteMaxSize, absoluteMaxSize));
+
+            // If the player is fully within the world border
+            // TODO: Allow to input location?
+            Location lastPlayerLoc = entity.getLocation(tloc);
+            double toMinX = lastPlayerLoc.getX() - minX;
+            double toMaxX = maxX - lastPlayerLoc.getX();
+            double minimumInXDirection = Math.min(toMinX, toMaxX);
+
+            double toMinZ = lastPlayerLoc.getZ() - minZ;
+            double toMaxZ = maxZ - lastPlayerLoc.getZ();
+            double minimumInZDirection = Math.min(toMinZ, toMaxZ);
+
+            double distanceToBorder = Math.min(minimumInXDirection, minimumInZDirection);
+
+            // If the player's is within 16 blocks of the world border, add the world border to the collisions (optimization)
+            if (distanceToBorder < 16 && lastPlayerLoc.getX() > minX && lastPlayerLoc.getX() < maxX && lastPlayerLoc.getZ() > minZ && lastPlayerLoc.getZ() < maxZ) {
+                if (collisionBoxes == null) collisionBoxes = new ArrayList<>();
+
+                // South border
+                collisionBoxes.add(new double[] {minX - 10, Double.NEGATIVE_INFINITY, maxZ, maxX + 10, Double.POSITIVE_INFINITY, maxZ});
+                // North border
+                collisionBoxes.add(new double[] {minX - 10, Double.NEGATIVE_INFINITY, minZ, maxX + 10, Double.POSITIVE_INFINITY, minZ});
+                // East border
+                collisionBoxes.add(new double[] {maxX, Double.NEGATIVE_INFINITY, minZ - 10, maxX, Double.POSITIVE_INFINITY, maxZ + 10});
+                // West border
+                collisionBoxes.add(new double[] {minX, Double.NEGATIVE_INFINITY, minZ - 10, minX, Double.POSITIVE_INFINITY, maxZ + 10});
+
+                //if (onlyCheckCollide) {
+                //    for (double[] box : collisionBoxes) {
+                //        if (isIntersected(box, AABB)) return true;
+                //    }
+                //}
+            }
+        }
+        
+        return false;
+    }
+
+    public static double collideX(double[] AABB, double[] other, double offsetX) {
+        if (offsetX != 0 && (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON &&
+                (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
+
+            if (offsetX >= 0.0) {
+                double max_move = AABB[0] - other[3];
+                if (max_move < -COLLISION_EPSILON) {
+                    return offsetX;
+                }
+                return Math.min(max_move, offsetX);
+            } else {
+                double max_move = AABB[3] - other[0];
+                if (max_move > COLLISION_EPSILON) {
+                    return offsetX;
+                }
+                return Math.max(max_move, offsetX);
+            }
+        }
+        return offsetX;
+    }
+
+    public static double collideY(double[] AABB, double[] other, double offsetY) {
+        if (offsetY != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON &&
+                (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
+            if (offsetY >= 0.0) {
+                double max_move = AABB[1] - other[4];
+                if (max_move < -COLLISION_EPSILON) {
+                    return offsetY;
+                }
+                return Math.min(max_move, offsetY);
+            } else {
+                double max_move = AABB[4] - other[1];
+                if (max_move > COLLISION_EPSILON) {
+                    return offsetY;
+                }
+                return Math.max(max_move, offsetY);
+            }
+        }
+        return offsetY;
+    }
+
+    public static double collideZ(double[] AABB, double[] other, double offsetZ) {
+        if (offsetZ != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON &&
+                (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON) {
+            if (offsetZ >= 0.0) {
+                double max_move = AABB[2] - other[5];
+                if (max_move < -COLLISION_EPSILON) {
+                    return offsetZ;
+                }
+                return Math.min(max_move, offsetZ);
+            } else {
+                double max_move = AABB[5] - other[2];
+                if (max_move > COLLISION_EPSILON) {
+                    return offsetZ;
+                }
+                return Math.max(max_move, offsetZ);
+            }
+        }
+        return offsetZ;
     }
 }

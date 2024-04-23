@@ -12,6 +12,7 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
@@ -202,13 +203,11 @@ public class PlayerEnvelopes {
             return false;
         }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
-        if (entityCollide != null) {
-            // This is for jumping with head obstructed.
-            Vector collisionVector = entityCollide.getHandle().collide(player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-            // Don't check for correct motion. We are only interested in seeing if the player collided vertically above.
-            thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
-            jumpGain = collisionVector.getY();
-        }
+        // This is for jumping with head obstructed.
+        Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+        // Don't check for correct motion. We are only interested in seeing if the player collided vertically above.
+        thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
+        jumpGain = collisionVector.getY();
         return
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
