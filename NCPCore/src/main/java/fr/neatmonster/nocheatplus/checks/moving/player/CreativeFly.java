@@ -56,7 +56,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
 /**
- *  A check designed for player that are either in Creative or Spectator mode
+ *  A check designed for players that are either in Creative or Spectator mode
  */
 public class CreativeFly extends Check {
 

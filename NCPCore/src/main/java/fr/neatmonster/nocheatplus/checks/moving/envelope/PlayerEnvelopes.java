@@ -1,8 +1,5 @@
 package fr.neatmonster.nocheatplus.checks.moving.envelope;
 
-import fr.neatmonster.nocheatplus.NCPAPIProvider;
-import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
-import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
@@ -12,7 +9,6 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
-import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
@@ -24,8 +20,6 @@ import org.bukkit.util.Vector;
  * Various auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
  */
 public class PlayerEnvelopes {
-
-    private static final IHandle<IEntityAccessCollide> entityCollide = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IEntityAccessCollide.class);
 
     /**
      * Jump off the top off a block with the ordinary jumping envelope, however
@@ -204,21 +198,22 @@ public class PlayerEnvelopes {
         }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // This is for jumping with head obstructed.
-        Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-        // Don't check for correct motion. We are only interested in seeing if the player collided vertically above.
+        Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+        // For setting the flag, we don't care about the correct speed.
         thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
+        // Then, override the ordinary jumping gain, if it was indeed obstructed by a collision.
         jumpGain = collisionVector.getY();
         return
                 // 0: Jump phase condition... Demand a very low air time.
                 data.sfJumpPhase <= 1
                 // 0: Ground conditions... Demand players to be in a "leaving ground" state.
                 && ( 
-                    // 1: Ordinary lift-off.
+                    // 1: The ordinary lift-off/case.
                     fromOnGround && !toOnGround
                     // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
                     // Usually happens when jumping on the corners of blocks
                     // Technically, a lost ground case but not really, because the ground status is detected, but with a delay
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction()
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case.
                     && (
                             // 2: The usual case: here we know that the player actually came from ground with the last move
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e

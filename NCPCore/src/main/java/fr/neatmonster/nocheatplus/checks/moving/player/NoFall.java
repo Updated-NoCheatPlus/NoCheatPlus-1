@@ -145,6 +145,7 @@ public class NoFall extends Check {
         float fallDist = (float) getApplicableFallHeight(player, y, previousSetBackY, data);
         // TODO: Need move data pTo, this location isn't updated
         Block block = player.getLocation(useLoc2).subtract(0.0, 1.0, 0.0).getBlock();
+        final IPlayerData pData = DataManager.getPlayerData(player);
         // Falling on farmland has a chance of trampling it (wasn't always the case. On legacy versions, just walking on crops would have been enough to trample them :) )
         if (block.getType() == BridgeMaterial.FARMLAND && fallDist > 0.5 && ThreadLocalRandom.current().nextFloat() < fallDist - 0.5) {
             final BlockState newState = block.getState();
@@ -153,6 +154,9 @@ public class NoFall extends Check {
                 // Move up a little bit in order not to get stuck in the block
                 player.setVelocity(new Vector(player.getVelocity().getX() * -1, 0.062501, player.getVelocity().getZ() * -1));
                 block.setType(Material.DIRT);
+                if (pData.isDebugActive(type)) {
+                    debug(player, "Apply block-state change workaround for FARMLAND.");
+                }
             }
             useLoc2.setWorld(null);
             return fallDist;
@@ -166,6 +170,9 @@ public class NoFall extends Check {
                     egg.setEggs(egg.getEggs() - 1);
                 } 
                 else block.setType(Material.AIR); // What about Cave air? (i.e.: with eggs being inside of a cave)
+                if (pData.isDebugActive(type)) {
+                    debug(player, "Apply block-state change workaround for TURTLE_EGG.");
+                }
             }
             useLoc2.setWorld(null);
             return fallDist;
@@ -175,12 +182,15 @@ public class NoFall extends Check {
         if (BridgeMisc.hasIsFrozen() && validMove != null && validMove.toIsValid && fallDist > 0.0) {
             final Block fallenOnBlock = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ()));
             if (fallenOnBlock.getBlockData() instanceof PointedDripstone) {
-                PointedDripstone stalagmite = (PointedDripstone) fallenOnBlock.getBlockData();
-                // Only if the pointed dripstone block is the tip (not the base or frustum) and is facing up.
-                if (stalagmite.getThickness().equals(PointedDripstone.Thickness.TIP) && stalagmite.getVerticalDirection().equals(BlockFace.UP)) {
+                PointedDripstone dripstone = (PointedDripstone) fallenOnBlock.getBlockData();
+                boolean isStalagmite = dripstone.getThickness().equals(PointedDripstone.Thickness.TIP) && dripstone.getVerticalDirection().equals(BlockFace.UP);
+                if (isStalagmite) {
                     // Source of the formula: PointedDripstoneBlock.java -> fallOn() -> calculateFallDamage()
                     fallDist = (fallDist + 0.5f) * 2.0f; // 0.5 is the offset, vanilla's would be 2.0 actually. We use 0.5 because we do not ceil the final fall damage, like vanilla does.
                     useLoc2.setWorld(null);
+                    if (pData.isDebugActive(type)) {
+                        debug(player, "Player fell on a stalagmite: multiply the final fall distance by x2.");
+                    } 
                     return fallDist;
                 }
             }
@@ -197,10 +207,10 @@ public class NoFall extends Check {
      * @param block
      * @param newState The BlockState of the new block
      * @param interact If to call a PlayerInteractEvent
-     * @param entityChangeBlock if call a EntityChangeBlockEvent
+     * @param entityChangeBlock If to call an EntityChangeBlockEvent
      * @param fade If to call a BlockFadeEvent
      * 
-     * @return True, if the state of this block can be changed and affected by players falling on them.
+     * @return True, if the state of this block can be changed (no other plugin put a veto)
      */
     @SuppressWarnings("deprecation")
     private boolean canChangeBlock(final Player player, final Block block, final BlockState newState, final boolean interact, final boolean entityChangeBlock, final boolean fade) {
@@ -208,6 +218,7 @@ public class NoFall extends Check {
             final PlayerInteractEvent interactEvent = new PlayerInteractEvent(player, Action.PHYSICAL, null, block, BlockFace.SELF);
             Bukkit.getPluginManager().callEvent(interactEvent);
             if (interactEvent.isCancelled()) {
+                // Denied by some plugin.
                 return false;
             }
         }
@@ -219,6 +230,7 @@ public class NoFall extends Check {
                     EntityChangeBlockEvent event = (EntityChangeBlockEvent)o;
                     Bukkit.getPluginManager().callEvent(event);
                     if (event.isCancelled()) {
+                         // Denied by some plugin.
                         return false;
                     }
                 }
@@ -227,6 +239,7 @@ public class NoFall extends Check {
                 final EntityChangeBlockEvent blockEvent = new EntityChangeBlockEvent(player, block, newState.getBlockData());
                 Bukkit.getPluginManager().callEvent(blockEvent);
                 if (blockEvent.isCancelled()) {
+                    // Denied by some plugin.
                     return false;
                 }
             }
@@ -238,6 +251,7 @@ public class NoFall extends Check {
             final BlockFadeEvent fadeEvent = new BlockFadeEvent(block, newFadeState);
             Bukkit.getPluginManager().callEvent(fadeEvent);
             if (fadeEvent.isCancelled()) {
+                // Denied by some plugin.
                 return false;
             }
         }
@@ -246,11 +260,11 @@ public class NoFall extends Check {
 
 
     /**
-     * Reduce the fall damage according to the feather fall enchant level (aka: fall protection) for BukkitAPI-only mode.
+     * Reduce the fall damage according to the feather-fall enchant level (aka: fall protection) for BukkitAPI-only mode.
      *
      * @param damage The fall damage to correct.
      * @param dealFallDamageFiresAnEvent If dealFallDamageFiresAnEvent is true.
-     *                                   In that case fall damage won't be modified, as feather fall is already taken into account.
+     *                                   In that case fall damage won't be modified, as feather-fall is already taken into account.
      * @return Corrected fall damage.
      */
     public static double applyFeatherFalling(Player player, double damage, boolean dealFallDamageFiresAnEvent) {

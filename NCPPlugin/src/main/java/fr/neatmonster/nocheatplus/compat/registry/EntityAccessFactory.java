@@ -15,7 +15,6 @@
 package fr.neatmonster.nocheatplus.compat.registry;
 
 import fr.neatmonster.nocheatplus.compat.MCAccess;
-import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
 import fr.neatmonster.nocheatplus.components.entity.IEntityAccessVehicle;
 
 /**
@@ -56,9 +55,6 @@ public class EntityAccessFactory {
                 "fr.neatmonster.nocheatplus.compat.bukkit.EntityAccessVehicleMultiPassenger",
                 "fr.neatmonster.nocheatplus.compat.bukkit.EntityAccessVehicleLegacy",
         }, IEntityAccessVehicle.class, false);
-        RegistryHelper.registerFirstAvailable(new String[] {
-                "fr.neatmonster.nocheatplus.compat.bukkit.EntityAccessCollide",
-        }, IEntityAccessCollide.class, false);
     }
 
 }

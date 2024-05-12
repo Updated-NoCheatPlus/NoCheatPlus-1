@@ -339,7 +339,7 @@ public class InventoryUtil {
     }
     
     /**
-     * Attempt to resync the player's item, by forcibily releasing it via NMS or refreshing it via a Bukkit method. <br>
+     * Attempt to resync the player's item, by forcibly releasing it via NMS or refreshing it via a Bukkit method. <br>
      * This is not context-aware. You'll need to check for preconditions yourself before calling this method.
      * 
      * @param player
@@ -357,7 +357,7 @@ public class InventoryUtil {
         }
         // NMS service isn't available, fall-back to a Bukkit-based method: attempt to get and set the item that is currently in hand.
         if (Bridge1_9.hasGetItemInOffHand() && data.offHandUse) {
-            // Off hand
+            // Offhand
             ItemStack stack = Bridge1_9.getItemInOffHand(player);
             if (stack != null) {
                 if (ServerIsAtLeast1_13) {

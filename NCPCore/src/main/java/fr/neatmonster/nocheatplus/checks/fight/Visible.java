@@ -39,7 +39,7 @@ import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 /**
- * A check to verify that hits are legit in terms of target visibility (look-independant)
+ * A check to verify that hits are legit in terms of target visibility (look-independent)
  * @author xaw3ep
  */
 public class Visible extends Check {

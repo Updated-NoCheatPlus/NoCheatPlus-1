@@ -847,7 +847,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
         // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
         // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B).
-        // Now, to fix this, we'd need to re-code NCP to run movement checks on packet level instead. Such option is out of the question however: it would require a massive work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
+        // Now, to fix this, we'd need to re-code NCP to run movement checks on packet-level instead. Such an option is out of the question: it would require a massive re-work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
         // Essentially, after Bukkit fires a PlayerMoveEvent, NCP will check if it had been fired normally. If it wasn't, the flying-packet queue is used to get the correct "from" and "to" locations.
         // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
         // (For simplicity, the mechanic is internally referred to as "split move", because the event is essentially split by how many moves were lost, with a cap)
@@ -857,8 +857,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
         if (
-            // 0: A regular PlayerMoveEvent will always fire a "from" loc reflecting player#getLocation().
-            //    If not, player#getLocation() will reflect a skipped move between from and to (for which no event was fired).
+            // 0: This is how we know if the move was fired correctly; player#getLocaton() and the event's "from" location are the same (More specifically, for Bukkit, from = the current Location of the player).
+            // If these don't match, player#getLocation() will reflect a skipped move between from and to (for which no event was fired).
             TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
@@ -868,13 +868,14 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, true);
         }
         else {
+            // Something happened: there was a mismatch between the player's location and the event's location(s)
             // Peek into ProtocolLib to recover the movement's actual locations.
             final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
             final DataPacketFlying[] queue = flyingHandle.getHandle();
             if (queue.length != 0) {
-                /** Index of the Bukkit's "from" location in the flying queue. -1 if already purged out of the queue or cannot be found for any reason. */
+                /** Index of the Bukkit's "from" location in the flying queue. -1 if already purged out of the queue or cannot be found for any other reason. */
                 int fromIndex = -1;
-                /** Index of the Bukkit's "to" location in the flying queue. -1 if already purged out of the queue or cannot be found for any reason.*/
+                /** Index of the Bukkit's "to" location in the flying queue. -1 if already purged out of the queue or cannot be found for any other reason.*/
                 int toIndex = -1;
                 // 1: Locate Bukkit's 'from' and 'to' locations on packet-level in the flying queue.
                 for (int queueIndex = 0; queueIndex < queue.length; queueIndex++) {
@@ -889,7 +890,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         fromIndex = queueIndex;
                     }
                     if (fromIndex > 0 && toIndex >= 0) {
-                        // Found both (toIndex must be checked for equality).
+                        // Found both (NOTE: toIndex MUST be checked for equality).
                         break;
                     }
                 }
@@ -979,7 +980,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      * Split the incoming move event into two different moves, by using player#getLocation() exclusively. <br>
      * This is a really inaccurate split, as without ProtocolLib, we cannot tell how many moves have been skipped between the event#getFrom/To() and player#getLocation().
      * (Which can be much more than 2)
-     * So, checking for anything that needs high precision (like a prediction implementation) during these phases should be avoided.
+     * So, checking for anything that requires high-precision (like a prediction implementation) during these phases should be avoided.
      * 
      * @param player
      * @param moveInfo

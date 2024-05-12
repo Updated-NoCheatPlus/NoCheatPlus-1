@@ -84,7 +84,7 @@ public class PlayerLocation extends RichEntityLocation {
 
     /**
      * Straw-man method to account for this specific bug: https://bugs.mojang.com/browse/MC-2404
-     * Should not be used outside of its intended context (sneaking on edges), or if vanilla uses it.
+     * Should not be used outside its intended context (sneaking on edges), or if vanilla uses it.
      */
     public boolean isAboveGround() {
         final IPlayerData pData = DataManager.getPlayerData(player);
@@ -103,7 +103,7 @@ public class PlayerLocation extends RichEntityLocation {
     /**
      * From EntityHuman.java <br>
      * Set the speed needed to back the player off from edges in the given vector.
-     * This assumes that you have checked for preconditions already (!) <br>
+     * This assumes that you have already checked for preconditions (!) <br>
      * [Pre-requisites are: the player must be _shifting_(not sneaking); must be above ground; must have negative or 0 y-distance; must not be flying]
      * 
      * @param vector

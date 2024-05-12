@@ -15,8 +15,8 @@
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
 /**
-* Meant to carry information regarding the player's key presses (WASD)
-*/
+ * Meant to carry information regarding the player's key presses (WASD)
+ */
 public class InputDirection {
     
     /** (A/D keys, left = 1, right = -1. A value of 0.0 means no strafe movement) */
@@ -56,14 +56,14 @@ public class InputDirection {
     }
     
     /**
-     * Run an operation with strafeMult and forwardMult.
+     * Run an operation with strafeFactor and forwardFactor.
      * 
      * @param strafeFactor Factor to use with the strafe value
      * @param forwardFactor Factor to use with the forward value
-     * @param operation     The operation to execute with strafeMult and forwardMult <br>
+     * @param operation     The operation to execute with strafeFactor and forwardFactor <br>
      *                      0 = Sets the enum direction to NONE and resets values for both strafe and forward.<br>
-     *                      1 = Multiply strafe and forward by strafeMult and forwardMult respectively.<br>
-     *                      2 = Divide strafe and forward by strafeMult and forwardMult respectively.
+     *                      1 = Multiply strafe and forward by strafeFactor and forwardFactor respectively.<br>
+     *                      2 = Divide strafe and forward by strafeFactor and forwardFactor respectively.
      */
     public void runOperation(double strafeFactor, double forwardFactor, int operation) {
         switch (operation) {

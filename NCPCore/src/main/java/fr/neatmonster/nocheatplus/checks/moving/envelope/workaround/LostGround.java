@@ -70,7 +70,7 @@ public class LostGround {
                                      final double hDistance, final double yDistance, final boolean sprinting, 
                                      final PlayerMoveData lastMove, final MovingData data, final MovingConfig cc, 
                                      final BlockChangeTracker blockChangeTracker, final Collection<String> tags) {
-        if (Bridge1_9.isGliding(player) || Bridge1_13.isRiptiding(player) || from.isResetCond() || from.isSlidingDown() || from.isOnGround() || player.isFlying()) {
+        if (Bridge1_9.isGliding(player) || Bridge1_13.isRiptiding(player) || from.isResetCond() || from.isSlidingDown() || from.isOnGround() || player.isFlying() || hDistance < 0.001) {
             // Cannot happen under these conditions.
             return false;
         }
@@ -87,7 +87,7 @@ public class LostGround {
         }
 
         if (!MathUtil.inRange(0.1, hDistance, 1.5)) { 
-            // Lost ground only happens with enough motion.
+            // Lost ground only happens with enough horizontal motion.
             return false;
         }
 
@@ -117,7 +117,7 @@ public class LostGround {
             }
             // Try interpolating the ground collision from last-from to this-from.
             // Usually, corresponds to a missed "fromOnGround" position with the *next* move (with last missing a ground collision too, but with the "to" position).
-            // (In other words AIR -> TO LOST GROUND(AIR)   |   FROM LOST GROUND(AIR) -> AIR
+            // (In other words: AIR -> TO LOST GROUND(AIR)   |   FROM LOST GROUND(AIR) -> AIR
             if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_from", tags, data,
                                  from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
                 thisMove.fromLostGround = true;

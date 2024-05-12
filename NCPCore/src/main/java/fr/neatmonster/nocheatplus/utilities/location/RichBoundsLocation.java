@@ -986,7 +986,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /**
      * Check if the location is in bubblestream
      *
-     * @return true, if is an bubblestream
+     * @return true, if is a bubblestream
      */
     public boolean isInBubbleStream() {
         if (inBubblestream == null) {
@@ -1000,7 +1000,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Delegate: check the if the location is in a bubblestream with drag value
+     * Delegate: check if the location is in a bubblestream with drag value
      *
      * @return true, if is dragged by a bubble stream.
      */

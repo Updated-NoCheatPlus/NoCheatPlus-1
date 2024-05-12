@@ -14,6 +14,9 @@
  */
 package fr.neatmonster.nocheatplus.utilities.location;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -23,19 +26,22 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
@@ -55,6 +61,9 @@ public class RichEntityLocation extends RichBoundsLocation {
     /** The mc access. */
     // Final members //
     private final IHandle<MCAccess> mcAccess;
+
+    private final boolean serverHigherOrEqual1_8 = ServerVersion.compareMinecraftVersion("1.8") >=0;
+
 
 
     // Simple members //
@@ -326,7 +335,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             double extraContraction = 0.4;
             final int iMinX = MathUtil.floor(minX + 0.001);
             final int iMaxX = MathUtil.ceil(maxX - 0.001);
-            final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction); // + 0.001 <- Minecraft actually deflates the AABB by this amount.
+            final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction); 
             final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
             final int iMinZ = MathUtil.floor(minZ + 0.001);
             final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
@@ -428,9 +437,6 @@ public class RichEntityLocation extends RichBoundsLocation {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        if (p == null) {
-            return false;
-        }
         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
             // This mechanic was introduced in 1.15 alongside honey blocks
             return false;
@@ -504,6 +510,60 @@ public class RichEntityLocation extends RichBoundsLocation {
      */
     public boolean isOnGroundDueToStandingOnAnEntity() {
         return isOnGround() && standsOnEntity; // Just ensure it is initialized.
+    }
+
+    /**
+     * Retrieve the collision Vector of the entity
+     * (From Entity.class -> collide()).
+     *
+     * @param input    Meant to represent the collision-seeking speed. <br>
+     *                 If no collision can be found within the given speed, the method will return the unmodified input Vector as a result.
+     *                 Otherwise, a modified Vector containing the "obstructed" speed is returned. <br>
+     *                 (Thus, if you wish to know if the player collided with something: inputXYZ != collidedXYZ)
+     * @param onGround The "on ground" status of the player. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground cases and mismatches must be taken into account.
+     *                 Used to determine whether the player will be able to step up with the given input.
+     * @param ncpAABB  The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
+     *                 Only makes sense if you call this method during PlayerMoveEvents, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
+     *                 If null, a new AABB using NMS' parameters (width/height) will be created.
+     * @return A Vector containing the collision components (collisionXYZ)
+     */
+    public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
+        if (input.getX() == 0 && input.getY() == 0 && input.getZ() == 0) {
+            return new Vector();
+        }
+        double[] tAABB = ncpAABB.clone();
+        if (tAABB == null) {
+            // Create the AABB
+            final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f;
+            final double height = mcAccess.getHandle().getHeight(entity);
+            final Location loc = entity.getLocation();
+            tAABB = new double[] {loc.getX() - halfWidth, loc.getY(), loc.getZ() - halfWidth, loc.getX() + halfWidth, loc.getY() + height, loc.getZ() + halfWidth};
+        }
+        List<double[]> collisionBoxes = new ArrayList<>();
+        CollisionUtil.getCollisionBoxes(blockCache, entity, CollisionUtil.expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
+        Vector vec3 = input.lengthSquared() == 0.0 ? input : CollisionUtil.collideBoundingBox(input, tAABB, collisionBoxes);
+        boolean collideX = input.getX() != vec3.getX();
+        boolean collideY = input.getY() != vec3.getY();
+        boolean collideZ = input.getZ() != vec3.getZ();
+        boolean touchGround = onGround || collideY && vec3.getY() < 0.0;
+        // TODO: Not only cc.sfStepHeight (0.6), change on vehicle(boats:0.0, other vehicle 1.0)
+        // Entity is on ground, collided with a wall and can actually step upwards: try to make it step up.
+        if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
+            Vector vec31 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
+            // Introduced in 1.8
+            boolean hasStepFix = entity instanceof Player ? !DataManager.getPlayerData((Player)(entity)).getClientVersion().isOlderThan(ClientVersion.V_1_8) : serverHigherOrEqual1_8;
+            if (hasStepFix) {
+                Vector vec32 = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), CollisionUtil.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
+                if (vec32.getY() < cc.sfStepHeight) {
+                    Vector vec33 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), CollisionUtil.move(tAABB, vec32.getX(), vec32.getY(), vec32.getZ()), collisionBoxes).add(vec32);
+                    if (TrigUtil.distanceSquared(vec33) > TrigUtil.distanceSquared(vec31)) vec31 = vec33;
+                }
+            }
+            if (TrigUtil.distanceSquared(vec31) > TrigUtil.distanceSquared(vec3)) {
+                return vec31.add(CollisionUtil.collideBoundingBox(new Vector(0.0, -vec31.getY() + input.getY(), 0.0), CollisionUtil.move(tAABB, vec31.getX(), vec31.getY(), vec31.getZ()), collisionBoxes));
+            }
+        }
+        return vec3;
     }
     
     /**
@@ -623,10 +683,10 @@ public class RichEntityLocation extends RichBoundsLocation {
      * Minecraft's function to calculate the liquid's flow force.
      * 'FlowingFluid'.java / FluidTypeFlowing.java, getFlow()
      * 
-     * @param access
      * @param x
      * @param y
      * @param z
+     * @param liquidTypeFlag
      * @return the vector, representing the liquid's flowing force.
      */
     public Vector getFlowForceVector(int x, int y, int z, final long liquidTypeFlag) {
@@ -723,29 +783,30 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Test if something solid/ground-like collides within the given margin
-     * above the eye height of the player, using a correction method.
+     * Very coarse test to check if something solid/ground-like collides within the given margin above the eye height of the player, using a correction method.
      *
      * @param marginAboveEyeHeight
      *            the margin above eye height
      * @return True, if is head obstructed
      */
+    @Deprecated
     public boolean seekHeadObstruction(double marginAboveEyeHeight) {
         return seekHeadObstruction(marginAboveEyeHeight, true);
     }
 
     /**
-     * Test if something solid/ground-like collides within the given margin
-     * above the eye height of the player.
+     * Very coarse test to check if something solid/ground-like collides within the given margin above the eye height of the player. <br>
+     * For a better (and more accurate) method, use RichEntityLocation#collide().
      *
      * @param marginAboveEyeHeight
      *            Must be greater than or equal zero.
      * @param stepCorrection
-     *            If set to true, a correction method is used for leniency.
+     *            If set to true, a correction method is used for leniency, at the cost of accuracy.
      * @return True, if head is obstructed
      * @throws IllegalArgumentException
      *             If marginAboveEyeHeight is smaller than 0.
      */
+    @Deprecated
     public boolean seekHeadObstruction(double marginAboveEyeHeight, boolean stepCorrection) {
         if (marginAboveEyeHeight < 0.0) {
             throw new IllegalArgumentException("marginAboveEyeHeight must be greater than 0.");
@@ -774,10 +835,11 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
 
     /**
-     * Test if something solid/ground-like collides above the eye height of the player, using a correction method.
+     * Very coarse test to check if something solid/ground-like collides above the eye height of the player, using a correction method.
      *
      * @return True, if is head obstructed
      */
+    @Deprecated
     public boolean seekHeadObstruction() {
         return seekHeadObstruction(0.0, true);
     }

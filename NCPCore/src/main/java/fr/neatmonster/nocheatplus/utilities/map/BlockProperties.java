@@ -3703,7 +3703,7 @@ public class BlockProperties {
     }
 
     /**
-     * Test if the box collide with any block that matches the flags somehow.
+     * Test if the box collides with any block that matches the flags somehow.
      *
      * @param access
      *            the access

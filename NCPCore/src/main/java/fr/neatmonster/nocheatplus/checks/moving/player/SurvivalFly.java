@@ -49,13 +49,10 @@ import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
-import fr.neatmonster.nocheatplus.components.entity.IEntityAccessCollide;
-import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -74,7 +71,6 @@ public class SurvivalFly extends Check {
     private final ArrayList<String> tags = new ArrayList<>(15);
     private final ArrayList<String> justUsedWorkarounds = new ArrayList<>();
     private final BlockChangeTracker blockChangeTracker;
-    private final IHandle<IEntityAccessCollide> entityCollide = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IEntityAccessCollide.class);
 
     /**
      * Instantiates a new survival fly check.
@@ -605,7 +601,7 @@ public class SurvivalFly extends Check {
             thisMove.yAllowedDistance += propellingForce.getY();
             thisMove.zAllowedDistance += propellingForce.getZ();
         }
-        Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+        Vector collisionVector = from.collide(new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
         thisMove.xAllowedDistance = collisionVector.getX();
         thisMove.yAllowedDistance = collisionVector.getY();
         thisMove.zAllowedDistance = collisionVector.getZ();
@@ -726,14 +722,14 @@ public class SurvivalFly extends Check {
         }
 
 
-        /////////////////////////////////
-        // Next tick / move           //
-        ////////////////////////////////
+        ///////////////////////////////////////
+        // Next client-tick/move             //
+        //////////////////////////////////////
         // Initialize the allowed distance(s) with the previous speed. (Only if we have end-point coordinates)
         // This essentially represents the momentum of the player.
         thisMove.xAllowedDistance = lastMove.toIsValid ? lastMove.xDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
-        // Collision reset first.
+        // If the player collided with something on the previous tick, start with 0 momentum now.
         if (lastMove.collideX) {
             thisMove.xAllowedDistance = 0.0;
         }
@@ -777,14 +773,13 @@ public class SurvivalFly extends Check {
         thisMove.zAllowedDistance *= (double) data.lastInertia;
         // Apply entity-pushing speed
         // From Entity.java.push()
-        // TODO: This isn't correct: entity pushing is done on the next move (thus, this has already been applied with the move we receive on the server-side).
         // The entity's location is in the past.
         // TODO: Properly implement
 
 
-        /////////////////////////////
-        // Last tick / move        //
-        /////////////////////////////
+        //////////////////////////////////
+        // Last client-tick/move        //
+        //////////////////////////////////
         // See CombinedListener.java for more details
         // This is done before liquid pushing...
         if (thisMove.hasAttackSlowDown) {
@@ -896,11 +891,13 @@ public class SurvivalFly extends Check {
         // TODO: Optimize. Brute forcing collisions with all 9 speed combinations will tank performance.
         for (i = 0; i < 9; i++) {
             // NOTE: Passing the unchecked distance is fine in this case. Vertical collision is checked with vdistrel (just separately).
-            Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]), onGround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+            Vector collisionVector = from.collide(new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]), onGround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
             if (xTheoreticalDistance[i] != collisionVector.getX()) {
+                // This theoretical speed would result in a collision. Remember it.
                 collideX[i] = true;
             }
             if (zTheoreticalDistance[i] != collisionVector.getZ()) {
+                // This theoretical speed would result in a collision. Remember it.
                 collideZ[i] = true;
             }
             xTheoreticalDistance[i] = collisionVector.getX();
@@ -1001,7 +998,6 @@ public class SurvivalFly extends Check {
         thisMove.hasImpulse = inputs[isPredictable ? inputsIdx : x_idx].getForwardDir() != ForwardDirection.NONE && inputs[isPredictable ? inputsIdx : z_idx].getStrafeDir() != StrafeDirection.NONE;
         thisMove.strafeImpulse = inputs[isPredictable ? inputsIdx : z_idx].getStrafeDir();
         thisMove.forwardImpulse = inputs[isPredictable ? inputsIdx : x_idx].getForwardDir();
-        // Debug and also set a flag, useful for other checks / contexts.
         if (debug) {
             player.sendMessage("[SurvivalFly] (postPredict) " + (!isPredictable ? "Uncertain" : "Predicted") + " direction: " + inputs[isPredictable ? inputsIdx : x_idx].getForwardDir() +" | "+ inputs[isPredictable ? inputsIdx : x_idx].getStrafeDir());
         }
@@ -1147,7 +1143,7 @@ public class SurvivalFly extends Check {
             // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fall back to the jump check above).
             // updateEntityAfterFallOn(), this function is called on the next move
             if (!player.isSneaking() && (from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) {
-                Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
+                Vector collisionVector = from.collide(new Vector(lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
                 if (lastMove.yDistance < 0.0 && collisionVector.getY() != thisMove.yAllowedDistance) {
                     if ((from.getBlockFlags() & BlockFlags.F_SLIME) != 0L) {
                         // The effect works by inverting the distance.
@@ -1196,13 +1192,13 @@ public class SurvivalFly extends Check {
             // Include horizontal motion to account for stepping: there are cases where NCP's isStep definition fails to catch it.
             // (In which case, isStep will return false and fall-back to friction here)
             // It is imperative that you pass yAllowedDistance as argument here (not the real yDistance), because if the player isn't on ground, the current motion will be used to determine it (collideY && motionY < 0.0). Passing an uncontrolled yDistance will be easily exploitable.
-            Vector collisionVector = CollisionUtil.collide(from.getBlockCache(), player, new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
+            Vector collisionVector = from.collide(new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
             thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && from.seekHeadObstruction() && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
             // Switch to descending phase after colliding above.
             if (lastMove.headObstructed && !thisMove.headObstructed && yDirectionSwitch && thisMove.yDistance <= 0.0 && fullyInAir) {
                 // Fix for clients not sending the "speed reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
                 // Normally, speed is set back to 0.0 and then gravity is applied. The former move however is never actually sent: what we see on the server-side is the player immediately descending but with speed that is still based on a previous move of 0.0 speed.
-                thisMove.yAllowedDistance = 0.0; // Simulate what the client should be doing here and re-iterate gravity
+                thisMove.yAllowedDistance = 0.0; // Simulate what the client should be doing and re-iterate gravity
                 if (BridgeMisc.hasGravity(player)) {
                     thisMove.yAllowedDistance -= !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) && lastMove.yDistance <= 0.0 ? Magic.DEFAULT_SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
                 }
@@ -1295,7 +1291,7 @@ public class SurvivalFly extends Check {
 
         /*
          * 1: Attempt to simulate the reset of speed that the client should have sent to the server.
-         * [Client lands on the ground but does not come to a rest on top of the block (and thus, reset the vertical speed), instead they'll immediately descend right after, but with speed that is still based on a previous move of 0.0]
+         * [Client lands on the ground but does not come to a "rest" on top of the block (and thus, reset the vertical speed), instead they'll immediately descend right after, but with speed that is still based on a previous move of 0.0]
          * Can be noticed when stepping down stair of slabs or breaking blocks below.
          * See: https://gyazo.com/0f748030296aebc0484564629abe6864
          * After interpolating the ground status, notice how the player immediately proceeds to descend with speed as if they actually landed on the ground with the previous move (-0.0784)
@@ -1372,7 +1368,7 @@ public class SurvivalFly extends Check {
          */
         if (cc.trackBlockMove && hDistanceAboveLimit > 0.0) {
             // TODO: Better also test if the per axis distance is equal to or exceeds hDistanceAboveLimit?
-            // TODO: Evaluate if a re-modeling is needed here. With the current implementation, a block-push on any given axis would result in a wildcard for the other axis as well.
+            // TODO: Evaluate if a re-modeling is needed here. With the current implementation, a block-push on any axis, would result in a wildcard for the other axis as well.
             if (from.matchBlockChange(blockChangeTracker, data.blockChangeRef, thisMove.xDistance < 0 ? Direction.X_NEG : Direction.X_POS, 0.05)) {
                 tags.add("blockpush_X");
                 hAllowedDistance = thisMove.hDistance;

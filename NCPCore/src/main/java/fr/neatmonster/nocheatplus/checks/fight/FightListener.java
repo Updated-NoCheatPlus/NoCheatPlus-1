@@ -309,7 +309,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         if (!cancelled && impossibleHit.isEnabled(player, pData)) {
             if (impossibleHit.check(player, data, cc, pData, mCc.survivalFlyResetItem && mcAccess.getHandle().resetActiveItem(player))) {
                 cancelled = true;
-
                 // Still feed the Improbable
                 if (cc.impossibleHitImprobableWeight > 0.0f) {
                     Improbable.feed(player, cc.impossibleHitImprobableWeight, System.currentTimeMillis());

@@ -1027,4 +1027,8 @@ public class TrigUtil {
     public static boolean isSameBlock(int x, int y, int z, Block block) {
         return x == block.getX() && y == block.getY() && z == block.getZ();
     }
+
+    public static double distanceSquared(Vector vector) {
+        return vector.getX() * vector.getX() + vector.getZ() * vector.getZ();
+    }
 }

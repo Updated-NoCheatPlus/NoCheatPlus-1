@@ -53,9 +53,9 @@ public class Visible extends Check {
         private Player player;
 
         @Override
-        protected boolean check(final double x, final double y, final double z, 
-                final float yaw, final float pitch, 
-                final int blockX, final int blockY, final int blockZ) {
+        protected boolean check(final double x, final double y, final double z,
+                                final float yaw, final float pitch,
+                                final int blockX, final int blockY, final int blockZ) {
             // Run ray-tracing again with updated pitch and yaw.
             useLoc.setPitch(pitch);
             useLoc.setYaw(yaw);
@@ -72,8 +72,8 @@ public class Visible extends Check {
         }
 
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                int blockY, int blockZ, FlyingQueueHandle flyingHandle, 
-                BlockFace face, List<String> tags, boolean debug, Player player) {
+                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle,
+                                        BlockFace face, List<String> tags, boolean debug, Player player) {
             this.face = face;
             this.tags = tags;
             this.debug = debug;
@@ -83,7 +83,7 @@ public class Visible extends Check {
 
         @Override
         public boolean checkFlyingQueue(double x, double y, double z, float oldYaw, float oldPitch, int blockX,
-                int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
+                                        int blockY, int blockZ, FlyingQueueHandle flyingHandle) {
             throw new UnsupportedOperationException("Use the other method.");
         }
 
@@ -113,9 +113,8 @@ public class Visible extends Check {
     }
 
     public boolean check(final Player player, final Location loc, final double eyeHeight, final Block block, 
-            final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle, 
-            final BlockInteractData data, final BlockInteractConfig cc, final IPlayerData pData) {
-
+                         final BlockFace face, final Action action, final FlyingQueueHandle flyingHandle,
+                         final BlockInteractData data, final BlockInteractConfig cc, final IPlayerData pData) {
         // TODO: This check might make parts of interact/blockbreak/... + direction (+?) obsolete.
         // TODO: Might confine what to check for (left/right-click, target blocks depending on item in hand, container blocks).
         boolean collides;
@@ -151,27 +150,39 @@ public class Visible extends Check {
                 boolean mightEdgeInteraction = true;
                 Set<BlockCoord> visited = new HashSet<BlockCoord>();
                 RichAxisData axisData = new RichAxisData(Axis.NONE, Direction.NONE);
-                if (Math.abs(face.getModX()) > 0) axisData.priority = Axis.X_AXIS; else if (Math.abs(face.getModY()) > 0) axisData.priority = Axis.Y_AXIS; else if (Math.abs(face.getModZ()) > 0) axisData.priority = Axis.Z_AXIS;
+                if (Math.abs(face.getModX()) > 0) {
+                    axisData.priority = Axis.X_AXIS; 
+                }
+                else if (Math.abs(face.getModY()) > 0) {
+                    axisData.priority = Axis.Y_AXIS; 
+                }
+                else if (Math.abs(face.getModZ()) > 0) {
+                    axisData.priority = Axis.Z_AXIS;
+                }
+
                 do {
                     canContinue = false;
-                for (BlockCoord neighbor : CollisionUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ, axisData)) {
-                    if (CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, eyeHeight, null, null, mightEdgeInteraction, axisData) && CollisionUtil.correctDir(neighbor.getY(), blockY, Location.locToBlock(eyeY)) && !visited.contains(neighbor)) {
-                        if (TrigUtil.isSameBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ)) {
-                            collides = false;
+                    for (BlockCoord neighbor : CollisionUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ, axisData)) {
+                        if (CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, eyeHeight, null, null, mightEdgeInteraction, axisData)
+                            && CollisionUtil.correctDir(neighbor.getY(), blockY, Location.locToBlock(eyeY)) 
+                            && !visited.contains(neighbor)) {
+                            if (TrigUtil.isSameBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ)) {
+                                collides = false;
+                                break;
+                            }
+                            visited.add(neighbor);
+                            rayTracing.set(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ);
+                            rayTracing.loop();
+                            canContinue = true;
+                            collides = rayTracing.collides();
+                            bc = new BlockCoord(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+                            direction = new Vector(eyeX - neighbor.getX(), eyeY - neighbor.getY(), eyeZ - neighbor.getZ()).normalize();
                             break;
-                        }
-                        visited.add(neighbor);
-                        rayTracing.set(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ);
-                        rayTracing.loop();
-                        canContinue = true;
-                        collides = rayTracing.collides();
-                        bc = new BlockCoord(neighbor.getX(), neighbor.getY(), neighbor.getZ());
-                        direction = new Vector(eyeX - neighbor.getX(), eyeY - neighbor.getY(), eyeZ - neighbor.getZ()).normalize();
-                        break;
+                       }
                     }
+                    mightEdgeInteraction = false;
                 }
-                mightEdgeInteraction = false;
-                } while (collides && canContinue);
+                while (collides && canContinue);
                 if (collides) tags.add("raytracing");
             }
             else if (rayTracing.getStepsDone() > rayTracing.getMaxSteps()) {
@@ -181,7 +192,6 @@ public class Visible extends Check {
             else {
                 collides = false;
             }
-            
             checker.cleanup();
             useLoc.setWorld(null);
             //Cleanup.
