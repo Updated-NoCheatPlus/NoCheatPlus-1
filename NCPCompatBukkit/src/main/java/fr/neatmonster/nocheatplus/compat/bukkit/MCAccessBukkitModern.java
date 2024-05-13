@@ -522,6 +522,10 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         mt = BridgeMaterial.getBlock("mud");
         if (mt != null) addModel(mt, MODEL_XZ100_HEIGHT8_7);
 
+        // Heavy core
+        mt = BridgeMaterial.getBlock("heavy_core");
+        if (mt != null) addModel(mt, MODEL_GROUND_HEAD);
+
         // Sort to processed by flags.
         for (final Material mat : Material.values()) {
             final long flags = BlockFlags.getBlockFlags(mat);

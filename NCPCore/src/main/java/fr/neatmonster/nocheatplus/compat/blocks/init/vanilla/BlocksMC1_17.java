@@ -112,7 +112,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         BlockFlags.addFlags("CAVE_VINES_PLANT", BlockFlags.F_CLIMBABLE);
         
         BlockProperties.setBlockProps("HANGING_ROOTS", BlockProperties.instantType);
-        BlockProperties.setBlockProps("ROOTED_DIRT", new BlockProperties.BlockProps(BlockProperties.noTool, 0.5f));
+        BlockProperties.setBlockProps("ROOTED_DIRT", new BlockProperties.BlockProps(BlockProperties.woodSpade, 0.5f));
 
         //Dripstone
         BlockProperties.setBlockProps("DRIPSTONE_BLOCK", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));

@@ -14,8 +14,14 @@
  */
 package fr.neatmonster.nocheatplus.utilities;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -45,6 +51,33 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 public class InventoryUtil {
 
     private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
+
+    private static final Map<String, InventoryType> all = new HashMap<String, InventoryType>();
+    static {
+        for (InventoryType type : InventoryType.values()) {
+            String name = type.name().toLowerCase(Locale.ROOT);
+            all.put(name, type);
+        }
+    }
+
+    public static InventoryType get(String name) {
+        return all.get(name.toLowerCase());
+    }
+
+    public static final Set<InventoryType> CONTAINER_LIST = Collections.unmodifiableSet(
+            getAll("chest", "ender_chest", "dispenser", "dropper", "hopper", "barrel", "shulker_box", "chiseled_bookshelf")
+            );
+
+    public static Set<InventoryType> getAll(String... names) {
+        final LinkedHashSet<InventoryType> res = new LinkedHashSet<InventoryType>();
+        for (final String name : names) {
+            final InventoryType mat = get(name);
+            if (mat != null) {
+                res.add(mat);
+            }
+        }
+        return res;
+    }
 
     /**
      * Collect non-block items by suffix of their Material name (case insensitive).
@@ -268,29 +301,13 @@ public class InventoryUtil {
      *
      * @param stack
      *            May be null, would return false.
-     * @return true, if is container
+     * @return true, if is a container
      */
-    public static boolean isContainerInventory(final InventoryType type) {
+    public static boolean isContainterInventory(final InventoryType type) {
         if (type == null) {
             return false;
         }
-        switch (type) {
-            case CHEST:
-            case ENDER_CHEST:
-            case DISPENSER:
-            case DROPPER:
-            case HOPPER:
-                return true;
-            default: {
-                // For legacy servers
-                if (type.toString().equals("SHULKER_BOX")
-                    || type.toString().equals("BARREL")
-                    || type.toString().equals("CHISELED_BOOKSHELF")) {
-                    return true;
-                }
-                return false;
-            }
-        }
+        return CONTAINER_LIST.contains(type);
     }
 
     /**

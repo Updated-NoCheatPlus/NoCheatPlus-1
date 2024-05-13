@@ -54,6 +54,12 @@ public class BlocksMC1_20 implements BlockPropertiesSetup {
             BlockProperties.setBlockProps("TRIAL_SPAWNER", new BlockProperties.BlockProps(BlockProperties.noTool, 50f));
             BlockFlags.setBlockFlags("TRIAL_SPAWNER", BlockFlags.FULLY_SOLID_BOUNDS);
         }
+        if (ServerVersion.compareMinecraftVersion("1.20.5") >= 0) {
+            BlockFlags.setBlockFlags("HEAVY_CORE", BlockFlags.SOLID_GROUND);
+            BlockProperties.setBlockProps("HEAVY_CORE", new BlockProperties.BlockProps(BlockProperties.noTool, 50f));
+            BlockProperties.setBlockProps("VAULT", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 10f));
+            BlockFlags.setBlockFlags("VAULT", BlockFlags.FULLY_SOLID_BOUNDS);
+        }
         ConfigFile config = ConfigManager.getConfigFile();
         if (config.getBoolean(ConfPaths.BLOCKBREAK_DEBUG, config.getBoolean(ConfPaths.CHECKS_DEBUG, false)))
         StaticLog.logInfo("Added block-info for Minecraft 1.20 blocks.");

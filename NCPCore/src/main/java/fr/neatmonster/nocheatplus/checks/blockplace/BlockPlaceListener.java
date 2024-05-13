@@ -53,6 +53,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
+import fr.neatmonster.nocheatplus.compat.BridgeEntityType;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
@@ -465,17 +466,7 @@ public class BlockPlaceListener extends CheckListener {
         }
         // And the projectile must be one the following:
         EntityType type = event.getEntityType();
-        switch (type) {
-            case ENDER_PEARL:
-            case ENDER_SIGNAL:
-            case EGG:
-            case SNOWBALL:
-            case THROWN_EXP_BOTTLE:
-            case SPLASH_POTION:
-                break;
-            default:
-                return;
-        }
+        if (!BridgeEntityType.PROJECTILE_CHECK_LIST.contains(type)) return;
 
         // Do the actual check...
         final IPlayerData pData = DataManager.getPlayerData(player);

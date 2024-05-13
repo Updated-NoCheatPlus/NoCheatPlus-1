@@ -32,7 +32,9 @@ import org.bukkit.entity.Slime;
 import org.bukkit.potion.PotionEffectType;
 
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.compat.BridgeEntityType;
 import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.BridgePotionEffect;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import fr.neatmonster.nocheatplus.utilities.entity.PotionUtil;
@@ -174,12 +176,14 @@ public class MCAccessBukkitBase implements MCAccess {
         // TODO: For height too. [Automatize most by spawning + checking?]
         // Values taken from 1.7.10.
         final EntityType type = entity.getType();
+        Double width = BridgeEntityType.LEGACY_ENTITY_WIDTH.get(type);
+        if (width != null) return width;
         switch(type){
             // TODO: case COMPLEX_PART:
-            case ENDER_SIGNAL: // this.a(0.25F, 0.25F);
-            case FIREWORK: // this.a(0.25F, 0.25F);
-            case FISHING_HOOK: // this.a(0.25F, 0.25F);
-            case DROPPED_ITEM: // this.a(0.25F, 0.25F);
+            //case ENDER_SIGNAL: // this.a(0.25F, 0.25F);
+            //case FIREWORK: // this.a(0.25F, 0.25F);
+            //case FISHING_HOOK: // this.a(0.25F, 0.25F);
+            //case DROPPED_ITEM: // this.a(0.25F, 0.25F);
             case SNOWBALL: // (projectile) this.a(0.25F, 0.25F);
                 return 0.25;
             case CHICKEN: // this.a(0.3F, 0.7F);
@@ -189,7 +193,7 @@ public class MCAccessBukkitBase implements MCAccess {
             case WITHER_SKULL: // this.a(0.3125F, 0.3125F);
                 return 0.3125f;
             case GHAST: // this.a(4.0F, 4.0F);
-            case SNOWMAN: // this.a(0.4F, 1.8F);
+            //case SNOWMAN: // this.a(0.4F, 1.8F);
                 return 0.4f;
             case ARROW: // this.a(0.5F, 0.5F);
             case BAT: // this.a(0.5F, 0.9F);
@@ -211,15 +215,15 @@ public class MCAccessBukkitBase implements MCAccess {
             case CAVE_SPIDER: // this.a(0.7F, 0.5F);
                 return 0.7f;
             case COW: // this.a(0.9F, 1.3F);
-            case MUSHROOM_COW: // this.a(0.9F, 1.3F);
+            //case MUSHROOM_COW: // this.a(0.9F, 1.3F);
             case PIG: // this.a(0.9F, 0.9F);
             case SHEEP: // this.a(0.9F, 1.3F);
             case WITHER: // this.a(0.9F, 4.0F);
                 return 0.9f;
             case SQUID: // this.a(0.95F, 0.95F);
                 return 0.95f;
-            case PRIMED_TNT: // this.a(0.98F, 0.98F);
-                return 0.98f;
+            //case PRIMED_TNT: // this.a(0.98F, 0.98F);
+            //    return 0.98f;
             case FIREBALL: // (EntityFireball) this.a(1.0F, 1.0F);
                 return 1.0f;
             case IRON_GOLEM: // this.a(1.4F, 2.9F);
@@ -227,8 +231,8 @@ public class MCAccessBukkitBase implements MCAccess {
                 return 1.4f;
             case BOAT: // this.a(1.5F, 0.6F);
                 return 1.5f;
-            case ENDER_CRYSTAL: // this.a(2.0F, 2.0F);
-                return 2.0f;
+            //case ENDER_CRYSTAL: // this.a(2.0F, 2.0F);
+            //    return 2.0f;
             case GIANT: // this.height *= 6.0F; this.a(this.width * 6.0F, this.length * 6.0F);
                 return 3.6f; // (Better than nothing.)
             case ENDER_DRAGON: // this.a(16.0F, 8.0F);
@@ -250,8 +254,8 @@ public class MCAccessBukkitBase implements MCAccess {
         // Latest Bukkit API.
         try {
             switch (type) {
-                case LEASH_HITCH: // hanging: this.a(0.5F, 0.5F);
-                    return 0.5f;
+                //case LEASH_HITCH: // hanging: this.a(0.5F, 0.5F);
+                //    return 0.5f;
                 case HORSE: // this.a(1.4F, 1.6F);
                     return 1.4f;
                     // 1.8
@@ -308,7 +312,7 @@ public class MCAccessBukkitBase implements MCAccess {
 
     @Override
     public double getJumpAmplifier(final Player player) {
-        return PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.JUMP);
+        return PotionUtil.getPotionEffectAmplifier(player, BridgePotionEffect.JUMP_BOOST);
     }
 
     @Override
