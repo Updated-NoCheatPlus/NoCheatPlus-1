@@ -135,8 +135,6 @@ import fr.neatmonster.nocheatplus.worlds.WorldFactoryArgument;
 
 /**
  * Central location to listen to events that are relevant for the moving checks.
- * 
- * @see MovingEvent
  */
 public class MovingListener extends CheckListener implements TickListener, IRemoveData, IHaveCheckType, INeedConfig, JoinLeaveListener {
 
@@ -848,7 +846,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         //    This will result in movements that don't have a significant change to be skipped. 
         //    With anticheating, this means that micro and very slow moves cannot be checked accurately (or at all, for that matter), as coordinates will not be reported correctly.
         // 3) On MC 1.19.4 and later, PlayerMoveEvents are skipped altogether upon entering a minecart and fired normally when exiting.
-        // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement(from loc A to loc B).
+        // In fact, one could argue that the event's nomenclature is misleading: Bukkit's PlayerMoveEvent doesn't actually monitor move packets but rather *changes* of movement between packets.
         // Now, to fix this, we'd need to re-code NCP to run movement checks on packet-level instead. Such an option is out of the question: it would require a massive re-work which we don't have the manpower for, hence this mechanic which -albeit convoluted- works well.
         // Essentially, after Bukkit fires a PlayerMoveEvent, NCP will check if it had been fired normally. If it wasn't, the flying-packet queue is used to get the correct "from" and "to" locations.
         // (Overall, this forces NCP to pretty much hard-depend on ProtocolLib, but it's the most sensible choice anyway, as working with Bukkit events has proven to be unreliable on the longer run)
@@ -859,7 +857,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         if (cc.loadChunksOnMove) MovingUtil.ensureChunksLoaded(player, from, to, lastMove, "move", cc, pData);
         
         if (
-            // 0: This is how we know if the move was fired correctly; player#getLocaton() and the event's "from" location are the same (More specifically, for Bukkit, from = the current Location of the player).
+            // 0: This is how we know if the event was fired correctly; player#getLocaton() and the event's "from" location are the same (More specifically, for Bukkit, from = the current Location of the player).
             // If these don't match, player#getLocation() will reflect a skipped move between from and to (for which no event was fired).
             TrigUtil.isSamePos(from, loc)
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
@@ -1178,8 +1176,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (!Double.isInfinite(mcAccess.getHandle().getFasterMovementAmplifier(player))) {
                 walkSpeed += (float)(mcAccess.getHandle().getFasterMovementAmplifier(player) + 1) * 0.2f * walkSpeed;
             }
-            if (!Double.isInfinite(PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW))) {
-                walkSpeed += (float)(PotionUtil.getPotionEffectAmplifier(player, PotionEffectType.SLOW) + 1) * -0.15f * walkSpeed;
+            if (!Double.isInfinite(PotionUtil.getPotionEffectAmplifier(player, BridgePotionEffect.SLOWNESS))) {
+                walkSpeed += (float)(PotionUtil.getPotionEffectAmplifier(player, BridgePotionEffect.SLOWNESS) + 1) * -0.15f * walkSpeed;
             }
         }
         if (MovingUtil.shouldCheckSurvivalFly(player, pFrom, pTo, data, cc, pData)) {

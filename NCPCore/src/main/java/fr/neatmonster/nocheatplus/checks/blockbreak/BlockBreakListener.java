@@ -148,7 +148,7 @@ public class BlockBreakListener extends CheckListener {
         final GameMode gameMode = player.getGameMode();
         int skippedRedundantChecks = 0;
         // Did the player try to destroy a liquid block? (Not possible)
-        if (!cancelled && BlockProperties.isLiquid(block.getType()) && !BlockProperties.isWaterPlant(block.getType())
+        if (BlockProperties.isLiquid(block.getType()) && !BlockProperties.isWaterPlant(block.getType())
             && !pData.hasPermission(Permissions.BLOCKBREAK_BREAK_LIQUID, player) 
             && !NCPExemptionManager.isExempted(player, CheckType.BLOCKBREAK_BREAK)){
             cancelled = true;
@@ -251,13 +251,6 @@ public class BlockBreakListener extends CheckListener {
         }
     }
 
-    /**
-     * We listen to PlayerAnimation events because it is (currently) equivalent to "player swings arm" and we want to
-     * check if they did that between block breaks.
-     * 
-     * @param event
-     *            the event
-     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerAnimation(final PlayerAnimationEvent event) {
         final BlockBreakData data = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(BlockBreakData.class);

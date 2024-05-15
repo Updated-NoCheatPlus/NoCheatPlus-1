@@ -191,16 +191,16 @@ public class CollisionUtil {
      *            the precision
      * @return Some offset.
      */
-    public static double directionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision)
-    {
-
+    public static double directionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX,
+                                        final double dirY, final double dirZ, final double targetX, final double targetY, final double targetZ,
+                                        final double targetWidth, final double targetHeight, final double precision) {
         //      // TODO: Here we have 0.x vs. 2.x, sometimes !
         //      NCPAPIProvider.getNoCheatPlusAPI().getLogManager().debug(Streams.TRACE_FILE, "COMBINED: " + combinedDirectionCheck(sourceX, sourceY, sourceZ, dirX, dirY, dirZ, targetX, targetY, targetZ, targetWidth, targetHeight, precision, 60));
-
         // TODO: rework / standardize.
-
         double dirLength = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
-        if (dirLength == 0.0) dirLength = 1.0; // ...
+        if (dirLength == 0.0) {
+            dirLength = 1.0; // ...
+        }
 
         final double dX = targetX - sourceX;
         final double dY = targetY - sourceY;
@@ -213,13 +213,12 @@ public class CollisionUtil {
         final double zPrediction = targetDist * dirZ / dirLength;
 
         double off = 0.0D;
-
         off += Math.max(Math.abs(dX - xPrediction) - (targetWidth / 2 + precision), 0.0D);
         off += Math.max(Math.abs(dZ - zPrediction) - (targetWidth / 2 + precision), 0.0D);
         off += Math.max(Math.abs(dY - yPrediction) - (targetHeight / 2 + precision), 0.0D);
-
-        if (off > 1) off = Math.sqrt(off);
-
+        if (off > 1) {
+            off = Math.sqrt(off);
+        }
         return off;
     }
 
@@ -1068,8 +1067,9 @@ public class CollisionUtil {
 
     public static boolean getCollisionBoxes(BlockCache blockCache, Entity entity, double[] AABB, List<double[]> collisionBoxes, boolean onlyCheckCollide) {
         boolean collided = addWorldBorder(entity, AABB, collisionBoxes, onlyCheckCollide);
-        if (onlyCheckCollide && collided) return true;
-        
+        if (onlyCheckCollide && collided) {
+            return true;
+        }
         int minBlockX = (int) Math.floor(AABB[0] - COLLISION_EPSILON) - 1;
         int maxBlockX = (int) Math.floor(AABB[3] + COLLISION_EPSILON) + 1;
         int minBlockY = (int) Math.floor(AABB[1] - COLLISION_EPSILON) - 1;
@@ -1080,12 +1080,12 @@ public class CollisionUtil {
             for (int x = minBlockX; x <= maxBlockX; x++) {
                 for (int z = minBlockZ; z <= maxBlockZ; z++) {
                     Material mat = blockCache.getType(x, y, z);
-                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) continue;
-
+                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) {
+                        continue;
+                    }
                     int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
-                            ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
-                            ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
-
+                                    ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
+                                    ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
                     if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0)
                             && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
                         // Don't add to a list if we only care if the player intersects with the block

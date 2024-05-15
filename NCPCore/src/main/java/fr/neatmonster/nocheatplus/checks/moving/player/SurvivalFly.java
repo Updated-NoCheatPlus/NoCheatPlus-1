@@ -595,7 +595,7 @@ public class SurvivalFly extends Check {
         // Yes, players can glide and riptide at the same time, increasing speed at a faster rate than chunks can load...
         // Surely a questionable decision on Mojang's part.
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
-            final Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, fromOnGround);
+            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, fromOnGround);
             // Fortunately, we do not have to account for onGround push here, as gliding does not work on ground.
             thisMove.xAllowedDistance += propellingForce.getX();
             thisMove.yAllowedDistance += propellingForce.getY();

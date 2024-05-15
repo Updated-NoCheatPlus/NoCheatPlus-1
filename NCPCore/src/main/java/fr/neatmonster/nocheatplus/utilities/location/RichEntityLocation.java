@@ -533,7 +533,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         double[] tAABB = ncpAABB.clone();
         if (tAABB == null) {
-            // Create the AABB
+            // Infer the AABB from NMS width and height parameters.
             final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f;
             final double height = mcAccess.getHandle().getHeight(entity);
             final Location loc = entity.getLocation();
@@ -696,7 +696,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         double xModifier = 0.0D;
         double zModifier = 0.0D;
-        float liquidLevel = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag); 
+        float liquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
@@ -712,13 +712,13 @@ public class RichEntityLocation extends RichBoundsLocation {
                         if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
                             modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
                             if (modLiquidHeight > 0.0F) {
-                                flowForce = liquidLevel - (modLiquidHeight - 0.8888889f);
+                                flowForce = liquidHeight - (modLiquidHeight - 0.8888889f);
                             }
                         }
                     }
                 } 
                 else if (modLiquidHeight > 0.0f) {
-                    flowForce = liquidLevel - modLiquidHeight;
+                    flowForce = liquidHeight - modLiquidHeight;
                 }
                 if (flowForce != 0.0F) {
                     xModifier += (float) hDirection.getModX() * flowForce;
@@ -920,7 +920,6 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (entity instanceof LivingEntity) {
             isLiving = true;
             final LivingEntity living = (LivingEntity) entity;
-            //final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             eyeHeight = living.getEyeHeight();
             fullHeight = Math.max(fullHeight, eyeHeight);
         }

@@ -21,6 +21,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
+import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
@@ -219,7 +220,7 @@ public final class BridgeEnchant {
     }
 
     /**
-     * Test, if there is chestplate with the given enchantment on.
+     * Test, if there is a chestplate with the given enchantment on.
      * 
      * @param player
      * @param enchantment
@@ -386,11 +387,11 @@ public final class BridgeEnchant {
         // Find the maximum level for the given enchantment.
         final ItemStack mainHand = player.getInventory().getItemInMainHand();
         final ItemStack offHand = player.getInventory().getItemInOffHand();
-        if (mainHand.getType().toString().equals("TRIDENT")) {
+        if (mainHand.getType().equals(BridgeMaterial.TRIDENT)) {
             // Found in main hand already, return.
             return Math.max(mainHand.getEnchantmentLevel(enchantment), level);
         }
-        if (offHand.getType().toString().equals("TRIDENT")) {
+        if (offHand.getType().equals(BridgeMaterial.TRIDENT)) {
             level = Math.max(offHand.getEnchantmentLevel(enchantment), level);
         }
         return level;

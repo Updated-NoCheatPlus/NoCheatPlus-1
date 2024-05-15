@@ -299,11 +299,11 @@ public class InventoryUtil {
      * Test if the given InventoryType can hold items.
      * Meant for check-related contexts, thus containers with just 1 or 2 slots are excluded for convenience (performing checks for those would be over doing it).
      *
-     * @param stack
+     * @param type
      *            May be null, would return false.
      * @return true, if is a container
      */
-    public static boolean isContainterInventory(final InventoryType type) {
+    public static boolean isContainerInventory(final InventoryType type) {
         if (type == null) {
             return false;
         }

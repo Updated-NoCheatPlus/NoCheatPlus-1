@@ -131,7 +131,7 @@ public class Open extends Check implements IDisableListener {
             // This check relies on data set in SurvivalFly.
             !pData.isCheckActive(CheckType.MOVING_SURVIVALFLY, player)
             // Ignore duplicate packets
-            || thisMove.duplicateEvent
+            || mData.lastMoveNoMove
             // Can't check vehicles
             || player.isInsideVehicle()
             // In creative or middle click

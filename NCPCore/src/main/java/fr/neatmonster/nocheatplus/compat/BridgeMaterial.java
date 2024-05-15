@@ -165,6 +165,8 @@ public class BridgeMaterial {
 
     public static final Material DIAMOND_SHOVEL = getFirstNotNull("diamond_shovel", "diamond_spade");
 
+    public static final Material TRIDENT = getFirst("trident");
+
     public static final Material NETHERITE_AXE = getFirst("netherite_axe");
     public static final Material NETHERITE_HOE = getFirst("netherite_hoe");
     public static final Material NETHERITE_PICKAXE = getFirst("netherite_pickaxe");
