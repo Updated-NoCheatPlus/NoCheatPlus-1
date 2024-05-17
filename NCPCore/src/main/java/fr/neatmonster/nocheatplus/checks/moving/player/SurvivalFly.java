@@ -514,29 +514,8 @@ public class SurvivalFly extends Check {
             }
         }
         // Reset speed if judged to be negligible.
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
-            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.yAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.zAllowedDistance = 0.0;
-            }
-        }
-        else {
-            // In 1.8 and lower, momentum is compared to 0.005 instead.
-            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.yAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.zAllowedDistance = 0.0;
-            }
-        }
+        checkNegligibleMomentum(pData, thisMove);
+        
         // TODO: Reduce verbosity (at least, make it easier to look at)
         Vector viewVector = TrigUtil.getLookingDirection(to, player);
         float radianPitch = to.getPitch() * TrigUtil.toRadians;
@@ -595,12 +574,13 @@ public class SurvivalFly extends Check {
         // Yes, players can glide and riptide at the same time, increasing speed at a faster rate than chunks can load...
         // Surely a questionable decision on Mojang's part.
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
-            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, fromOnGround);
+            Vector propellingForce = to.getTridentPropellingForce(player, fromOnGround);
             // Fortunately, we do not have to account for onGround push here, as gliding does not work on ground.
             thisMove.xAllowedDistance += propellingForce.getX();
             thisMove.yAllowedDistance += propellingForce.getY();
             thisMove.zAllowedDistance += propellingForce.getZ();
         }
+        // Collisions last.
         Vector collisionVector = from.collide(new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
         thisMove.xAllowedDistance = collisionVector.getX();
         thisMove.yAllowedDistance = collisionVector.getY();
@@ -636,8 +616,39 @@ public class SurvivalFly extends Check {
         player.sendMessage("vDistance/Predicted " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.yAllowedDistance));
         return new double[]{thisMove.hAllowedDistance, hDistanceAboveLimit, thisMove.yAllowedDistance, yDistanceAboveLimit};
     }
-
-
+    
+    /**
+     * Check if the allowed speed set in thisMove should be canceled due to it being lower than the negligible speed threshold.
+     * 
+     * @param pData
+     * @param thisMove
+     */
+    private void checkNegligibleMomentum(IPlayerData pData, PlayerMoveData thisMove) {
+        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
+            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
+                thisMove.xAllowedDistance = 0.0;
+            }
+            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
+                thisMove.yAllowedDistance = 0.0;
+            }
+            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
+                thisMove.zAllowedDistance = 0.0;
+            }
+        }
+        else {
+            // In 1.8 and lower, momentum is compared to 0.005 instead.
+            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
+                thisMove.xAllowedDistance = 0.0;
+            }
+            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
+                thisMove.yAllowedDistance = 0.0;
+            }
+            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
+                thisMove.zAllowedDistance = 0.0;
+            }
+        }
+    }
+    
     /**
      * Estimate the player's horizontal speed, according to the given data (inertia, ground status, etc...)
      */
@@ -793,23 +804,7 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
         }
         // Before calculating the acceleration, check if momentum is below the negligible speed threshold and cancel it.
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
-            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.zAllowedDistance = 0.0;
-            }
-        }
-        else {
-            // In 1.8 and lower, momentum is compared to 0.005 instead.
-            if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.zAllowedDistance = 0.0;
-            }
-        }
+        checkNegligibleMomentum(pData, thisMove);
         // Sprint-jumping...
         // NOTE: here you must use to.getYaw not from. To is the most recent rotation. Using from lags behind a few ticks, causing false positives when switching looking direction.
         // This does not apply for locations (from.(...) correctly reflects the player's current position)
@@ -882,7 +877,7 @@ public class SurvivalFly extends Check {
         }
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
             // Riptide works by propelling the player after releasing the trident (the effect only pushes the player, unless is on ground)
-            Vector propellingForce = BridgeEnchant.getTridentPropellingForce(player, to, from, lastMove.touchedGround);
+            Vector propellingForce = to.getTridentPropellingForce(player, lastMove.touchedGround);
             for (i = 0; i < 9; i++) {
                 xTheoreticalDistance[i] += propellingForce.getX();
                 zTheoreticalDistance[i] += propellingForce.getZ();
@@ -1142,7 +1137,7 @@ public class SurvivalFly extends Check {
             }
             // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fall back to the jump check above).
             // updateEntityAfterFallOn(), this function is called on the next move
-            if (!player.isSneaking() && (from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) {
+            if (!player.isSneaking() && (from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) { // TODO: Cannot used flags from 1.20 and onwards, needs the mainSupportingBlock method.
                 Vector collisionVector = from.collide(new Vector(lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
                 if (lastMove.yDistance < 0.0 && collisionVector.getY() != thisMove.yAllowedDistance) {
                     if ((from.getBlockFlags() & BlockFlags.F_SLIME) != 0L) {
@@ -1185,7 +1180,7 @@ public class SurvivalFly extends Check {
             // TODO: Needs to be adjusted for on ground pushing
             if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
                 // Riptide works by propelling the player in air after releasing the trident (the effect only pushes the player, unless is on ground)
-                thisMove.yAllowedDistance += BridgeEnchant.getTridentPropellingForce(player, to, from, lastMove.touchedGround).getY();
+                thisMove.yAllowedDistance += to.getTridentPropellingForce(player, lastMove.touchedGround).getY();
                 player.sendMessage("Trident propel(v): " + StringUtil.fdec6.format(thisMove.yDistance) + " / " + StringUtil.fdec6.format(thisMove.yAllowedDistance));
             }
             // Collision next.
@@ -1196,7 +1191,7 @@ public class SurvivalFly extends Check {
             thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && from.seekHeadObstruction() && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
             // Switch to descending phase after colliding above.
             if (lastMove.headObstructed && !thisMove.headObstructed && yDirectionSwitch && thisMove.yDistance <= 0.0 && fullyInAir) {
-                // Fix for clients not sending the "speed reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
+                // Fix for clients not sending the "speed-reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
                 // Normally, speed is set back to 0.0 and then gravity is applied. The former move however is never actually sent: what we see on the server-side is the player immediately descending but with speed that is still based on a previous move of 0.0 speed.
                 thisMove.yAllowedDistance = 0.0; // Simulate what the client should be doing and re-iterate gravity
                 if (BridgeMisc.hasGravity(player)) {

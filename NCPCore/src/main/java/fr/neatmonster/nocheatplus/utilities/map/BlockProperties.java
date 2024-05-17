@@ -14,18 +14,8 @@
  */
 package fr.neatmonster.nocheatplus.utilities.map;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.InputMismatchException;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,22 +24,20 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.block.data.type.BubbleColumn;
+import org.bukkit.block.data.type.Snow;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
-import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
-import fr.neatmonster.nocheatplus.compat.BridgePotionEffect;
-import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.*;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
@@ -557,15 +545,15 @@ public class BlockProperties {
 
     /**
      * NMS stuck-in-block vertical speed factor library.
-     * 
-     * @param player
-     * @param location Inaccurate with split moves, should be avoided.
+     *
+     * @param entity
+     * @param location  Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves) 
-     * @return the factor 
+     * @param thisMove  Should be used over location to compose the correct position (split moves)
+     * @return the factor
      */
-    public static final double getStuckInBlockVerticalFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying()) {
+    public static final double getStuckInBlockVerticalFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (entity instanceof Player && ((Player) entity).isFlying()) {
             // Flying player are ignored by the game.
             return 1.0;
         }
@@ -573,7 +561,7 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, player, yOnGround);
+        pLoc.set(loc, entity, yOnGround);
         double stuckInFactor = 1.0;
         if (pLoc.isInBerryBush()) {
             stuckInFactor = 0.75;
@@ -591,15 +579,15 @@ public class BlockProperties {
 
     /**
      * NMS block friction library for horizontal speed
-     * 
-     * @param player
-     * @param location Inaccurate with split moves, should be avoided.
+     *
+     * @param entity
+     * @param location  Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves) 
+     * @param thisMove  Should be used over location to compose the correct position (split moves)
      * @return the factor
      */
-    public static final float getBlockFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGliding(player)) {
+    public static final float getBlockFrictionFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (entity instanceof Player && ((Player) entity).isFlying()|| Bridge1_9.isGliding(entity)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -607,8 +595,8 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, player, yOnGround);
-        final IPlayerData pData = DataManager.getPlayerData(player);
+        pLoc.set(loc, entity, yOnGround);
+        final IPlayerData pData = DataManager.getPlayerData((Player) entity);
         /** 1.15 changed the ground-seeking distance to 0.5 */
         final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
         final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
@@ -632,14 +620,14 @@ public class BlockProperties {
     /**
      * NMS block-speed library for horizontal speed (mostly slowdown multipliers).
      * This is retrieved according to how vanilla does it (Entity.java, getBlockSpeedFactor()).
-     * 
-     * @param player
-     * @param location Inaccurate with split moves, should be avoided.
+     *
+     * @param entity
+     * @param location  Inaccurate with split moves, should be avoided.
      * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves)
+     * @param thisMove  Should be used over location to compose the correct position (split moves)
      */
-    public static final float getBlockSpeedFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        if (player.isFlying() || Bridge1_9.isGliding(player)) {
+    public static final float getBlockSpeedFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+        if (entity instanceof Player && ((Player) entity).isFlying() || Bridge1_9.isGliding(entity)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -647,13 +635,13 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, player, yOnGround);
+        pLoc.set(loc, entity, yOnGround);
         float speedFactor = 1.0f;
         final Material block = pLoc.getTypeId();
         if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
-            if (BridgeEnchant.hasSoulSpeed(player)) {
+            if (BridgeEnchant.hasSoulSpeed((Player) entity)) {
                 speedFactor = 1.0f;
             } 
             else speedFactor = 0.4f;
@@ -664,11 +652,11 @@ public class BlockProperties {
         }
         if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
             // Failed to retrieve anything; do it again with the block below (getBlockPosBelowThatAffectsMyMovement() in vanilla).
-            final IPlayerData pData = DataManager.getPlayerData(player);
+            final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
             final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
             if (blockBelow == Material.SOUL_SAND) {
-                if (BridgeEnchant.hasSoulSpeed(player)) {
+                if (BridgeEnchant.hasSoulSpeed((Player) entity)) {
                     speedFactor = 1.0f;
                 } 
                 else speedFactor = 0.4f;
@@ -684,14 +672,14 @@ public class BlockProperties {
 
     /**
      * NMS stuck-in-block factor library for horizontal speed.
-     * 
-     * @param player
+     *
+     * @param entity
      * @param location
      * @param yOnGround
-     * @param thisMove 
+     * @param thisMove
      */
-    public static final double getStuckInBlockHorizontalFactor(final Player player, final Location location, final double yOnGround, final PlayerMoveData thisMove) {
-        if (player.isFlying()) {
+    public static final double getStuckInBlockHorizontalFactor(final LivingEntity entity, final Location location, final double yOnGround, final PlayerMoveData thisMove) {
+        if (entity instanceof Player && ((Player) entity).isFlying() ) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -699,7 +687,7 @@ public class BlockProperties {
         blockCache.setAccess(location.getWorld());
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         pLoc.setBlockCache(blockCache);
-        pLoc.set(loc, player, yOnGround);
+        pLoc.set(loc, entity, yOnGround);
         double stuckInFactor = 1.0D;
         if (pLoc.isInWeb()) {
             stuckInFactor = 0.25D;
@@ -2240,7 +2228,6 @@ public class BlockProperties {
      * @param itemInHand
      * @param helmet
      * @param player
-     * @param eyeHEight
      * @param location
      * @return
      */
@@ -2725,7 +2712,7 @@ public class BlockProperties {
      * @param yOnGround
      * @return
      */
-    public static final boolean canSeeSky(final Player player, final Location location, final double yOnGround) {
+    public static boolean canSeeSky(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         pLoc.setBlockCache(blockCache);
@@ -2738,6 +2725,93 @@ public class BlockProperties {
         pLoc.cleanup();
         return res;
     }
+    
+    public static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
+        return getLiquidHeightAt(access, x, y, z, liquidTypeFlag) == 0 
+                || getLiquidHeightAt(access, x, y, z, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0;
+    }
+    
+    public static boolean isSame(final BlockCache access, long liquidTypeFlag, Player player, int x1, int y1, int z1, int x2, int y2, int z2) {
+        return  getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag) > 0
+                || getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag) > 0;
+    }
+    
+    public static boolean isSolidFace(final BlockCache blockCache, Player player, int x, int y, int z, BlockFace direction, long liquidTypeFlag, final Location location) {
+         int modX = x + direction.getModX();
+         int modZ = z + direction.getModZ();
+         final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
+         final Material mat = node.getType();
+         final BlockData data = location.getWorld().getBlockAt(modX, y, modZ).getBlockData();
+         final long collectedFlags = BlockFlags.getBlockFlags(node.getType());
+         final IPlayerData pData = DataManager.getPlayerData(player);
+        
+         if (isSame(blockCache, liquidTypeFlag, player, modX, y, modZ, x, y, z)) {
+             return false;
+         }
+         if (isIce(mat)) {
+             return false;
+         }
+        
+         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12)) {
+             if (mat == BridgeMaterial.PISTON || mat == BridgeMaterial.STICKY_PISTON) {
+                 return ((Directional)data).getFacing().getOppositeFace() == direction || isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+             }
+             if (mat == BridgeMaterial.PISTON_HEAD) {
+                 return ((Directional)data).getFacing() == direction;
+             }
+         }
+         
+         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_12)) {
+             if (MaterialUtil.BANNERS.contains(mat)) {
+                 return pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16);
+             }
+             if (isSolid(mat)) {
+                 return true;
+             }
+         }
+         
+         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12) && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_13_2)) {
+             if (isStairs(mat) || isLeaves(mat) || MaterialUtil.SHULKER_BOXES.contains(mat) || MaterialUtil.INSTANT_PLANTS.contains(mat)
+                    || MaterialUtil.ALL_TRAP_DOORS.contains(mat)) {
+                 return false;
+             }
+             if (mat == Material.BEACON || MaterialUtil.ALL_CAULDRONS.contains(mat) || mat == Material.GLOWSTONE || mat == BridgeMaterial.SEA_LANTERN || mat == BridgeMaterial.CONDUIT) {
+                 return false;
+             }
+             if (mat == BridgeMaterial.PISTON || mat == BridgeMaterial.STICKY_PISTON || mat == BridgeMaterial.PISTON_HEAD) {
+                 return false;
+             }
+             return mat == Material.SOUL_SAND || isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+         }
+         
+         // All the rest...
+         if (isLeaves(mat)) {
+             return pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14) && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_15_2);
+         }
+         if (mat == Material.SNOW) {
+             return ((Snow)data).getLayers() == 8;
+         }
+         if (isStairs(mat)) {
+             return ((Directional)data).getFacing() == direction;
+         }
+         if (mat == BridgeMaterial.COMPOSTER) {
+             return true;
+         }
+         if (mat == Material.SOUL_SAND) {
+             return pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_12_2) || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16);
+         }
+         if (mat == Material.LADDER) {
+             return ((Directional) data).getFacing().getOppositeFace() == direction;
+         }
+         if (MaterialUtil.ALL_TRAP_DOORS.contains(mat)) {
+             return ((Directional)data).getFacing().getOppositeFace() == direction && ((Openable)data).isOpen();
+         } 
+         if (MaterialUtil.ALL_DOORS.contains(mat)) {
+             // TODO: Incomplete / not correct
+             return ((Directional)data).getFacing().getOppositeFace() == direction;
+         }
+         return isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+    }
 
     /**
      * Get the liquid level at the given block location.
@@ -2749,7 +2823,7 @@ public class BlockProperties {
      * @param liquidTypeFlag flag of the liquid want to check(BlockFlags.F_WATER or BlockFlags.F_LAVA)
      * @return 0.0, if not a liquid.
      */
-    public static double getLiquidHeight(final BlockCache access, final int x, final int y, final int z, final long liquidTypeFlag) {
+    public static double getLiquidHeightAt(final BlockCache access, final int x, final int y, final int z, final long liquidTypeFlag) {
         double liquidHeight;
         final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
         final IBlockCacheNode nodeAbove = access.getOrCreateBlockCacheNode(x, y + 1, z, false);
@@ -4133,7 +4207,8 @@ public class BlockProperties {
         if (!outOfBounds) {
             collide = true;
         }
-
+        
+        // Check for multi-AABB blocks.
         if (!collide && AABB.length > 6 && AABB.length % 6 == 0) {
             for (int i = 2; i <= (int)AABB.length / 6; i++) {
 
@@ -4382,7 +4457,7 @@ public class BlockProperties {
             }
         }
         // Check if the collided (and solid ^) block contains the player's foot.
-        // (Block's min height is higher than the the distance from foot to block) 
+        // (Block's min height is higher than the distance from foot to block) 
         if (getGroundMinHeight(access, x, y, z, node, flags) > maxY - y) { // TODO: height >= ?
             // Assume stuck in block; within block, this block collision is no candidate for ground.
             if (isFullBounds(AABB)) {
@@ -4453,7 +4528,7 @@ public class BlockProperties {
             // Does not collide with a block above, regard the block collision as ground
             return AlmostBoolean.YES;
         }
-        // Check for passabality(without the ignore flag) of the block above, if the player does collide with it.
+        // Check for passability(without the ignore flag) of the block above, if the player does collide with it.
         if (isPassableWorkaround(access, x, y + 1, z, minX - x, minY - (y + 1), minZ - z, 
                                  nodeAbove, maxX - minX, maxY - minY, maxZ - minZ,
                                  minX, minY, minZ, maxX, maxY, maxZ, 1.0)) {
@@ -4607,7 +4682,7 @@ public class BlockProperties {
             }
         }
         // 1: Surely not on ground.
-        if (blockLocation.size() == 0) {
+        if (blockLocation.isEmpty()) {
             return null;
         }
         // 2: Find out which block location is closest to the player's current position

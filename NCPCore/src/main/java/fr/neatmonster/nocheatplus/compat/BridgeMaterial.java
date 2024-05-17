@@ -31,7 +31,7 @@ import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.SimpleCharPrefixTree;
 
 public class BridgeMaterial {
-
+    
     // TODO: Should be non static, ideally.
 
     /** Legacy Material by lower case name without preceding 'legacy_' part. */
@@ -193,6 +193,12 @@ public class BridgeMaterial {
     ///////////////////////////////////////////////////
     // Specific unique material instances for blocks.
     ///////////////////////////////////////////////////
+    public static final Material SEA_LANTERN = get("sea_lantern");
+    
+    public static final Material COMPOSTER = get("composter");
+    
+    public static final Material CONDUIT = get("conduit");
+    
     public static final Material BARREL = get("barrel"); // null for legacy servers
 
     public static final Material BEETROOTS = getFirst("beetroots", "beetroot_block");

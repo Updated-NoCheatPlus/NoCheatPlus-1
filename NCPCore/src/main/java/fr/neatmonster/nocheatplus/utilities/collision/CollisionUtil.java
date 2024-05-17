@@ -27,12 +27,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
-import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
-import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
@@ -46,7 +43,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 /**
  * Collision related static utility.
- * 
+ *
  * @author asofold
  *
  */
@@ -159,7 +156,7 @@ public class CollisionUtil {
      */
     public static double directionCheck(final Location sourceFoot, final double eyeHeight, final Vector dir, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision)
     {
-        return directionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision);                    
+        return directionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision);
     }
 
     /**
@@ -249,7 +246,7 @@ public class CollisionUtil {
      */
     public static double combinedDirectionCheck(final Location sourceFoot, final double eyeHeight, final Vector dir, final double targetX, final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double precision, final double anglePrecision, boolean isPlayer)
     {
-        return combinedDirectionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision, anglePrecision, isPlayer);                  
+        return combinedDirectionCheck(sourceFoot.getX(), sourceFoot.getY() + eyeHeight, sourceFoot.getZ(), dir.getX(), dir.getY(), dir.getZ(), targetX, targetY, targetZ, targetWidth, targetHeight, precision, anglePrecision, isPlayer);
     }
 
     /**
@@ -306,8 +303,8 @@ public class CollisionUtil {
      *            Precision in grad.
      * @return the double
      */
-    public static double combinedDirectionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX, 
-                                                final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double blockPrecision, 
+    public static double combinedDirectionCheck(final double sourceX, final double sourceY, final double sourceZ, final double dirX, final double dirY, final double dirZ, final double targetX,
+                                                final double targetY, final double targetZ, final double targetWidth, final double targetHeight, final double blockPrecision,
                                                 final double anglePrecision, final boolean isPlayer) {
         double dirLength = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
         if (dirLength == 0.0) dirLength = 1.0; // ...
@@ -358,7 +355,7 @@ public class CollisionUtil {
 
     /**
      * Test if a point is inside an AABB, including the edges.
-     * 
+     *
      * @param x
      *            Position of the point.
      * @param y
@@ -382,7 +379,7 @@ public class CollisionUtil {
     /**
      * Get the earliest time a collision with the min-max coordinates can occur,
      * in multiples of dir, including edges.
-     * 
+     *
      * @param pos
      * @param dir
      * @param minPos
@@ -408,7 +405,7 @@ public class CollisionUtil {
 
     /**
      * Get the maximum time for which the min-max coordinates still are hit.
-     * 
+     *
      * @param pos
      * @param dir
      * @param minPos
@@ -441,7 +438,7 @@ public class CollisionUtil {
     /**
      * Get the maximum (closest) distance from the given position towards the
      * AABB regarding axes independently.
-     * 
+     *
      * @param x
      *            Position of the point.
      * @param y
@@ -465,7 +462,7 @@ public class CollisionUtil {
     /**
      * Get the maximum (closest) 'Manhattan' distance from the given position
      * towards the AABB regarding axes independently.
-     * 
+     *
      * @param x
      *            Position of the point.
      * @param y
@@ -489,7 +486,7 @@ public class CollisionUtil {
     /**
      * Get the squared (closest) distance from the given position towards the
      * AABB regarding axes independently.
-     * 
+     *
      * @param x
      *            Position of the point.
      * @param y
@@ -515,7 +512,7 @@ public class CollisionUtil {
     /**
      * Get the distance towards a min-max interval (inside and edge count as 0.0
      * distance).
-     * 
+     *
      * @param pos
      * @param minPos
      * @param maxPos
@@ -527,13 +524,13 @@ public class CollisionUtil {
 
     /**
      * Test if the player is colliding with entities. <br>
-     * 
+     *
      * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
      * @return True, if the player is colliding with entities, within the given margins.
      */
     public static boolean isCollidingWithEntities(final Player p, double xMargin, double yMargin, double zMargin, final boolean shouldFilter) {
         if (shouldFilter) {
-            List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin); 
+            List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
             // Minecarts, boats, armor stands, dead entities cannot push the player
             entities.removeIf(e -> e.getType() == EntityType.MINECART || e.getType() == EntityType.ARMOR_STAND || !e.isValid() || MaterialUtil.isBoat(e.getType()) || !(e instanceof LivingEntity)); //|| !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
             return !entities.isEmpty();
@@ -544,7 +541,7 @@ public class CollisionUtil {
     /**
      * Test if the player is colliding with entities. <br>
      * Does not use any margin.
-     * 
+     *
      * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
      * @return True, if the player is colliding with entities.
      */
@@ -556,7 +553,7 @@ public class CollisionUtil {
      * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
      * (Not Minecarts, Boats, dead entities (...)).
      * Intended use is within moving checks.
-     * 
+     *
      * @param p
      * @param xMargin
      * @param yMargin
@@ -574,7 +571,7 @@ public class CollisionUtil {
      * Get the number of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
      * (Not Minecarts, Boats, dead entities (...)).
      * Intended use is within checks.
-     * 
+     *
      * @param p
      * @param xMargin
      * @param yMargin
@@ -589,7 +586,7 @@ public class CollisionUtil {
     /**
      * Simple check to see if neighbor block is nearly same direction with block trying to interact.<br>
      * For example if block interacting below or equal eye block, neighbor must be below or equal eye block.<br>
-     * 
+     *
      * @param neighbor coord to check
      * @param block coord that trying to interact
      * @param eyeBlock
@@ -611,7 +608,7 @@ public class CollisionUtil {
      * Simple check to see if neighnor block is nearly same direction with block trying to interact.<br>
      * If the check don't satisfied but the coord to check is still within min and max, check still return true.<br>
      * Design for blocks currently colliding with a bounding box<br>
-     * 
+     *
      * @param neighbor coord to check
      * @param block coord that trying to interact
      * @param eyeBlock
@@ -628,12 +625,12 @@ public class CollisionUtil {
             if (neighbor > eyeBlock) {
                 return false;
             }
-        } 
+        }
         else if (d < 0) {
             if (neighbor < eyeBlock) {
                 return false;
             }
-        } 
+        }
         else {
             if (neighbor < eyeBlock || neighbor > eyeBlock) {
                 return false;
@@ -644,7 +641,7 @@ public class CollisionUtil {
 
     /**
      * Test if from last block, the next block can pass through
-     * 
+     *
      * @param rayTracing
      * @param blockCache
      * @param lastBlock The last block
@@ -658,12 +655,12 @@ public class CollisionUtil {
      * @param eyeHeight
      * @param sCollidingBox Start of bounding box(min). Can be null
      * @param eCollidingBox End of bounding box(max). Can be null
-     * @param mightEdgeInteraction 
+     * @param mightEdgeInteraction
      * @param axisData Auxiliary stuff for specific usage can be null
-     * 
+     *
      * @return true if can.
      */
-    public static boolean canPassThrough(InteractAxisTracing rayTracing, BlockCache blockCache, BlockCoord lastBlock, int x, int y, int z, Vector direction, double eyeX, double eyeY, double eyeZ, double eyeHeight, 
+    public static boolean canPassThrough(InteractAxisTracing rayTracing, BlockCache blockCache, BlockCoord lastBlock, int x, int y, int z, Vector direction, double eyeX, double eyeY, double eyeZ, double eyeHeight,
                                          BlockCoord sCollidingBox, BlockCoord eCollidingBox, boolean mightEdgeInteraction, RichAxisData axisData) {
         double[] nextAABB = blockCache.getBounds(x, y, z);
         final Material mat = blockCache.getType(x, y, z);
@@ -691,7 +688,7 @@ public class CollisionUtil {
                         && lastAABB[2] == 0.0 && lastAABB[5] == 1.0
                         && rangeContains(nextAABB[0], lastAABB[0], nextAABB[3], lastAABB[3])) {
                         axisData.exclude = nextAABB[0] == 0.0 ? Direction.X_NEG : nextAABB[3] == 1.0 ? Direction.X_POS : Direction.NONE;
-                    } 
+                    }
                     if (nextAABB[1] == 0.0 && nextAABB[4] == 1.0
                         && nextAABB[0] == 0.0 && nextAABB[3] == 1.0
                         && lastAABB[1] == 0.0 && lastAABB[4] == 1.0
@@ -854,17 +851,17 @@ public class CollisionUtil {
     }
 
     /**
-     * Function to return the list of blocks that can be interact from.<br>
+     * Function to return the list of blocks that can be interacted from.<br>
      * As we can only see maximum 3 sides of a cube at a time
-     * 
+     *
      * @param currentBlock Current block to move on
      * @param direction
      * @param eyeX Eye location just to automatically prioritize with Axis will attempt to try first
      * @param eyeY
      * @param eyeZ
-     * @param axisData Rich data for specific usage. Can be null. If not null will consume data 
+     * @param axisData Rich data for specific usage. Can be null. If not null will consume data
      * @return List of blocks that can possibly interact from
-     */ 
+     */
     public static List<BlockCoord> getNeighborsInDirection(BlockCoord currentBlock, Vector direction, double eyeX, double eyeY, double eyeZ, RichAxisData axisData) {
         List<BlockCoord> neighbors = new ArrayList<>();
         int stepY = direction.getY() > 0 ? 1 : (direction.getY() < 0 ? -1 : 0);
@@ -932,7 +929,7 @@ public class CollisionUtil {
                 if (allowZ) {
                     neighbors.add(new BlockCoord(currentBlock.getX(), currentBlock.getY(), currentBlock.getZ() + stepZ));
                 }
-            } 
+            }
             else {
                 if (allowZ) {
                     neighbors.add(new BlockCoord(currentBlock.getX(), currentBlock.getY(), currentBlock.getZ() + stepZ));
@@ -954,7 +951,7 @@ public class CollisionUtil {
             if (allowY) {
                 neighbors.add(new BlockCoord(currentBlock.getX(), currentBlock.getY() + stepY, currentBlock.getZ()));
             }
-        } 
+        }
         else {
             if (allowZ) {
                 neighbors.add(new BlockCoord(currentBlock.getX(), currentBlock.getY(), currentBlock.getZ() + stepZ));
@@ -1014,7 +1011,7 @@ public class CollisionUtil {
             for (double[] cb : collisionBoxes) {
                 y = collideY(cb, tAABB, y);
             }
-            tAABB[1] += y; 
+            tAABB[1] += y;
             tAABB[4] += y;
         }
         boolean flag = Math.abs(x) < Math.abs(y);
@@ -1022,21 +1019,21 @@ public class CollisionUtil {
             for (double[] cb : collisionBoxes) {
                 z = collideZ(cb, tAABB, z);
             }
-            tAABB[2] += z; 
+            tAABB[2] += z;
             tAABB[5] += z;
         }
         if (x != 0.0) {
             for (double[] cb : collisionBoxes) {
                 x = collideX(cb, tAABB, x);
             }
-            tAABB[0] += x; 
+            tAABB[0] += x;
             tAABB[3] += x;
         }
         if (!flag && z != 0.0) {
             for (double[] cb : collisionBoxes) {
                 z = collideZ(cb, tAABB, z);
             }
-            tAABB[2] += z; 
+            tAABB[2] += z;
             tAABB[5] += z;
         }
         return new Vector(x, y, z);
@@ -1063,7 +1060,7 @@ public class CollisionUtil {
             tAABB[5] += z;
         }
         return tAABB;
-    } 
+    }
 
     public static boolean getCollisionBoxes(BlockCache blockCache, Entity entity, double[] AABB, List<double[]> collisionBoxes, boolean onlyCheckCollide) {
         boolean collided = addWorldBorder(entity, AABB, collisionBoxes, onlyCheckCollide);
@@ -1086,7 +1083,7 @@ public class CollisionUtil {
                     int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
                                     ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
                                     ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
-                    if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0)
+                    if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0) 
                             && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
                         // Don't add to a list if we only care if the player intersects with the block
                         //if (!onlyCheckCollide) {

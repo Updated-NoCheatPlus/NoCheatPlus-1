@@ -323,7 +323,7 @@ public class UseItemAdapter extends BaseAdapter {
                     && (
                         // 2: In water
                         BlockProperties.isInWater(p, p.getLocation(), mCC.yOnGround)
-                        // 2: Always check raining first, since canSeeSky is a much more expensive call. Needs optimiziation.
+                        // 2: Always check raining first, since canSeeSky is a much more expensive call. Needs optimization.
                         || p.getLocation().getWorld().hasStorm() && BlockProperties.canSeeSky(p, p.getLocation(), mCC.yOnGround) 
                     ) 
                     // 1: Otherwise, the trident can be used and thrown anywhere

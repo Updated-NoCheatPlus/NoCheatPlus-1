@@ -215,8 +215,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             // MC applies ice properties only with at least half the box on the block
-            final double xzMargin = getBoxMarginHorizontal();
-            onIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_ICE);
+            final Material typeId = getTypeIdBelow();
+            final long thisFlags = BlockFlags.getBlockFlags(typeId);
+            onIce = isOnGround() && (thisFlags & BlockFlags.F_ICE) != 0;
             return onIce;
         }
         // Not a legacy client.
@@ -234,17 +235,16 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-            // Does not exist.
-            onBlueIce = false;
-            // However, do assume multi-protocol plugins to map this block to normal ice/packed ice (most logical)
-            onIce = true;
-            return onIce;
-        }
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             // MC applies ice properties only with at least half the box on the block
-            final double xzMargin = getBoxMarginHorizontal();
-            onBlueIce = isOnGround() && BlockProperties.collides(blockCache, minX+xzMargin, minY - yOnGround, minZ+xzMargin, maxX-xzMargin, minY, maxZ-xzMargin, BlockFlags.F_BLUE_ICE);
+            final Material typeId = getTypeIdBelow();
+            final long thisFlags = BlockFlags.getBlockFlags(typeId);
+            onBlueIce = isOnGround() && (thisFlags & BlockFlags.F_BLUE_ICE) != 0;
+            if (onBlueIce && pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+                // Does not exist, but assume multiprotocol plugins to map it to regular ice.
+                onBlueIce = false;
+                onIce = true;
+            }
             return onBlueIce;
         }
         // Not a legacy client.
@@ -343,7 +343,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             for (int x = iMinX; x < iMaxX; x++) {
                 for (int y = iMinY; y < iMaxY; y++) {
                     for (int z = iMinZ; z < iMaxZ; z++) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, BlockFlags.F_WATER);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_WATER);
                         double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
                             // Collided.
@@ -604,7 +604,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 for (int z = iMinZ; z < iMaxZ; z++) {
                     // LEGACY 1.13-
                     if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
                         if (liquidHeight != 0.0) {
                             double d0 = (float) (y + 1) - liquidHeight;
                             if (!p.isFlying() && iMaxY >= d0) {
@@ -616,7 +616,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                     }
                     // MODERN 1.13+
                     else {
-                        double liquidHeight = BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
                         double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY && liquidHeight != 0.0 && !p.isFlying()) {
                             // Collided.
@@ -667,13 +667,6 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     // (Taken from Grim :p)
-    private boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
-        return BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) == 0
-               || BlockProperties.getLiquidHeight(access, x, y, z, liquidTypeFlag) > 0 
-               && BlockProperties.getLiquidHeight(access, x1, y1, z1, liquidTypeFlag) > 0; 
-    }
-    
-    // (Taken from Grim :p)
     private Vector normalizedVectorWithoutNaN(Vector vector) {
         double var0 = vector.length();
         return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
@@ -696,12 +689,12 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         double xModifier = 0.0D;
         double zModifier = 0.0D;
-        float liquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, x, y, z, liquidTypeFlag);
+        float liquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
-            if (affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
-                float modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y, modZ, liquidTypeFlag); 
+            if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
+                float modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y, modZ, liquidTypeFlag); 
                 float flowForce = 0.0F;
                 if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
@@ -709,8 +702,8 @@ public class RichEntityLocation extends RichBoundsLocation {
                     //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
                     // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
                     if (!matAtThisLoc.isSolid()) { 
-                        if (affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
-                            modLiquidHeight = (float) BlockProperties.getLiquidHeight(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
+                        if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
+                            modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
                             if (modLiquidHeight > 0.0F) {
                                 flowForce = liquidHeight - (modLiquidHeight - 0.8888889f);
                             }
@@ -728,15 +721,16 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         // Compose the speed vector
         Vector flowingVector = new Vector(xModifier, 0.0, zModifier);
-        /*IBlockCacheNode originalNode = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
+        IBlockCacheNode originalNode = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
         if (BlockProperties.isLiquid(originalNode.getType()) && originalNode.getData(blockCache, x, y, z) >= 8) { // 8-15 - falling liquid
             for (BlockFace direction : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-                if (isSolidFace((Player) entity, x, y, z, direction, liquidTypeFlag) || isSolidFace((Player) entity, x, y + 1, z, direction, liquidTypeFlag)) {
+                if (BlockProperties.isSolidFace(blockCache, (Player) entity, x, y, z, direction, liquidTypeFlag, entity.getLocation()) 
+                    || BlockProperties.isSolidFace(blockCache, (Player) entity, x, y + 1, z, direction, liquidTypeFlag, entity.getLocation())) {
                     flowingVector = normalizedVectorWithoutNaN(flowingVector).add(new Vector(0.0D, -6.0D, 0.0D));
                     break;
                 }
             }
-        }*/
+        }
         return normalizedVectorWithoutNaN(flowingVector);
     }
 
