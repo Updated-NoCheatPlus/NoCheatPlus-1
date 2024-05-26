@@ -328,7 +328,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             useBedLeaveLoc.setWorld(null);
             // Teleport.
             data.prepareSetBack(newTo); // Should be enough. 
-            player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+            Folia.teleportEntity(player, newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
         }
         // Reset bed ...
         else data.wasInBed = false;
@@ -2593,7 +2593,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                 else {
                                     StaticLog.logInfo("Set back player " + player.getName() + ": " + LocUtil.simpleFormat(refLoc));
                                     data.prepareSetBack(refLoc);
-                                    if (!player.teleport(refLoc, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
+                                    if (!Folia.teleportEntity(player, refLoc, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
                                         StaticLog.logWarning("FAILED to set back player " + player.getName());
                                     }
                                 }
@@ -2749,7 +2749,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             final Location newTo = enforceLocation(player, player.getLocation(useTickLoc), data);
             if (newTo != null) {
                 data.prepareSetBack(newTo);
-                player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+                Folia.teleportEntity(player, newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
             }
         }
         if (!rem.isEmpty()) playersEnforce.removeAll(rem);

@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.checks.chat;
 import java.util.ArrayList;
 import java.util.List;
 
+import fr.neatmonster.nocheatplus.compat.Folia;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -232,7 +233,7 @@ public class ChatListener extends CheckListener implements INotifyReload, JoinLe
             final Location newTo = MovingUtil.checkUntrackedLocation(loc);
             if (newTo != null) {
                 if (mcc.passableUntrackedCommandTryTeleport 
-                        && player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
+                        && Folia.teleportEntity(player,newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
                     NCPAPIProvider.getNoCheatPlusAPI().getLogManager().info(Streams.TRACE_FILE, player.getName() + " runs the command '" + message + "' at an untracked location: " + loc + " , teleport to: " + newTo);
                 } else {
                     // TODO: Allow disabling cancel?
