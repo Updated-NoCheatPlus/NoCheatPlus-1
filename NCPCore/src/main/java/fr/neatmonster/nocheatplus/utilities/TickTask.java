@@ -540,8 +540,8 @@ public class TickTask implements Runnable {
                 listener.onTick(tick, timeLast);
             }
             catch(Throwable t) {
-                StaticLog.logSevere("(TickTask) TickListener generated an exception:");
-                StaticLog.logSevere(t);
+                //StaticLog.logSevere("(TickTask) TickListener generated an exception:");
+                //StaticLog.logSevere(t);
             }
         }
     }
