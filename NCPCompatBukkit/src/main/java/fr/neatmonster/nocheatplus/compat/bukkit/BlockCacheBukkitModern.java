@@ -14,8 +14,11 @@
  */
 package fr.neatmonster.nocheatplus.compat.bukkit;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.function.Predicate;
 
+import fr.neatmonster.nocheatplus.compat.Folia;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -23,6 +26,7 @@ import org.bukkit.entity.EntityType;
 
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitShapeModel;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import org.bukkit.util.BoundingBox;
 
 
 /**
@@ -80,25 +84,21 @@ public class BlockCacheBukkitModern extends BlockCacheBukkit {
         }
 
     }
-    
+
     @Override
     public boolean standsOnEntity(final Entity entity, final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ){
+        BoundingBox boundingBox = new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+        Predicate<Entity> filter = e -> e.getType() == EntityType.BOAT || e.getType() == EntityType.SHULKER;
+
         try{
-            // TODO: Probably check vehicle ids too before doing this ?
-            for (final Entity vehicle : entity.getNearbyEntities(0.1, 2.0, 0.1)){
-                final EntityType type = vehicle.getType();
-                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(vehicle instanceof Minecart)) 
-                    continue; 
-                }
-                final double vehicleY = vehicle.getLocation(useLoc).getY() + vehicle.getHeight();
-                final double entityY = entity.getLocation(useLoc).getY();
-                useLoc.setWorld(null);
-                if (vehicleY < entityY + 0.1 && Math.abs(vehicleY - entityY) < 0.7){
-                    // TODO: A "better" estimate is possible, though some more tolerance would be good. 
-                    return true; 
+            Collection<Entity> nearbyEntities = Folia.getNearbyEntities(entity.getLocation().getBlock(), boundingBox, filter);
+            for (final Entity other : nearbyEntities){
+                final double locY = entity.getLocation().getY();
+                if (Math.abs(locY - minY) < 0.7){
+                    return true;
                 }
                 else return false;
-            }		
+            }
         }
         catch (Throwable t){
             // Ignore exceptions (Context: DisguiseCraft).
