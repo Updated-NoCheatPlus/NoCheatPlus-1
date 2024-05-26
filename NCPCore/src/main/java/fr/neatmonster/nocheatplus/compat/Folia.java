@@ -15,19 +15,23 @@
 package fr.neatmonster.nocheatplus.compat;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Server;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.Plugin;
 
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.util.BoundingBox;
 
 public class Folia {
     private static final boolean RegionizedServer = ReflectionUtil.getClass("io.papermc.paper.threadedregions.RegionizedServer") != null;
@@ -250,6 +254,36 @@ public class Folia {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public static Collection<Entity> getNearbyEntities(final Block block, final BoundingBox boundingBox, final Predicate<Entity> filter) {
+        final World world = block.getWorld();
+        if (isFoliaServer) {
+            final int minChunkX = boundingBox.getMin().getBlockX() >> 4;
+            final int maxChunkX = boundingBox.getMax().getBlockX() >> 4;
+            final int minChunkZ = boundingBox.getMin().getBlockZ() >> 4;
+            final int maxChunkZ = boundingBox.getMax().getBlockZ() >> 4;
+            final List<Entity> nearbyEntities = new ArrayList<>();
+            for (int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX) {
+                for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ) {
+                    if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                        continue;
+                    }
+                    final Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+                    if (!chunk.isEntitiesLoaded()) {
+                        continue;
+                    }
+                    for (final Entity entity : chunk.getEntities()) {
+                        if ((filter == null || filter.test(entity)) && boundingBox.overlaps(entity.getBoundingBox())) {
+                            nearbyEntities.add(entity);
+                        }
+                    }
+                }
+            }
+            return nearbyEntities;
+        } else {
+            return world.getNearbyEntities(boundingBox, filter);
+        }
     }
 
     /**
