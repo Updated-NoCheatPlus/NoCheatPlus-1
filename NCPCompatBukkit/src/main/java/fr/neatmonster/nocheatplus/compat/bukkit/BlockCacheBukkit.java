@@ -14,6 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.compat.bukkit;
 
+import fr.neatmonster.nocheatplus.compat.Folia;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -25,6 +26,10 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
+import org.bukkit.util.BoundingBox;
+
+import java.util.Collection;
+import java.util.function.Predicate;
 
 public class BlockCacheBukkit extends BlockCache {
 
@@ -76,17 +81,14 @@ public class BlockCacheBukkit extends BlockCache {
 
     @Override
     public boolean standsOnEntity(final Entity entity, final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ){
+        BoundingBox boundingBox = new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+        Predicate<Entity> filter = e -> e.getType() == EntityType.BOAT || e.getType() == EntityType.SHULKER;
+
         try{
-            // TODO: Probably check other ids too before doing this ?
-            for (final Entity other : entity.getNearbyEntities(2.0, 2.0, 2.0)){
-                final EntityType type = other.getType();
-                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(other instanceof Minecart)) 
-                    continue;
-                }
-                final double locY = entity.getLocation(useLoc).getY();
-                useLoc.setWorld(null);
+            Collection<Entity> nearbyEntities = Folia.getNearbyEntities(entity.getLocation().getBlock(), boundingBox, filter);
+            for (final Entity other : nearbyEntities){
+                final double locY = entity.getLocation().getY();
                 if (Math.abs(locY - minY) < 0.7){
-                    // TODO: A "better" estimate is possible, though some more tolerance would be good. 
                     return true;
                 }
                 else return false;
