@@ -259,7 +259,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
                 // - If the server has protocol plugins active but doesn't have CompatNoCheatPlus, that's on them as well :)
                 DataManager.getPlayerData(player).setClientVersionID(ProtocolLibrary.getProtocolManager().getProtocolVersion(player));
             }
-        }, 20);
+        }, 5);
     }
 
     @Override

@@ -733,14 +733,14 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         /////////////////////////////////////////////////////////////////////////////
         // Check problematic yaw/pitch values (against magnet cheats and similar)  //
         /////////////////////////////////////////////////////////////////////////////
-        if (LocUtil.needsDirectionCorrection2(from.getYaw(), from.getPitch())) {
-            from.setYaw(LocUtil.correctYaw2(from.getYaw()));
-            from.setPitch(LocUtil.correctPitch(from.getPitch()));
-        }
-        if (LocUtil.needsDirectionCorrection2(to.getYaw(), to.getPitch())) {
-            to.setYaw(LocUtil.correctYaw2(to.getYaw()));
-            to.setPitch(LocUtil.correctPitch(to.getPitch()));
-        }
+        //if (LocUtil.needsDirectionCorrection2(from.getYaw(), from.getPitch())) {
+        //    from.setYaw(LocUtil.correctYaw2(from.getYaw()));
+        //    from.setPitch(LocUtil.correctPitch(from.getPitch()));
+        //}
+        //if (LocUtil.needsDirectionCorrection2(to.getYaw(), to.getPitch())) {
+        //    to.setYaw(LocUtil.correctYaw2(to.getYaw()));
+        //    to.setPitch(LocUtil.correctPitch(to.getPitch()));
+        //}
         
 
         ////////////////////////////////////////////////////
@@ -863,6 +863,36 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // 0: Special case / bug? (Which/why, which version of MC/spigot?)
             || lastMove.valid && TrigUtil.isSamePos(loc, lastMove.from.getX(), lastMove.from.getY(), lastMove.from.getZ())) {
             // TODO: On pistons pulling the player back: -1.15 yDistance for split move 1 (untracked position > 0.5 yDistance!).
+            // Detect idle packet original design but now serve as look corrector for PlayerMoveEvent
+            final FlyingQueueHandle flyingHandle = new FlyingQueueHandle(pData);
+            final DataPacketFlying[] queue = flyingHandle.getHandle();
+            float currentYaw = from.getYaw();
+            float currentPitch = from.getPitch();
+            int count = 0;
+            boolean breakOnFound = false;
+            if (queue.length != 0) {
+                for (int queueIndex = queue.length -1; queueIndex >=0; queueIndex--) {
+                    final DataPacketFlying packetData = queue[queueIndex];
+                    if (packetData == null || (!packetData.hasPos && !packetData.hasLook)) {
+                        continue;
+                    }
+                    if (breakOnFound && packetData.hasPos) break;
+                    if (packetData.hasLook) {
+                        currentYaw = packetData.getYaw();
+                        currentPitch = packetData.getPitch();
+                        if (!packetData.hasPos) continue;
+                    }
+                    if (count < 1 && TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                        from.setYaw(currentYaw);
+                        from.setPitch(currentPitch);
+                        count++;
+                    } else if (TrigUtil.isSamePos(to.getX(), to.getY(), to.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                        breakOnFound = true;
+                    }
+                }
+                to.setYaw(currentYaw);
+                to.setPitch(currentPitch);
+            }
             // Normal move: fire from -> to
             moveInfo.set(player, from, to, cc.yOnGround);
             checkPlayerMove(player, from, to, 0, moveInfo, debug, data, cc, pData, event, true);
@@ -883,10 +913,10 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     if (packetData == null || !packetData.hasPos) {
                         continue;
                     }
-                    if (TrigUtil.isSamePos(to.getX(), to.getY(), to.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                    if (toIndex == -1 && TrigUtil.isSamePos(to.getX(), to.getY(), to.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
                         toIndex = queueIndex;
                     } 
-                    else if (TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
+                    else if (fromIndex == -1 && TrigUtil.isSamePos(from.getX(), from.getY(), from.getZ(), packetData.getX(), packetData.getY(), packetData.getZ())) {
                         fromIndex = queueIndex;
                     }
                     if (fromIndex > 0 && toIndex >= 0) {
@@ -905,7 +935,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     }
                     return;
                 }
-                // 2: Filter out null, look only or ground only packet
+                // 2: Filter out null, ground only packet
                 final DataPacketFlying[] queuePos = new DataPacketFlying[fromIndex - toIndex + 1]; // Array of the size of packets skipped between the bukkit locations
                 int j = 0;
                 for (int i = fromIndex; i >= toIndex; i--) {
@@ -915,7 +945,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                         // This packet is duplicate of the previous one, ignore it.
                     //    continue;
                     //}
-                    if (queue[i] != null && queue[i].hasPos) {
+                    if (queue[i] != null && (queue[i].hasPos || queue[i].hasLook)) {
                         // Put packets into the array.
                         queuePos[j] = queue[i];
                         j++;
@@ -927,39 +957,41 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 int maxSplit = 14;
                 float currentYaw = from.getYaw();
                 float currentPitch = from.getPitch();
-                for (int i = 0; i < j-1; i++) {
+                Location packet = null;
+                for (int i = 0; i < j; i++) {
                     if (queuePos[i].hasLook) {
                         // Ensure to set the correct look.
                         currentYaw = queuePos[i].getYaw();
                         currentPitch = queuePos[i].getPitch();
                     }
-                    /** The 'from' location skipped/lost by Bukkit in the flying queue */
-                    final Location packetFrom = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), currentYaw, currentPitch);
-                    if (queuePos[i+1].hasLook) {
-                        // Ensure to set the correct look.
-                        currentYaw = queuePos[i+1].getYaw();
-                        currentPitch = queuePos[i+1].getPitch();
-                    }
-                    /** The 'to' location skipped/lost by Bukkit in the flying queue. Use Bukkit's "to" if the maximum split was reached */
-                    final Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i+1].getX(), queuePos[i+1].getY(), queuePos[i+1].getZ(), currentYaw, currentPitch);
-                    moveInfo.set(player, packetFrom, packetTo, cc.yOnGround);
-                    if (debug) {
-                        final String s1 = count == 1 ? "from" : "loc";
-                        final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
-                        debug(player, "Split move (packet): " + count + " (" + s1 + " -> " + s2 + ")");
-                    }
-                    if (!checkPlayerMove(player, packetFrom, packetTo, count++, moveInfo, debug, data, cc, pData, event, true) 
-                        && processingEvents.containsKey(player.getName())) {
-                        onMoveMonitorNotCancelled(player, packetFrom, packetTo, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
-                        data.joinOrRespawn = false;
-                    } 
-                    else {
-                        // Stop processing split moves on set-back.
-                        break;
-                    }
-                    // Split too much!
-                    if (count > maxSplit) {
-                        break;
+                    if (queuePos[i].hasPos) {
+                        // if from was set
+                        if (packet != null) {
+                            /** The 'to' location skipped/lost by Bukkit in the flying queue. Use Bukkit's "to" if the maximum split was reached */
+                            Location packetTo = count >= maxSplit ? to : new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), currentYaw, currentPitch);
+                            moveInfo.set(player, packet, packetTo, cc.yOnGround);
+                            if (debug) {
+                                final String s1 = count == 1 ? "from" : "loc";
+                                final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
+                                debug(player, "Split move (packet): " + count + " (" + s1 + " -> " + s2 + ")");
+                            }
+                            if (!checkPlayerMove(player, packet, packetTo, count++, moveInfo, debug, data, cc, pData, event, true) 
+                                && processingEvents.containsKey(player.getName())) {
+                                onMoveMonitorNotCancelled(player, packet, packetTo, System.currentTimeMillis(), TickTask.getTick(), pData.getGenericInstance(CombinedData.class), data, cc, pData);
+                                data.joinOrRespawn = false;
+                            } 
+                            else {
+                                // Stop processing split moves on set-back.
+                                break;
+                            }
+
+                            // Split too much!
+                            if (count > maxSplit) {
+                                break;
+                            }
+                        }
+                        /** The 'from' location skipped/lost by Bukkit in the flying queue */
+                        packet = new Location(from.getWorld(), queuePos[i].getX(), queuePos[i].getY(), queuePos[i].getZ(), currentYaw, currentPitch);
                     }
                 }
             } 

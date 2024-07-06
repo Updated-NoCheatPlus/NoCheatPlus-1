@@ -1014,7 +1014,7 @@ public class CollisionUtil {
             tAABB[1] += y;
             tAABB[4] += y;
         }
-        boolean flag = Math.abs(x) < Math.abs(y);
+        boolean flag = Math.abs(x) < Math.abs(z);
         if (flag && z != 0.0) {
             for (double[] cb : collisionBoxes) {
                 z = collideZ(cb, tAABB, z);
