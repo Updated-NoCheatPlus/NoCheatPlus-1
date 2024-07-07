@@ -29,7 +29,7 @@ import org.bukkit.plugin.Plugin;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 
 /**
- * Utility class to provide compatibility with Paper's regionized multi-threaded server implementation (a.k.a.: Folia), using reflection.
+ * Utility class to provide compatibility with Paper's regionized, multi-threaded server implementation (a.k.a.: Folia), using reflection.
  * If the server is not running Folia, use Bukkit's scheduler.
  */
 public class SchedulerHelper {
@@ -48,11 +48,11 @@ public class SchedulerHelper {
     }
 
     /**
-     * Run an asyncronous task, either with Bukkit's scheduler or Java's if the server is using Folia.
+     * Run an asynchronous task, either with Bukkit's scheduler or Java's if the server is using Folia.
      * 
-     * @param plugin Plugin to assign for
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
-     * @return An int, representing for task ID when running on Paper/Spigot, or Thread when on Folia (or null if unable to schedule)
+     * @param plugin Plugin that owns the task.
+     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
+     * @return An int representing a task ID when running on Paper/Spigot; or Thread when on Folia (or null if unable to schedule)
      */
     public static Object runTaskAsync(Plugin plugin, Consumer<Object> run) {
         if (!isFoliaServer) {
@@ -80,9 +80,9 @@ public class SchedulerHelper {
     /**
      * Schedule a once off task to occur as soon as possible, either with Bukkit's scheduler or Folia's.
      * 
-     * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
-     * @return An int, representing for task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * @param plugin Plugin that owns the task.
+     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
+     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
      */
     public static Object runSyncTask(Plugin plugin, Consumer<Object> run) {
         if (!isFoliaServer) {
@@ -106,11 +106,11 @@ public class SchedulerHelper {
     /**
      * Schedule a repeating task, either with Bukkit's scheduler or Folia's.
      * 
-     * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
+     * @param plugin Plugin that owns the task.
+     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively.
      * @param delay Delay in server ticks before executing the first repeat.
      * @param period Period in server ticks, for which the task will be repeated.
-     * @return An int, representing for task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
      */
     public static Object runSyncRepeatingTask(Plugin plugin, Consumer<Object> run, long delay, long period) {
         if (!isFoliaServer) {
@@ -137,10 +137,10 @@ public class SchedulerHelper {
     /**
      * Run a delayed task, either with Bukkit's scheduler or Folia's.
      * 
-     * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
-     * @param delay Delay in ticks
-     * @return An int, representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * @param plugin Plugin that owns the task.
+     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
+     * @param delay Delay in ticks.
+     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
      */
     public static Object runSyncDelayedTask(Plugin plugin, Consumer<Object> run, long delay) {
         if (!isFoliaServer) {
@@ -166,23 +166,23 @@ public class SchedulerHelper {
      * 
      * @param entity Entity that owns the task
      * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
+     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively
      * @param retired The task to run if entity is retired before the task is run
-     * @return An int, representing for task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
      */
     public static Object runSyncTaskForEntity(Entity entity, Plugin plugin, Consumer<Object> run, Runnable retired) {
         return runSyncDelayedTaskForEntity(entity, plugin, run, retired, 1L);
     }
     
     /**
-     * Run a delayed task for an entity, either with Bukkit's scheduler or Folia's.
+     * Run a synchronous delayed task for an entity, either with Bukkit's scheduler or Folia's.
      * 
-     * @param entity Entity that owns the task
-     * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively
-     * @param retired The task to run if entity is retired before the task is run
-     * @param delay Delay in ticks
-     * @return An int, representing for task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * @param entity Entity that owns the task.
+     * @param plugin Plugin that owns the task.
+     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively.
+     * @param retired The task to run if entity is retired before the task is run.
+     * @param delay Delay in ticks.
+     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
      */
     public static Object runSyncDelayedTaskForEntity(Entity entity, Plugin plugin, Consumer<Object> run, Runnable retired, long delay) {
         if (!isFoliaServer) {
@@ -257,7 +257,7 @@ public class SchedulerHelper {
     }
     
     /**
-     * Asyncronously teleports the given entity if the server is using Folia
+     * Asynchronously teleport the given entity if the server is using Folia.
      * 
      * @param entity The entity to teleport
      * @param loc Target location
@@ -280,7 +280,7 @@ public class SchedulerHelper {
     }
 
     /**
-     * @param task The task ID (Paper/Spigot/Bukkit), ScheduledTask or Thread (Folia)
+     * @param task The task ID (Paper/Spigot/Bukkit), ScheduledTask or Thread object (Folia)
      *             May be null (would yield false)
      * @return Whether the given task is scheduled.
      */

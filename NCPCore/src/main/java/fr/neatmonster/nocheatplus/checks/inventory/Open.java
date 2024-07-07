@@ -86,7 +86,7 @@ public class Open extends Check implements IDisableListener {
             // TODO: POC: Item duplication with teleporting NPCS, having their inventory open.
             exeSet.getHandle().isRegardedAsNpc(player)
             || !isEnabled(player) 
-            || !InventoryUtil.hasAnyInventoryOpen(player)
+            || !InventoryUtil.hasInventoryOpen(player)
             // Workaround, Open would disallow players from opening the container if standing on top
             // of the shulker. Reason for this is unknown
             || isShulkerBox) {
@@ -111,7 +111,7 @@ public class Open extends Check implements IDisableListener {
     }
 
     /**
-     * To be called on PlayerMoveEvents; pre-requsite is InventoryUtil.hasAnyInventoryOpen having returned true. <br>
+     * To be called on PlayerMoveEvents; pre-requisite is InventoryUtil.hasAnyInventoryOpen having returned true. <br>
      * (Against InventoryMove cheats and similar)<br>
      * 
      * @param player

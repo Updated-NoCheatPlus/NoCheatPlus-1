@@ -55,7 +55,8 @@ public class Relog extends Check {
                 player.sendMessage(ColorUtil.replaceColors(cc.relogWarningMessage));
                 data.relogWarningTime = now;
                 data.relogWarnings++;
-            } else{
+            } 
+            else {
                 // Find out if we need to ban the player or not.
                 data.relogVL += 1D;
                 cancel = executeActions(player, (double) data.relogVL, 1D, cc.relogActions).willCancel();

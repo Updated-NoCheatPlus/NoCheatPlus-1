@@ -32,22 +32,21 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
  *
  */
 public class BlockCacheBukkitModern extends BlockCacheBukkit {
-
+    
     private Map<Material, BukkitShapeModel> shapeModels;
-
+    
     public BlockCacheBukkitModern(Map<Material, BukkitShapeModel> shapeModels) {
         super(null);
         this.shapeModels = shapeModels;
     }
-
+    
     public BlockCacheBukkitModern(World world) {
         super(world);
     }
-
+    
     @Override
     public int fetchData(int x, int y, int z) {
         Material mat = getType(x, y, z);
-
         final BukkitShapeModel shapeModel = shapeModels.get(mat);
         if (shapeModel != null) {
             final int data = shapeModel.getFakeData(this, world, x, y, z);
@@ -57,53 +56,37 @@ public class BlockCacheBukkitModern extends BlockCacheBukkit {
         }
         return super.fetchData(x, y, z);
     }
-
+    
     @Override
     public double[] fetchBounds(int x, int y, int z) {
-        // minX, minY, minZ, maxX, maxY, maxZ
-
         // TODO: Fetch what's possible to fetch/guess (...).
-
         // TODO: Consider to store the last used block/stuff within BlockCacheBukkit already.
-        //final Block block = world.getBlockAt(x, y, z);
-        //final BlockState state = block.getState();
-        //final MaterialData materialData = state.getData();
-        //final BlockData blockData = state.getBlockData();
         Material mat = getType(x, y, z);
-
         final BukkitShapeModel shapeModel = shapeModels.get(mat);
         if (shapeModel == null) {
             return super.fetchBounds(x, y, z);
         }
-        else {
-            return shapeModel.getShape(this, world, x, y, z);
-        }
-
+        return shapeModel.getShape(this, world, x, y, z);
     }
     
     @Override
-    public boolean standsOnEntity(final Entity entity, final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ){
-        try{
+    public boolean standsOnEntity(final Entity entity, final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ) {
+        try {
             // TODO: Probably check vehicle ids too before doing this ?
-            for (final Entity vehicle : entity.getNearbyEntities(0.1, 2.0, 0.1)){
+            for (final Entity vehicle : entity.getNearbyEntities(0.1, 2.0, 0.1)) {
                 final EntityType type = vehicle.getType();
-                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER){ //  && !(vehicle instanceof Minecart)) 
-                    continue; 
+                if (!MaterialUtil.isBoat(type) && type != EntityType.SHULKER) { //  && !(vehicle instanceof Minecart)) 
+                    continue;
                 }
                 final double vehicleY = vehicle.getLocation(useLoc).getY() + vehicle.getHeight();
                 final double entityY = entity.getLocation(useLoc).getY();
                 useLoc.setWorld(null);
-                if (vehicleY < entityY + 0.1 && Math.abs(vehicleY - entityY) < 0.7){
-                    // TODO: A "better" estimate is possible, though some more tolerance would be good. 
-                    return true; 
-                }
-                else return false;
-            }		
-        }
-        catch (Throwable t){
+                // TODO: A "better" estimate is possible, though some more tolerance would be good. 
+                return vehicleY < entityY + 0.1 && Math.abs(vehicleY - entityY) < 0.7;
+            }
+        } catch (Throwable t) {
             // Ignore exceptions (Context: DisguiseCraft).
         }
         return false;
     }
-
 }

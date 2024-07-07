@@ -107,11 +107,6 @@ public class Improbable extends Check implements IDisableListener {
      * 
      */
     private boolean checkImprobable(final Player player, final float weight, final long now, final String tags, final IPlayerData pData) {
-    	// TODO: Other concepts for Improbable checking
-        // 1) Let ALL checks *feed* the Improbable check 
-    	// THEN
-    	// 2) Automatically check every custom amount of minutes/hours OR on-demand checking via command (i.e.: /ncp checkImprobable)
-        
         if (!pData.isCheckActive(type, player)) {
             return false;
         }
@@ -124,10 +119,10 @@ public class Improbable extends Check implements IDisableListener {
         boolean violated = false;
         if (shortTerm * 0.8f > cc.improbableLevel / 20.0) {
             /** Lag factor for the first window lag (3 seconds) */
-            final float lag = pData.getCurrentWorldData().shouldAdjustToLag(type) ? TickTask.getLag(data.improbableCount.bucketDuration(), true) : 1f;
+            final float lagFactor = pData.getCurrentWorldData().shouldAdjustToLag(type) ? TickTask.getLag(data.improbableCount.bucketDuration(), true) : 1f;
             // Re-check with lag adaptation.
-            if (shortTerm / lag > cc.improbableLevel / 20.0) {
-                violation += shortTerm * 2D / lag;
+            if (shortTerm / lagFactor > cc.improbableLevel / 20.0) {
+                violation += shortTerm * 2D / lagFactor;
                 violated = true;
             }
         }
@@ -135,10 +130,10 @@ public class Improbable extends Check implements IDisableListener {
         final double fullTerm = data.improbableCount.score(1.0f);
         if (fullTerm > cc.improbableLevel) {
             /** Full window lag factor, 1 minute */
-            final float lag = pData.getCurrentWorldData().shouldAdjustToLag(type) ? TickTask.getLag(data.improbableCount.bucketDuration() * data.improbableCount.numberOfBuckets(), true) : 1f;
+            final float lagFactor = pData.getCurrentWorldData().shouldAdjustToLag(type) ? TickTask.getLag(data.improbableCount.bucketDuration() * data.improbableCount.numberOfBuckets(), true) : 1f;
             // Re-check with lag adaptation.
-            if (fullTerm / lag > cc.improbableLevel) {
-                violation += fullTerm / lag;
+            if (fullTerm / lagFactor > cc.improbableLevel) {
+                violation += fullTerm / lagFactor;
                 violated = true;
             }
         }

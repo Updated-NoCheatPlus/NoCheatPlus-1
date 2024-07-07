@@ -1,6 +1,7 @@
 package fr.neatmonster.nocheatplus.checks.moving.envelope;
 
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
@@ -14,7 +15,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
-import org.bukkit.util.Vector;
 
 /**
  * Various auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
@@ -210,15 +210,15 @@ public class PlayerEnvelopes {
                 && ( 
                     // 1: The ordinary lift-off/case.
                     fromOnGround && !toOnGround
-                    // 1: With jump being delayed a tick after (Player jumps server-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
+                    // 1: With jump being delayed a tick after (Player jumps client-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
                     // Usually happens when jumping on the corners of blocks
-                    // Technically, a lost ground case but not really, because the ground status is detected, but with a delay
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case.
+                    // Technically, this should be considered a lost ground case, however the ground status is detected in this case, just with a delay.
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case. We only need to rule out that the player is jumping in too tight areas.
                     && (
-                            // 2: The usual case: here we know that the player actually came from ground with the last move
+                            // 2: The usual case.
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
                             lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
-                            // 2: Plain ground miss on block's edges.
+                            // 2: Sometimes, the ground collision is missed altogether.
                             // TODO: check for abuses.
                             || (thisMove.touchedGroundWorkaround && !lastMove.touchedGroundWorkaround || thisMove.touchedGroundWorkaround && lastMove.touchedGroundWorkaround && !thisMove.to.onGround)
                     ) 

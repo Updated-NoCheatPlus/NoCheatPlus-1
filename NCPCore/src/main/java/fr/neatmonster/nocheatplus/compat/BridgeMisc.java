@@ -33,7 +33,6 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import fr.neatmonster.nocheatplus.checks.combined.CombinedConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
@@ -93,7 +92,7 @@ public class BridgeMisc {
      * @param player
      * @return True if so.
      */
-    public static boolean isRipGliding(final Player player) {
+    public static boolean isRipgliding(final Player player) {
         return Bridge1_9.isGliding(player) && Bridge1_13.isRiptiding(player);
     }
     

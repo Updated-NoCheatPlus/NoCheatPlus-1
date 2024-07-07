@@ -54,7 +54,7 @@ public class MaterialUtil {
             "wood" // Legacy
             );
 
-    private final static List<EntityType> collectTypesBySuffix(String prefix) {
+    private static List<EntityType> collectTypesBySuffix(String prefix) {
         prefix = prefix.toLowerCase();
         final List<EntityType> res = new LinkedList<EntityType>();
         for (final EntityType type : EntityType.values()) {
@@ -144,9 +144,7 @@ public class MaterialUtil {
                         StringUtil.join(set, ", ", builder);
                         builder.append('\n');
                     }
-                } catch (IllegalArgumentException e) {
-                } catch (IllegalAccessException e) {
-                }
+                } catch (IllegalArgumentException | IllegalAccessException e) {}
             }
         }
         StaticLog.log(level, builder.toString());

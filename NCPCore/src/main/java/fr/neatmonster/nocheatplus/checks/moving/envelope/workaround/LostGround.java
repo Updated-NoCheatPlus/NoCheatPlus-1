@@ -20,7 +20,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -41,7 +40,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 
 
 /**
- * Determine if the player should have touched the ground with this movement.
+ * Determine whether the player should have touched the ground with this movement.
  * @See <a href="https://bugs.mojang.com/browse/MC-90024">Mojang's issue tracker</a> 
  * 
  * @author asofold
@@ -78,14 +77,12 @@ public class LostGround {
             // Ignore levitation
             return false;
         }
-
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         // Very specific case with players jumping with head obstructed by lanterns or after respawning
         if (hDistance <= Magic.Minecraft_minMoveSqDistance && from.isOnGround(Magic.Minecraft_minMoveSqDistance)
             && (MaterialUtil.LANTERNS.contains(from.getTypeId(from.getBlockX(), Location.locToBlock(from.getY() + 2.0), from.getBlockZ())) || data.joinOrRespawn)) {
             return applyLostGround(player, from, true, thisMove, data, "0.03", tags);
         }
-
         if (!MathUtil.inRange(0.1, hDistance, 1.5)) { 
             // Lost ground only happens with enough horizontal motion.
             return false;
@@ -112,12 +109,12 @@ public class LostGround {
         // Acceleration changed: player might have collided with something.
         if (thisMove.yDistance > lastMove.yDistance && lastMove.yDistance < 0.0) {
             if (to.isOnGround()) {
-                // No need for interpolation in this case: the player likely has just landed on the ground, though there may be cases with missed from, but detected to.
+                // No need for interpolation in this case: the player has likely just landed on the ground, though there may be cases with missed "from", but detected "to".
                 return false;
             }
             // Try interpolating the ground collision from last-from to this-from.
-            // Usually, corresponds to a missed "fromOnGround" position with the *next* move (with last missing a ground collision too, but with the "to" position).
-            // (In other words: AIR -> TO LOST GROUND(AIR)   |   FROM LOST GROUND(AIR) -> AIR
+            // Usually, this corresponds to a missed "fromOnGround" position with this move (with last missing a ground collision too, but with the "to" position).
+            // (In other words: lastMove: AIR -> TO LOST GROUND(AIR)   -   thisMove: FROM LOST GROUND(AIR) -> AIR
             if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_from", tags, data,
                                  from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
                 thisMove.fromLostGround = true;

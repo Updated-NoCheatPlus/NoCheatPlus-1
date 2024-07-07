@@ -70,7 +70,6 @@ public class OutgoingPosition extends BaseAdapter {
             StaticLog.logWarning("Failed to fetch player data with " + event.getPacketType() + " for: " + player.toString());
             return;
         }
-        // TODO: In future multiple checks might use this (!)
         interpretPacket(player, event.getPacket(), time, pData.getGenericInstance(NetData.class), pData.isDebugActive(CheckType.NET));
     }
 

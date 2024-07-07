@@ -64,7 +64,6 @@ public class Reach extends Check {
         final double distanceLimit = player.getGameMode() == GameMode.CREATIVE ? CREATIVE_DISTANCE : SURVIVAL_DISTANCE;
         // Distance is calculated from eye location to center of targeted block.
         // TODO: On failure loop through flying queue, and do set not working entries to null (!).
-        // (Where does the magic value 0.5 come from, and what is it used for?)
         final double distance = TrigUtil.distance(loc.getX(), loc.getY() + eyeHeight, loc.getZ(), 0.5 + block.getX(), 0.5 + block.getY(), 0.5 + block.getZ());
 
         if (distance > distanceLimit) {

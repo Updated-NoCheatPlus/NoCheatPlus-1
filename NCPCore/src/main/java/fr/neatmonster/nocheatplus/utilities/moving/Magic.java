@@ -15,7 +15,6 @@
 package fr.neatmonster.nocheatplus.utilities.moving;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 
 
@@ -41,7 +40,7 @@ public class Magic {
     /** EntityLiving, flyingSpeed (NMS field can be misleading, this is for air in general, not strictly creative-fly) */
     public static final float AIR_ACCELERATION = 0.02f;
     /** EntityLiving, travel */
-    public static final float LIQUID_BASE_ACCELERATION = 0.02f;
+    public static final float LIQUID_ACCELERATION = 0.02f;
     /** EntityLiving, travel */
     public static final float HORIZONTAL_SWIMMING_INERTIA = 0.9f;
     /** EntityLiving, getWaterSlowDown */

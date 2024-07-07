@@ -41,8 +41,6 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
     public double godModeVL;
     public double noSwingVL;
     public double reachVL;
-    public double speedVL;
-    public double impossibleHitVL;
     public double visibleVL;
 
     // Shared data between checks
@@ -97,9 +95,6 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
     // Data of the SelfHit check.
     public ActionFrequency selfHitVL = new ActionFrequency(6, 5000);
 
-    // Data of the ImpossibleHit check
-    public int lookFight = -1;
-
     public FightData(final FightConfig config){
         // Start with full fast-heal buffer.
         fastHealBuffer = config.fastHealBuffer; 
@@ -138,10 +133,6 @@ public class FightData extends ACheckData implements IDataOnRemoveSubCheckData, 
                     break;
                 case FIGHT_CRITICAL:
                     criticalVL = 0;
-                    break;
-                case FIGHT_IMPOSSIBLEHIT:
-                    impossibleHitVL = 0;
-                    lookFight = -1;
                     break;
                 case FIGHT_NOSWING:
                     noSwingVL = 0;

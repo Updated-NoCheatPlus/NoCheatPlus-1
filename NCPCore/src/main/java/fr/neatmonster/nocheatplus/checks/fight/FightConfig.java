@@ -57,9 +57,6 @@ public class FightConfig extends ACheckConfig {
     public final long godModeLagMinAge;
     public final long godModeLagMaxAge;
     public final ActionList godModeActions;
-    
-    public final float impossibleHitImprobableWeight;
-    public final ActionList impossibleHitActions;
 
     public final ActionList noSwingActions;
 
@@ -80,16 +77,18 @@ public class FightConfig extends ACheckConfig {
 
     // Special flags:
     public final boolean cancelDead;
+    public boolean enforceItemRelease;
+    public boolean enforceClosedInventory;
     public final boolean knockBackVelocityPvP;
 
     /** Maximum latency counted in ticks for the loop checks (reach, direction). */
     public final long loopMaxLatencyTicks; // TODO: Configurable,  sections for players and entities.
-
+    
     /**
      * Instantiates a new fight configuration.
      * 
-     * @param data
-     *            the data
+     * @param worldData
+     *            the worldData
      */
     public FightConfig(final IWorldData worldData) {
         super(worldData);
@@ -135,10 +134,7 @@ public class FightConfig extends ACheckConfig {
         godModeActions = config.getOptimizedActionList(ConfPaths.FIGHT_GODMODE_ACTIONS, Permissions.FIGHT_GODMODE);
 
         noSwingActions = config.getOptimizedActionList(ConfPaths.FIGHT_NOSWING_ACTIONS, Permissions.FIGHT_NOSWING);
-
-        impossibleHitImprobableWeight = (float) config.getDouble(ConfPaths.FIGHT_IMPOSSIBLEHIT_IMPROBABLE_WEIGHT);
-        impossibleHitActions = config.getOptimizedActionList(ConfPaths.FIGHT_IMPOSSIBLEHIT_ACTIONS, Permissions.FIGHT_IMPOSSIBLEHIT);
-
+        
         reachSurvivalDistance = config.getDouble(ConfPaths.FIGHT_REACH_SURVIVALDISTANCE, 3.5, 6.0, 4.1);
         reachPenalty = config.getLong(ConfPaths.FIGHT_REACH_PENALTY);
         reachPrecision = config.getBoolean(ConfPaths.FIGHT_REACH_PRECISION);
@@ -154,6 +150,9 @@ public class FightConfig extends ACheckConfig {
         visibleActions = config.getOptimizedActionList(ConfPaths.FIGHT_VISIBLE_ACTIONS, Permissions.FIGHT_VISIBLE);
 
         cancelDead = config.getBoolean(ConfPaths.FIGHT_CANCELDEAD);
+        enforceItemRelease = config.getBoolean(ConfPaths.FIGHT_ENFORCE_ITEM_RELEASE);
+        enforceClosedInventory = config.getBoolean(ConfPaths.FIGHT_ENFORCE_CLOSED_INVENTORY);
+        
 		loopMaxLatencyTicks = config.getInt(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 1, 15, 8);
         AlmostBoolean ref = config.getAlmostBoolean(ConfPaths.FIGHT_KNOCKBACKVELOCITY, AlmostBoolean.MAYBE);
         knockBackVelocityPvP = ref == AlmostBoolean.MAYBE ? Bugs.shouldPvpKnockBackVelocity() : ref.decide();

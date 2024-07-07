@@ -19,7 +19,6 @@ import java.util.LinkedList;
 
 import org.bukkit.Material;
 
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
@@ -323,6 +322,8 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_ACTIVE, "default", 1144);
         // General
         set(ConfPaths.FIGHT_CANCELDEAD, true, 154);
+        set(ConfPaths.FIGHT_ENFORCE_ITEM_RELEASE, true, 152);
+        set(ConfPaths.FIGHT_ENFORCE_CLOSED_INVENTORY, true, 154);
         // TODO: Using System.currentTimeMillis() for timestamp not server tick?
         set(ConfPaths.FIGHT_MAXLOOPLETENCYTICKS, 8, 154);
         set(ConfPaths.FIGHT_TOOLCHANGEPENALTY, 0L, 154); // Disabled for now, it interferes too much with pvp. 500L
@@ -355,10 +356,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.FIGHT_GODMODE_LAGMINAGE, 1100, 154); // TODO: ndt/2 => 500-600.
         set(ConfPaths.FIGHT_GODMODE_LAGMAXAGE, 5000, 154);
         set(ConfPaths.FIGHT_GODMODE_ACTIONS, "cancel vl>10 cancel log:godmode:0:5:icf cmdc:kickgod:0:5", 154);
-        // ImpHit
-        set(ConfPaths.FIGHT_IMPOSSIBLEHIT_CHECK, "default", 154);
-        set(ConfPaths.FIGHT_IMPOSSIBLEHIT_IMPROBABLE_WEIGHT, 0.05, 154);
-        set(ConfPaths.FIGHT_IMPOSSIBLEHIT_ACTIONS, "cancel vl>3 cancel log:impossiblehit:0:5:if", 154);
         // NoSwing
         set(ConfPaths.FIGHT_NOSWING_CHECK, "default", 154);
         set(ConfPaths.FIGHT_NOSWING_ACTIONS, "vl>2 cancel vl>10 log:noswing:2:5:i cancel", 154);
@@ -483,6 +480,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.MOVING_SURVIVALFLY_CHECK, "default", 154);
         set(ConfPaths.MOVING_SURVIVALFLY_STEPHEIGHT, "default", 154);
         set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM, true, 154);
+        set(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STRICT_HORIZONTAL_PREDICTION, true, 154);
         // SurvivalFly - ViolationFrequencyHook
         set(ConfPaths.MOVING_SURVIVALFLY_VLFREQUENCY_ACTIVE, true, 154);
         set(ConfPaths.MOVING_SURVIVALFLY_VLFREQUENCY_DEBUG, false, 154);
@@ -623,7 +621,6 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.STRINGS + ".fvisible", start + "tried to attack target through a solid obstacle" + end, 1154);
         set(ConfPaths.STRINGS + ".godmode", start + "tried to ignore inflicted damage (Health: &7[health]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".gutenberg", start + "created a book with too many pages" + end, 154);
-        set(ConfPaths.STRINGS + ".impossiblehit", start + "tried to hit an entity while performing another action (Tags: &6[tags]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".improbable", start + "is exhibiting an erratic behaviour (Check: &6[tags]&7)" + end, 154);
         set(ConfPaths.STRINGS + ".instantbow", start + "tried to shoot an arrow too fast" + end, 154);
         set(ConfPaths.STRINGS + ".keepalive", start + "is spamming keep-alive packets to the server" + end, 154);

@@ -47,10 +47,7 @@ import com.comphenix.protocol.wrappers.EnumWrappers.PlayerDigType;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
-import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.*;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.registry.order.RegistrationOrder.RegisterMethodWithOrder;
@@ -66,8 +63,9 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
  * Adapter for listening to packets and Bukkit events relevant for item-use.<br>
  * On 1.17 and above, the adapter will only register events tied to a specific item-use exploit, since Bukkit does
  * provide us with a getItemInUse() method.<br>
- * On 1.12 and above, all listener will be registered since Bukkit doesn't provide a way of knowing <em>which</em> item is in use (we only get to know if the
- * player is using an item via isHandRaised)
+ * On 1.12 and above, all listeners will be registered since Bukkit doesn't provide a way of knowing <em>which</em> item is in use (we only get to know if the
+ * player is using an item via player#isHandRaised())<br>
+ * The PlayerRespawnEvent is always listened for in order fix a specific item de-synchronisation issue.
  * 
  */
 public class UseItemAdapter extends BaseAdapter {
@@ -131,10 +129,10 @@ public class UseItemAdapter extends BaseAdapter {
     public UseItemAdapter(Plugin plugin) {
         super(plugin, ListenerPriority.MONITOR, initPacketTypes());
         final NoCheatPlusAPI api = NCPAPIProvider.getNoCheatPlusAPI();
-        // Only actually register ALL listeners, if the method is not available (not on 1.17)
         if (!BridgeMisc.hasGetItemInUseMethod()) {
+            // getItemInUse() isn't there, register all events
             if (Bridge1_13.hasPlayerRiptideEvent()) {
-                // Only register this event if available.
+                // Only register this one if available.
                 final MiniListener<?> riptideListener = new MiniListener<PlayerRiptideEvent>() {
                     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
                     @RegisterMethodWithOrder(tag = dftag)
@@ -145,7 +143,7 @@ public class UseItemAdapter extends BaseAdapter {
                 };
                 api.addComponent(riptideListener, false);
             }
-            // All the other listeners
+            // ...All the other listeners
             for (final MiniListener<?> listener : miniListeners) {
                 api.addComponent(listener, false);
             }
@@ -164,6 +162,7 @@ public class UseItemAdapter extends BaseAdapter {
 
     @Override
     public void onPacketReceiving(final PacketEvent event) {
+        // Fast return tests first.
         try {
             if (event.isPlayerTemporary()) return;
         } 
@@ -178,12 +177,15 @@ public class UseItemAdapter extends BaseAdapter {
             }
         }
         if (BridgeMisc.hasGetItemInUseMethod()) {
+            // getItemInUse() is already there. Only check the digging packet for exploitation prevention purposes.
             if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
-                // Only handle the digging packet, because we still want to prevent a very specific kind of use-item abuse/cheating.
                 handleDiggingPacket(event);
             }
+            // Don't need to do anything else.
             return;
         }
+        
+        // getItemInUse() ins't there: do the ordinary stuff.
         if (event.getPacketType().equals(PacketType.Play.Client.BLOCK_DIG)) {
             handleDiggingPacket(event);
         }
@@ -275,11 +277,13 @@ public class UseItemAdapter extends BaseAdapter {
                     return;
                 }
                 if (m == Material.POTION || m == Material.MILK_BUCKET || m.toString().endsWith("_APPLE") || m.name().startsWith("HONEY_BOTTLE")) {
+                    // Can be consumed regardless of hunger level
                     pData.setItemInUse(m);
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
                 }
                 if (item.getType().isEdible() && p.getFoodLevel() < 20) {
+                    // Hunger level dependant consumables.
                     pData.setItemInUse(m); 
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
@@ -315,10 +319,9 @@ public class UseItemAdapter extends BaseAdapter {
                 }
             }
             // Tridents (1.13)... 
-            if (Bridge1_13.hasIsRiptiding() && m == Material.TRIDENT 
-            	// 0: If the trident has riptide enchant, it can only be used in rain or water 
+            if (m == BridgeMaterial.TRIDENT 
             	&& (
-                    // 1: Has riptide enchant
+                    // 1:If the trident has riptide enchant, it can only be used in rain or water 
             		BridgeEnchant.getRiptideLevel(p) > 0.0
                     && (
                         // 2: In water

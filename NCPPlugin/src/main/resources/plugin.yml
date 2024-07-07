@@ -97,15 +97,11 @@ permissions:
         default: false
     nocheatplus.checks.fight.godmode.silent:
         default: false
-    nocheatplus.checks.net.impossiblehit.silent:
-        default: false
     nocheatplus.checks.fight.noswing.silent:
         default: false
     nocheatplus.checks.fight.reach.silent:
         default: false
     nocheatplus.checks.fight.selfhit.silent:
-        default: false
-    nocheatplus.checks.fight.speed.silent:
         default: false
     nocheatplus.checks.inventory.fastclick.silent:
         default: false
@@ -243,16 +239,12 @@ permissions:
                         description: Allow the player to bypass the FastHeal check.
                     nocheatplus.checks.fight.godmode:
                         description: Allow the player to bypass the GodMode check.
-                    nocheatplus.checks.fight.impossiblehit:
-                        description: Allow the player to bypass the ImpossibleHit check.
                     nocheatplus.checks.fight.noswing:
                         description: Allow the player to bypass the NoSwing check.
                     nocheatplus.checks.fight.reach:
                         description: Allow the player to bypass the Reach check.
                     nocheatplus.checks.fight.selfhit:
                         description: Allow the player to bypass the SelfHit check.
-                    nocheatplus.checks.fight.speed:
-                        description: Allow the player to bypass the Speed check.
             nocheatplus.checks.inventory:
                 description: Allow the player to bypass all Inventory checks.
                 children:

@@ -36,7 +36,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
@@ -315,14 +314,12 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
-            if (player != null) {
-                final IPlayerData pData = DataManager.getPlayerData(player);
-                final InventoryData data = pData.getGenericInstance(InventoryData.class);
-                data.inventoryOpenTime = 0;
-                data.containerInteractTime = 0;
-                if (pData.isDebugActive(CheckType.INVENTORY)) {
-                    debug(player, "InventoryCloseEvent: reset timing data.");
-                }
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            final InventoryData data = pData.getGenericInstance(InventoryData.class);
+            data.inventoryOpenTime = 0;
+            data.containerInteractTime = 0;
+            if (pData.isDebugActive(CheckType.INVENTORY)) {
+                debug(player, "InventoryCloseEvent: reset timing data.");
             }
         }
         keepCancel = false;
@@ -407,23 +404,21 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         final HumanEntity entity = event.getPlayer();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
-            if (player != null) {
-                final IPlayerData pData = DataManager.getPlayerData(player);
-                final InventoryData data = pData.getGenericInstance(InventoryData.class);
-                if (MovingUtil.hasScheduledPlayerSetBack(player)) {
-                    // Don't allow players to open inventories on set-backs.
-                    event.setCancelled(true);
-                    data.inventoryOpenTime = 0; // Just to be sure
-                    if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                        debug(player, "InventoryOpenEvent: attempted to open a container during set back processing; reset timing data and prevent opening.");
-                    }
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            final InventoryData data = pData.getGenericInstance(InventoryData.class);
+            if (MovingUtil.hasScheduledPlayerSetBack(player)) {
+                // Don't allow players to open inventories on set-backs.
+                event.setCancelled(true);
+                data.inventoryOpenTime = 0; // Just to be sure
+                if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                    debug(player, "InventoryOpenEvent: attempted to open a container during set back processing; reset timing data and prevent opening.");
                 }
-                else if (data.inventoryOpenTime == 0) {
-                    // Only set the inventory opening time, if a setback is not scheduled.
-                    data.inventoryOpenTime = now;
-                     if (pData.isDebugActive(CheckType.INVENTORY)) {
-                        debug(player, "Fired an explicit InventoryOpenEvent; inventory is now open (no assumptions): register time.");
-                    }
+            }
+            else if (data.inventoryOpenTime == 0) {
+                // Only set the inventory opening time, if a setback is not scheduled.
+                data.inventoryOpenTime = now;
+                 if (pData.isDebugActive(CheckType.INVENTORY)) {
+                    debug(player, "Fired an explicit InventoryOpenEvent; inventory is now open (no assumptions): register time.");
                 }
             }
         }
@@ -512,12 +507,10 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         final LivingEntity entity = event.getEntity();
         if (entity instanceof Player) {
             final Player player = (Player) entity;
-            if (player != null) {
-                final IPlayerData pData = DataManager.getPlayerData(player);
-                if (open.check(player)) {
-                    if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
-                        debug(player, "Force-close inventory on death.");
-                    }
+            final IPlayerData pData = DataManager.getPlayerData(player);
+            if (open.check(player)) {
+                if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
+                    debug(player, "Force-close inventory on death.");
                 }
             }
         }
@@ -612,7 +605,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
         // Determine if the inventory should be closed.
         if (cc.openCancelOnMove && !pData.hasBypass(CheckType.INVENTORY_OPEN, event.getPlayer())) {
-            if (InventoryUtil.hasAnyInventoryOpen(event.getPlayer()) && open.checkOnMove(event.getPlayer(), pData)) {
+            if (InventoryUtil.hasInventoryOpen(event.getPlayer()) && open.checkOnMove(event.getPlayer(), pData)) {
                 event.getPlayer().closeInventory(); // Do not call open.check() here.
                 if (pData.isDebugActive(CheckType.INVENTORY_OPEN)) {
                     debug(event.getPlayer(), "Player is actively moving: force-close open inventory.");

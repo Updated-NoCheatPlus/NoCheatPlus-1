@@ -67,8 +67,6 @@ public class BlockCacheBukkit extends BlockCache {
         if (flags == BlockFlags.F_IGN_PASSABLE) {
             return null;
         }
-        // minX, minY, minZ, maxX, maxY, maxZ
-
         // TODO: Want to maintain a list with manual entries or at least half / full blocks ?
         // Always return full bounds, needs extra adaption to BlockProperties (!).
         return new double[]{0D, 0D, 0D, 1D, 1D, 1D};
@@ -85,11 +83,8 @@ public class BlockCacheBukkit extends BlockCache {
                 }
                 final double locY = entity.getLocation(useLoc).getY();
                 useLoc.setWorld(null);
-                if (Math.abs(locY - minY) < 0.7){
-                    // TODO: A "better" estimate is possible, though some more tolerance would be good. 
-                    return true;
-                }
-                else return false;
+                // TODO: A "better" estimate is possible, though some more tolerance would be good. 
+                return Math.abs(locY - minY) < 0.7;
             }
         }
         catch (Throwable t){
@@ -106,5 +101,4 @@ public class BlockCacheBukkit extends BlockCache {
         super.cleanup();
         world = null;
     }
-
 }

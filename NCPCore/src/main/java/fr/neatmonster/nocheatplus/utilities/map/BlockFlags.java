@@ -319,8 +319,7 @@ public class BlockFlags {
                         nameFlagMap.put(name, value);
                         nameFlagMap.put(name.substring(2), value);
                     } 
-                    catch (IllegalArgumentException e) {} 
-                    catch (IllegalAccessException e) {}
+                    catch (IllegalArgumentException | IllegalAccessException e) {}
                 }
             }
         }

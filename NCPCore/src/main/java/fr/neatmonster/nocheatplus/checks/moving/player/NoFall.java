@@ -231,7 +231,7 @@ public class NoFall extends Check {
                     Bukkit.getPluginManager().callEvent(event);
                     if (event.isCancelled()) {
                          // Denied by some plugin.
-                        return false;
+                         return false;
                     }
                 }
             } 
@@ -334,8 +334,7 @@ public class NoFall extends Check {
             // TODO: In case of velocity... skip too / calculate max exempt height?
             final double correction = data.noFallMaxY - previousSetBackY;
             if (correction > 0.0) {
-                final float effectiveDistance = (float) Math.max(0.0, yDistance - correction);
-                return effectiveDistance;
+                return (float) Math.max(0.0, yDistance - correction);
             }
         }
         return yDistance;

@@ -36,7 +36,6 @@ public class Direction extends AbstractBlockDirectionCheck<BlockInteractData, Bl
     @Override
     protected double addVL(Player player, double distance, BlockInteractData data, BlockInteractConfig cc) {
         data.directionVL += distance;
-        data.lookInteraction = 0;
         return data.directionVL;
     }
 
@@ -48,7 +47,6 @@ public class Direction extends AbstractBlockDirectionCheck<BlockInteractData, Bl
     @Override
     protected void cooldown(Player player, BlockInteractData data, BlockInteractConfig cc) {
         data.directionVL *= 0.9D;
-        data.lookInteraction = -1;
         data.addPassedCheck(this.type);
     }
 

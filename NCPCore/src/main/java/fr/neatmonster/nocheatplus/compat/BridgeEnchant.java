@@ -85,8 +85,7 @@ public final class BridgeEnchant {
         int level = 0;
         // Find the maximum level for the given enchantment.
         final ItemStack[] armor = player.getInventory().getArmorContents();
-        for (int i = 0; i < armor.length; i++) {
-            final ItemStack item = armor[i];
+        for (final ItemStack item : armor) {
             if (!BlockProperties.isAir(item)) {
                 level = Math.max(item.getEnchantmentLevel(enchantment), level);
             }
@@ -362,7 +361,7 @@ public final class BridgeEnchant {
     /**
      * @param player
      * @return The speed increment granted by the swift sneak enchant level (clamped)
-     *         (Formula is from LocalPlayer aiStep)
+     *         (Formula is from LocalPlayer.java, aiStep)
      */      
     public static float getSwiftSneakIncrement(final Player player) {
       return MathUtil.clamp((float)getSwiftSneakLevel(player) * 0.15f, 0.0f, 1.0f);

@@ -45,7 +45,7 @@ public class ToggleFrequency extends Check {
      */
     public boolean check(final Player player, final NetData data, final NetConfig cc, final IPlayerData pData) {
         boolean cancel = false;
-        // (Additium to frequency is done in the listener for each toggle event)
+        // (Addition to frequency is done in the listener for each toggle event)
         // Full time resolution
         final long actionFullTime = data.playerActionFreq.bucketDuration() * data.playerActionFreq.numberOfBuckets();
         /** Toggle action events counted */

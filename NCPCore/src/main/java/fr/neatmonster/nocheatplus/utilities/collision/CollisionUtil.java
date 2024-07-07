@@ -986,6 +986,16 @@ public class CollisionUtil {
     }
 
     // TODO: Move to another utility class
+    
+    /**
+     * Move the bounding box by the given coordinates.
+     * 
+     * @param AABB
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
     public static double[] move(double[] AABB, double x, double y, double z) {
         if (AABB.length % 6 == 0) {
             double[] tAABB = AABB.clone();
@@ -1151,6 +1161,12 @@ public class CollisionUtil {
         return false;
     }
 
+    /**
+     * Split the given block's multiple bounding boxes into single ones.
+     * 
+     * @param multiAABB
+     * @return
+     */
     // TODO: Move to another utility class.
     public static List<double[]> splitIntoSingle(double[] multiAABB) {
         List<double[]> a = new ArrayList<>();

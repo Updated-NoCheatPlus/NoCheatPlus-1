@@ -663,11 +663,11 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * to solve conflicts where the player may stand on more than a single block that has motion properties (i.e.: standing half on ice and half on slime)
      * Does not use the yOnGround parameter for collision (!).
      * 
-     * @param flag
+     * @param flagToMatch
      * @return False, if the player is not on ground by NCP's definition, or the supporting block couldn't be found.
      *         True, if the supporting block has the given flag and the player collides with it.
      */
-    public boolean isSupportedBy(final long flag) {
+    public boolean isSupportedBy(final long flagToMatch) {
         final Material supportingMat = BlockProperties.getMainSupportingBlock(world, blockCache, minX, minY, minZ, maxX, maxY, maxZ, getLocation());
         if (supportingMat == Material.AIR) {
             return false;
@@ -675,8 +675,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         if (!isOnGround()) {
             return false;
         }
-        final long thisFlags = BlockFlags.getBlockFlags(supportingMat);
-        return (thisFlags & flag) != 0;
+        final long collectedFlag = BlockFlags.getBlockFlags(supportingMat);
+        return (collectedFlag & flagToMatch) != 0;
     }
 
     /**
@@ -866,7 +866,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                 // TODO: This check needs to be re-done.
                 // If you stand on the very edge of the block:
                 // Vertically, you jump with standard motion (as if you were outside the block)
-                // Horizontally, you DO get slowed-down (as if you were inside the block)
+                // Horizontally, you DO get slowed down (as if you were inside the block)
                 inPowderSnow = isInsideBlock(BlockFlags.F_POWDERSNOW)
                                // To be considered "in" powder snow, the player needs to be supported by more powder snow (remember that pwdsnw has the ground flag) below (or other solid-ground blocks)
                                // This fixes an edge case with player jumping with powder snow above (in which case, they are not considered "inside", the game applies the ordinary gravity motion)

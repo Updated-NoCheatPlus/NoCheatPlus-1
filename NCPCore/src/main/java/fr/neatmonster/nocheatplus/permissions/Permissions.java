@@ -131,7 +131,6 @@ public class Permissions {
     public static final RegisteredPermission  CHAT_TEXT                    = add(CHAT + ".text");
 
     public static final RegisteredPermission  COMBINED                     = add(CHECKS + ".combined");
-    public static final RegisteredPermission  COMBINED_BEDLEAVE            = add(COMBINED + ".bedleave");
     public static final RegisteredPermission  COMBINED_IMPROBABLE          = add(COMBINED + ".improbable");
     public static final RegisteredPermission  COMBINED_MUNCHHAUSEN         = add(COMBINED + ".munchhausen");
 
@@ -141,14 +140,12 @@ public class Permissions {
     public static final RegisteredPermission  FIGHT_DIRECTION              = add(FIGHT + ".direction");
     public static final RegisteredPermission  FIGHT_FASTHEAL               = add(FIGHT + ".fastheal");
     public static final RegisteredPermission  FIGHT_GODMODE                = add(FIGHT + ".godmode");
-    public static final RegisteredPermission  FIGHT_IMPOSSIBLEHIT          = add(FIGHT + ".impossiblehit");
     public static final RegisteredPermission  FIGHT_NOSWING                = add(FIGHT + ".noswing");
     public static final RegisteredPermission  FIGHT_REACH                  = add(FIGHT + ".reach");
     public static final RegisteredPermission  FIGHT_SELFHIT                = add(FIGHT + ".selfhit");
     public static final RegisteredPermission  FIGHT_VISIBLE                = add(FIGHT + ".visible");
 
     public static final RegisteredPermission  INVENTORY                    = add(CHECKS + ".inventory");
-    public static final RegisteredPermission  INVENTORY_DROP               = add(INVENTORY + ".drop");
     public static final RegisteredPermission  INVENTORY_FASTCLICK          = add(INVENTORY + ".fastclick");
     public static final RegisteredPermission  INVENTORY_FASTCONSUME        = add(INVENTORY + ".fastconsume");
     public static final RegisteredPermission  INVENTORY_GUTENBERG          = add(INVENTORY + ".gutenberg");

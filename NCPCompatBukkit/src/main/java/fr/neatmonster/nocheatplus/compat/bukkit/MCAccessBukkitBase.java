@@ -177,7 +177,9 @@ public class MCAccessBukkitBase implements MCAccess {
         // Values taken from 1.7.10.
         final EntityType type = entity.getType();
         Double width = BridgeEntityType.LEGACY_ENTITY_WIDTH.get(type);
-        if (width != null) return width;
+        if (width != null) {
+            return width;
+        }
         switch(type){
             // TODO: case COMPLEX_PART:
             //case ENDER_SIGNAL: // this.a(0.25F, 0.25F);

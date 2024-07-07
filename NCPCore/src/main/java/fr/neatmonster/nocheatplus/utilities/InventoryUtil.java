@@ -192,34 +192,34 @@ public class InventoryUtil {
 
     /**
      * Check if the player's inventory is open by looking up the current InventoryView type, via player#getOpenInventory().
-     * Note that this method cannot be used to check for one's own inventory, because Bukkit returns CRAFTING/CREATIVE as default InventoryView type.
+     * Note that this method cannot be used to check for one's own inventory, because Bukkit returns CRAFTING/CREATIVE as default InventoryView type (due to Minercaft not sending anything when pressing E).
      * (See InventoryData.inventoryOpenTime)
      *
      * @param player
      *            the player
      * @return True, if the opened inventory is of any type that isn't CRAFTING/CREATIVE and is not null.
      */
-    public static boolean hasInventoryOpen(final Player player) {
+    public static boolean hasInventoryOpenOwnExcluded(final Player player) {
         final InventoryView view = player.getOpenInventory();
         return view != null && view.getType() != InventoryType.CRAFTING && view.getType() != InventoryType.CREATIVE; // Exclude the CRAFTING and CREATIVE inv type.
     }
 
    /**
     * Check if the player has opened any kind of inventory (including their own).
-    * If the inventory status cannot be assumed from player#getOpenInventory() (see hasInventoryOpen(player)), look up if we have registered the first inventory click time.
+    * If the inventory status cannot be assumed from player#getOpenInventory() (see hasInventoryOpenOwnExcluded(player)), look up if we have registered the first inventory click time.
     * 
     * @param player
     *            the player
     * @return True, if inventory status is known, or can be assumed with InventoryData.inventoryOpenTime
     */
-    public static boolean hasAnyInventoryOpen(final Player player) {
+    public static boolean hasInventoryOpen(final Player player) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        return hasInventoryOpen(player) || data.inventoryOpenTime != 0; 
+        return hasInventoryOpenOwnExcluded(player) || data.inventoryOpenTime != 0; 
     }
     
    /**
-    * Test the player has recently opened an inventory of any type (own, containers).
+    * Test if the player has recently opened an inventory of any type (own, containers).
     * 
     * @param player
     * @param timeAge In milliseconds to be considered as 'recent activity' (inclusive)
@@ -234,7 +234,7 @@ public class InventoryUtil {
         final long now = System.currentTimeMillis();
         final IPlayerData pData = DataManager.getPlayerData(player);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
-        return hasAnyInventoryOpen(player) && (now - data.inventoryOpenTime <= timeAge);     
+        return hasInventoryOpen(player) && (now - data.inventoryOpenTime <= timeAge);     
     }
     
    /** 
@@ -349,8 +349,9 @@ public class InventoryUtil {
     public static boolean hasArrow(final PlayerInventory i, final boolean fw) {
         if (Bridge1_9.hasElytra()) {
             final Material m = i.getItemInOffHand().getType();
-            return (fw && m == Material.FIREWORK_ROCKET) || m.toString().endsWith("ARROW") ||
-                   i.contains(Material.ARROW) || i.contains(Material.TIPPED_ARROW) || i.contains(Material.SPECTRAL_ARROW);
+            return (fw && m == Material.FIREWORK_ROCKET) 
+                    || m.toString().endsWith("ARROW")
+                    || i.contains(Material.ARROW) || i.contains(Material.TIPPED_ARROW) || i.contains(Material.SPECTRAL_ARROW);
         }
         return i.contains(Material.ARROW);
     }
@@ -368,7 +369,7 @@ public class InventoryUtil {
         // Handle via NMS
         if (mcAccess.getHandle().resetActiveItem(player)) {
             // Released, reset all data and request an inventory update to the server, for good measure.
-            resetUsingItemStatus(pData);
+            tryResetItemUsageStatus(pData);
             pData.requestUpdateInventory();
             return;
         }
@@ -383,13 +384,13 @@ public class InventoryUtil {
                     }
                     else {
                         // False positive
-                    	resetUsingItemStatus(pData);
+                    	tryResetItemUsageStatus(pData);
                     }
                 } 
                 else {
                     // Refresh.
                     player.getInventory().setItemInOffHand(stack);
-                    resetUsingItemStatus(pData);
+                    tryResetItemUsageStatus(pData);
                 }
             }
             return;
@@ -414,14 +415,15 @@ public class InventoryUtil {
                 else {
                     // Refresh.
                     Bridge1_9.setItemInMainHand(player, stack);
-                    resetUsingItemStatus(pData);
+                    tryResetItemUsageStatus(pData);
                 }
             } 
         }
     }
 
-    private static void resetUsingItemStatus(final IPlayerData pData) {
+    private static void tryResetItemUsageStatus(final IPlayerData pData) {
         if (BridgeMisc.hasGetItemInUseMethod()) {
+            // No need to do anything as we did not have to set the item in the first place
             return;
         }
         pData.setItemInUse(null);

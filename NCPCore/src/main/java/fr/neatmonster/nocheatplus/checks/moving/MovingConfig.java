@@ -14,12 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -33,7 +28,6 @@ import fr.neatmonster.nocheatplus.checks.moving.model.ModelFlying;
 import fr.neatmonster.nocheatplus.checks.moving.player.PlayerSetBackMethod;
 import fr.neatmonster.nocheatplus.command.CommandUtil;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.versions.Bugs;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.config.value.OverrideType;
@@ -44,7 +38,6 @@ import fr.neatmonster.nocheatplus.utilities.ColorUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.SimpleCharPrefixTree;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
-import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.IWorldData;
 
 /**
@@ -104,6 +97,7 @@ public class MovingConfig extends ACheckConfig {
    
     public final double sfStepHeight;
     public final boolean survivalFlyResetItem;
+    public boolean survivalFlyStrictHorizontal;
     // Leniency settings.
     public final long survivalFlyVLFreezeCount;
     public final boolean survivalFlyVLFreezeInAir;
@@ -163,7 +157,7 @@ public class MovingConfig extends ACheckConfig {
     // Messages.
     public final String msgKickIllegalMove;
     public final String msgKickIllegalVehicleMove;
-
+    
     /**
      * Instantiates a new moving configuration.
      * 
@@ -213,6 +207,7 @@ public class MovingConfig extends ACheckConfig {
         CommandUtil.feedCommands(passableUntrackedCommandPrefixes, config, ConfPaths.MOVING_PASSABLE_UNTRACKED_CMD_PREFIXES, true);
 
         survivalFlyResetItem = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_RESETITEM);
+        survivalFlyStrictHorizontal = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_EXTENDED_STRICT_HORIZONTAL_PREDICTION);
         sfSetBackPolicyFallDamage = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_FALLDAMAGE);
         sfSetBackPolicyVoid = config.getBoolean(ConfPaths.MOVING_SURVIVALFLY_SETBACKPOLICY_VOIDTOVOID);
         final double sfStepHeight = config.getDouble(ConfPaths.MOVING_SURVIVALFLY_STEPHEIGHT, Double.MAX_VALUE);

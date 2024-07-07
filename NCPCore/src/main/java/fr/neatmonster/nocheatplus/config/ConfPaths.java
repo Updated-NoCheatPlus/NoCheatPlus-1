@@ -77,7 +77,7 @@ public abstract class ConfPaths {
     public static final String CONFIGVERSION_CREATED                     = CONFIGVERSION + "created";
     /** Build number of the build for which the default config was first created (DefaultConfig.buildNumber), updated with each save. */
     public static final String CONFIGVERSION_SAVED                       = CONFIGVERSION + "saved";
-
+    
     @GlobalConfig
     private static final String LOGGING                                  = "logging.";
     public static final String  LOGGING_ACTIVE                           = LOGGING + SUB_ACTIVE;
@@ -464,6 +464,8 @@ public abstract class ConfPaths {
     public static final String  FIGHT_ACTIVE                             = FIGHT + SUB_ACTIVE;
 
     public static final String  FIGHT_CANCELDEAD                         = FIGHT + "cancel-dead";
+    public static final String FIGHT_ENFORCE_ITEM_RELEASE                = FIGHT + "enforce-item-release";
+    public static final String FIGHT_ENFORCE_CLOSED_INVENTORY            = FIGHT + "enforce-closed-inventory";
     public static final String  FIGHT_TOOLCHANGEPENALTY                  = FIGHT + "tool-change-penalty";
 	public static final String  FIGHT_MAXLOOPLETENCYTICKS                = FIGHT + "max-loop-latency-ticks";
     public static final String  FIGHT_KNOCKBACKVELOCITY                  = FIGHT + "knockback-velocity";
@@ -506,12 +508,6 @@ public abstract class ConfPaths {
     public static final String  FIGHT_NOSWING_CHECK                      = FIGHT_NOSWING + SUB_ACTIVE;
     public static final String  FIGHT_NOSWING_ACTIONS                    = FIGHT_NOSWING + "actions";
 
-    private static final String FIGHT_IMPOSSIBLEHIT                      = FIGHT + "impossiblehit.";
-    public static final String  FIGHT_IMPOSSIBLEHIT_CHECK                = FIGHT_IMPOSSIBLEHIT + SUB_ACTIVE;
-    private static final String FIGHT_IMPOSSIBLEHIT_IMPROBABLE           = FIGHT_IMPOSSIBLEHIT + "improbable.";
-    public static final String  FIGHT_IMPOSSIBLEHIT_IMPROBABLE_WEIGHT    = FIGHT_IMPOSSIBLEHIT_IMPROBABLE + "weight";
-    public static final String  FIGHT_IMPOSSIBLEHIT_ACTIONS              = FIGHT_IMPOSSIBLEHIT + "actions";
-
     private static final String FIGHT_REACH                              = FIGHT + "reach.";
     public static final String  FIGHT_REACH_CHECK                        = FIGHT_REACH + SUB_ACTIVE;
     public static final String  FIGHT_REACH_SURVIVALDISTANCE             = FIGHT_REACH + "survival-distance";
@@ -527,8 +523,6 @@ public abstract class ConfPaths {
 
     public static final String FIGHT_SELFHIT                             = FIGHT + "selfhit.";
     public static final String FIGHT_SELFHIT_CHECK                       = FIGHT_SELFHIT + SUB_ACTIVE;
-	public static final String FIGHT_SELFHIT_EXCLUDEPROJECTILE           = FIGHT_SELFHIT + "exclude-projectile";
-	public static final String FIGHT_SELFHIT_MESSAGE                     = FIGHT_SELFHIT + "warn-player";
     public static final String FIGHT_SELFHIT_ACTIONS                     = FIGHT_SELFHIT + "actions";
     
     private static final String FIGHT_YAWRATE                            = FIGHT + "yawrate.";
@@ -623,10 +617,9 @@ public abstract class ConfPaths {
 
     public static final String  MOVING_PASSABLE                             = MOVING + "passable.";
     public static final String  MOVING_PASSABLE_CHECK                       = MOVING_PASSABLE + SUB_ACTIVE;
-    //private static final String MOVING_PASSABLE_RAYTRACING                  = MOVING_PASSABLE + "raytracing.";
     public static final String  MOVING_PASSABLE_ACTIONS                     = MOVING_PASSABLE + "actions";
-    public static final String  MOVING_PASSABLE_RT_XZ_FACTOR                = MOVING_PASSABLE + "horizontal-margins";
-    public static final String  MOVING_PASSABLE_RT_Y_FACTOR                 = MOVING_PASSABLE + "vertical-margins";
+    public static final String  MOVING_PASSABLE_RT_XZ_FACTOR                = MOVING_PASSABLE + "horizontal-margin";
+    public static final String  MOVING_PASSABLE_RT_Y_FACTOR                 = MOVING_PASSABLE + "vertical-margin";
     private static final String MOVING_PASSABLE_UNTRACKED                   = MOVING_PASSABLE + "untracked.";
     private static final String MOVING_PASSABLE_UNTRACKED_TELEPORT          = MOVING_PASSABLE_UNTRACKED + "teleport.";
     public static final String  MOVING_PASSABLE_UNTRACKED_TELEPORT_ACTIVE   = MOVING_PASSABLE_UNTRACKED_TELEPORT + SUB_ACTIVE;
@@ -640,6 +633,7 @@ public abstract class ConfPaths {
     public static final String MOVING_SURVIVALFLY_STEPHEIGHT                = MOVING_SURVIVALFLY + "stepheight";
     private static final String MOVING_SURVIVALFLY_EXTENDED                 = MOVING_SURVIVALFLY + "extended.";
     public static final String MOVING_SURVIVALFLY_EXTENDED_RESETITEM        = MOVING_SURVIVALFLY_EXTENDED + "reset-activeitem";
+    public static final String MOVING_SURVIVALFLY_EXTENDED_STRICT_HORIZONTAL_PREDICTION = MOVING_SURVIVALFLY_EXTENDED + "strict-speed-prediction";
     private static final String MOVING_SURVIVALFLY_LENIENCY                 = MOVING_SURVIVALFLY + "leniency.";
     public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZECOUNT      = MOVING_SURVIVALFLY_LENIENCY + "freeze-count";
     public static final String MOVING_SURVIVALFLY_LENIENCY_FREEZEINAIR      = MOVING_SURVIVALFLY_LENIENCY + "freeze-inair";
@@ -842,7 +836,10 @@ public abstract class ConfPaths {
     public static final String  MOVING_MOREPACKETSVEHICLE_ACTIONS        = "checks.moving.morepacketsvehicle.actions";
 
     // Deprecated paths (just removed).
-    // TODO: Deprecate or rename (->falldistancemin)?
+    @Deprecated
+    public static final String FIGHT_SELFHIT_EXCLUDEPROJECTILE           = FIGHT_SELFHIT + "exclude-projectile";
+    @Deprecated
+    public static final String FIGHT_SELFHIT_MESSAGE                     = FIGHT_SELFHIT + "warn-player";
     @Deprecated
     public static final String MOVING_SURVIVALFLY_EXTENDED_NOSLOW           = MOVING_SURVIVALFLY_EXTENDED + "noslow";
     @Deprecated

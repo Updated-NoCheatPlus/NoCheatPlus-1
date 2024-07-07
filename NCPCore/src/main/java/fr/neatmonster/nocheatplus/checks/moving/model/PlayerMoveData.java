@@ -69,7 +69,7 @@ public class PlayerMoveData extends MoveData {
     
     /**
      * Indicates that this movement has/should have been slowed down due to the player hitting an entity (sprinting will be reset as well).<br>
-     * Mostly intended to be used for h-speed prediction.
+     * Mostly intended to be used for the h-speed prediction.
      */
     public boolean hasAttackSlowDown;
 
@@ -137,7 +137,7 @@ public class PlayerMoveData extends MoveData {
      * Do note that players cannot send duplicate packets in a row: after we receive an "empty" PlayerMoveEvent, the next one incoming must have the actual movement change.
      * (Sequence is: normal PME -> duplicate PME -> normal PME(...))
      */
-    public boolean duplicateEvent;
+    public boolean hasNoMovementDueToDuplicatePacket;
 
     /**
      * Just the used vertical velocity. Could be overridden multiple times
@@ -146,7 +146,7 @@ public class PlayerMoveData extends MoveData {
     public SimpleEntry verVelUsed = null;
     
     /**
-     * Signal that this movement has horizontal impulse: meaning, the player has actively pressed a WASD key.
+     * Signal that this movement has horizontal impulse, meaning: the player has actively pressed a WASD key.
      * Intention is to be able to differentiate when the player is actively moving VS being passively moved by other sources (i.e.: push and velocity)
      */
     public boolean hasImpulse;
@@ -188,7 +188,7 @@ public class PlayerMoveData extends MoveData {
         // Meta stuff.
         multiMoveCount = 0;
         verVelUsed = null;
-        duplicateEvent = false;
+        hasNoMovementDueToDuplicatePacket = false;
         hasImpulse = false;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();

@@ -45,8 +45,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
@@ -467,7 +465,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             }
         }
         // Teleport to untracked locations.
-        else if (cause == TeleportCause.COMMAND || cause == TeleportCause.PLUGIN) { 
+        else { 
             // Attempt to prevent teleporting to players inside of blocks at untracked coordinates.
             if (cc.passableUntrackedTeleportCheck) {
                 if (cc.loadChunksOnTeleport) {
@@ -797,15 +795,17 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             token = "awaitsetback";
         }
         else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove 
-            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)) { 
+            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)
+            // This was apparently fixed by mojang in 1.21. 
+            && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_20_3)
+            ) { 
             //if (data.sfHoverTicks > 0) data.sfHoverTicks += hoverTicksStep;
-            earlyReturn = data.lastMoveNoMove = thisMove.duplicateEvent = true;
+            earlyReturn = data.lastMoveNoMove = thisMove.hasNoMovementDueToDuplicatePacket = true;
             token = "duplicate";
             // Ignore 1.17+ duplicate position packets.
             // Context: Mojang attempted to fix a bucket placement desync issue by re-sending the position on right clicking...
             // On the server-side, this translates in a duplicate move which we need to ignore (i.e.: players can have 0 distance in air, MorePackets will trigger due to the extra packet if the button is pressed for long enough etc...)
             // Thanks Mojang as always.
-            // NOTE: on ground status does not seem to change
         }
         else {
             earlyReturn = false;
@@ -814,7 +814,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         
         // (Reset here, not after the checks run)
         if (!TrigUtil.isSamePos(from, to)) {
-            data.lastMoveNoMove = thisMove.duplicateEvent = false;
+            data.lastMoveNoMove = thisMove.hasNoMovementDueToDuplicatePacket = false;
         }
 
         if (earlyReturn) {
@@ -2392,7 +2392,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                                 else {
                                     StaticLog.logInfo("Set back player " + player.getName() + ": " + LocUtil.simpleFormat(refLoc));
                                     data.prepareSetBack(refLoc);
-                                    if (!player.teleport(refLoc, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
+                                    if (!SchedulerHelper.teleportEntity(player, refLoc, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION)) {
                                         StaticLog.logWarning("FAILED to set back player " + player.getName());
                                     }
                                 }
@@ -2505,7 +2505,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             final Location newTo = enforceLocation(player, player.getLocation(useTickLoc), data);
             if (newTo != null) {
                 data.prepareSetBack(newTo);
-                player.teleport(newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
+                SchedulerHelper.teleportEntity(player, newTo, BridgeMisc.TELEPORT_CAUSE_CORRECTION_OF_POSITION);
             }
         }
         if (!rem.isEmpty()) {

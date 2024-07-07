@@ -57,7 +57,7 @@ public enum AlmostBoolean{
     }
 
     /**
-     * Pessimistic interpretation: true iff YES.
+     * Pessimistic interpretation: true if YES.
      * @return
      */
     public boolean decide(){
@@ -65,7 +65,7 @@ public enum AlmostBoolean{
     }
 
     /**
-     * Optimistic interpretation: true iff not NO.
+     * Optimistic interpretation: true if not NO.
      * @return
      */
     public boolean decideOptimistically() {

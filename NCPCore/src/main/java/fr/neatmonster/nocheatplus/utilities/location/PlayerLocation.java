@@ -99,6 +99,7 @@ public class PlayerLocation extends RichEntityLocation {
                 || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16_2) 
                 && (
                     player.getFallDistance() < cc.sfStepHeight 
+                    // TODO: Needs CollisionUtil.getCollisionBoxes
                     && BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND)
                 )
             ;
@@ -153,6 +154,7 @@ public class PlayerLocation extends RichEntityLocation {
         double[] aaBBCopy = getAABBCopy();
 
         // Move AABB alongside the X axis.
+        // TODO: Needs CollisionUtil.getCollisionBoxes
         boolean collidesX = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND);
         while (xDistance != 0.0 && !collidesX) {
             if (xDistance < 0.05 && xDistance >= -0.05) {

@@ -146,7 +146,6 @@ public class MathUtil {
     /**
      * Absolute non-zero value of the input number.
      * 
-     * @param a
      * @param b
      * @return The first non-zero value.
      * @throws IllegalArgumentException if input is 0
@@ -272,7 +271,6 @@ public class MathUtil {
      * Given an array of doubles, get the index of the array slot containing the closest value to the target value.
      * 
      * @param arr
-     * @param target
      * @return the index.
      */
     public static int closestIndex(double[] arr, double target) {
@@ -291,28 +289,7 @@ public class MathUtil {
         }
         return closestIdx;
     }
-
-    /**
-     * Seconds to ms.
-     *
-     * @param s1
-     *            the s1
-     * @param s2
-     *            the s2
-     * @param s3
-     *            the s3
-     * @param s4
-     *            the s4
-     * @param s5
-     *            the s5
-     * @param s6
-     *            the s6
-     * @return the long[]
-     */
-    public static long[] secToMs(final double s1, final double s2, final double s3, final double s4, final double s5, final double s6, final double s7) {
-        return new long[] { (long) (s1 * 1000d), (long) (s2 * 1000d), (long) (s3 * 1000d), (long) (s4 * 1000d), (long) (s5 * 1000d), (long) (s6 * 1000d), (long) (s7 * 1000d) };
-    }
-
+    
     /**
      * Seconds to ms.
      *
@@ -328,7 +305,6 @@ public class MathUtil {
     /**
      * Milliseconds to seconds
      * 
-     * @param milliseconds
      * @return converted time.
      */
     public static double toSeconds(final long milliseconds) {

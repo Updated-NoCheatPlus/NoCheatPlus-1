@@ -520,8 +520,8 @@ public class RichEntityLocation extends RichBoundsLocation {
      *                 If no collision can be found within the given speed, the method will return the unmodified input Vector as a result.
      *                 Otherwise, a modified Vector containing the "obstructed" speed is returned. <br>
      *                 (Thus, if you wish to know if the player collided with something: inputXYZ != collidedXYZ)
-     * @param onGround The "on ground" status of the player. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground cases and mismatches must be taken into account.
-     *                 Used to determine whether the player will be able to step up with the given input.
+     * @param onGround The "on ground" status of the entity. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground cases and mismatches must be taken into account.
+     *                 Used to determine whether the entity will be able to step up with the given input.
      * @param ncpAABB  The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
      *                 Only makes sense if you call this method during PlayerMoveEvents, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
      *                 If null, a new AABB using NMS' parameters (width/height) will be created.
@@ -534,7 +534,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         double[] tAABB = ncpAABB.clone();
         if (tAABB == null) {
             // Infer the AABB from NMS width and height parameters.
-            final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f;
+            final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f; // Half width to add to the entity's horizontal coordinates (to get the overall horizontal length)
             final double height = mcAccess.getHandle().getHeight(entity);
             final Location loc = entity.getLocation();
             tAABB = new double[] {loc.getX() - halfWidth, loc.getY(), loc.getZ() - halfWidth, loc.getX() + halfWidth, loc.getY() + height, loc.getZ() + halfWidth};
@@ -556,7 +556,9 @@ public class RichEntityLocation extends RichBoundsLocation {
                 Vector vec32 = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), CollisionUtil.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
                 if (vec32.getY() < cc.sfStepHeight) {
                     Vector vec33 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), CollisionUtil.move(tAABB, vec32.getX(), vec32.getY(), vec32.getZ()), collisionBoxes).add(vec32);
-                    if (TrigUtil.distanceSquared(vec33) > TrigUtil.distanceSquared(vec31)) vec31 = vec33;
+                    if (TrigUtil.distanceSquared(vec33) > TrigUtil.distanceSquared(vec31)) {
+                        vec31 = vec33;
+                    }
                 }
             }
             if (TrigUtil.distanceSquared(vec31) > TrigUtil.distanceSquared(vec3)) {
@@ -577,9 +579,6 @@ public class RichEntityLocation extends RichBoundsLocation {
      */
     public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
         final Player p = (Player) entity;
-        if (p == null) {
-            return new Vector();
-        }
         final IPlayerData pData = DataManager.getPlayerData(p);
         if (isInLava() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16)) {
             // Lava pushes entities starting from the nether update (1.16+)
@@ -620,7 +619,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                         double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY && liquidHeight != 0.0 && !p.isFlying()) {
                             // Collided.
-                            d2 = Math.max(liquidHeightToWorld - minY, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                            d2 = Math.max(liquidHeightToWorld - minY, d2);
                             // Determine pushing speed by using the current flow of the liquid.
                             Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                             if (d2 < 0.4) {
@@ -683,10 +682,6 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return the vector, representing the liquid's flowing force.
      */
     public Vector getFlowForceVector(int x, int y, int z, final long liquidTypeFlag) {
-        final Player p = (Player) entity;
-        if (p == null) {
-            return new Vector();
-        }
         double xModifier = 0.0D;
         double zModifier = 0.0D;
         float liquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
@@ -699,9 +694,12 @@ public class RichEntityLocation extends RichBoundsLocation {
                 if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
                     final Material matAtThisLoc = node.getType();
-                    //          if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
-                    // NCP: Assumption: blocks that can block motion need to be considered ground and should be solid (with some exceptions)
-                    if (!matAtThisLoc.isSolid()) { 
+                    // if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
+                    // NOTE: the game assigns a "blocksMotion" flag to each and every block, as well as a "isSolid" one.
+                    // Thus, a block's ability to obstruct motion isn't determined by its solidity (i.e.: moss block. See in PacketEvents' src, StateTypes.java)
+                    // This also means that we cannot directly use BlockProperties#isSolid() to check for this (and NCP does not have this distinction yet).
+                    // To hack around this, we can use the isGround() check instead, since all ground blocks are able to obstruct motion.
+                    if (!BlockProperties.isGround(matAtThisLoc)) { 
                         if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
                             modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
                             if (modLiquidHeight > 0.0F) {
@@ -723,9 +721,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         Vector flowingVector = new Vector(xModifier, 0.0, zModifier);
         IBlockCacheNode originalNode = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
         if (BlockProperties.isLiquid(originalNode.getType()) && originalNode.getData(blockCache, x, y, z) >= 8) { // 8-15 - falling liquid
-            for (BlockFace direction : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-                if (BlockProperties.isSolidFace(blockCache, (Player) entity, x, y, z, direction, liquidTypeFlag, entity.getLocation()) 
-                    || BlockProperties.isSolidFace(blockCache, (Player) entity, x, y + 1, z, direction, liquidTypeFlag, entity.getLocation())) {
+            for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+                if (BlockProperties.isSolidFace(blockCache, (Player) entity, x, y, z, hDirection, liquidTypeFlag, entity.getLocation()) 
+                    || BlockProperties.isSolidFace(blockCache, (Player) entity, x, y + 1, z, hDirection, liquidTypeFlag, entity.getLocation())) {
                     flowingVector = normalizedVectorWithoutNaN(flowingVector).add(new Vector(0.0D, -6.0D, 0.0D));
                     break;
                 }

@@ -66,7 +66,7 @@ public class BounceHandler {
      */
     public static void processBounce(final Player player,final double fromY, final double toY, final BounceType bounceType, final int tick, final IDebugPlayer idp,
                                      final MovingData data, final MovingConfig cc, final IPlayerData pData) {
-        /** Takes into accounto micro moves */
+        /** Takes into account micro moves */
     	double fallDistance = MovingUtil.getRealisticFallDistance(player, fromY, toY, data, pData);
         /** The base force of the bounce */
         double baseEffect = getBaseBounceSpeed(player, fallDistance);
@@ -111,7 +111,7 @@ public class BounceHandler {
      * @return The squared root of the given fall distance, divided by a magic number
      */
     public static double getBaseBounceSpeed(final Player player, double fallDistance) {
-        if (BridgeMisc.isRipGliding(player)) {
+        if (BridgeMisc.isRipgliding(player)) {
             // Thank you Mojang for letting players perform such ridiculous moves that not even the server can handle!
             return Math.sqrt(fallDistance);
         }
@@ -128,7 +128,7 @@ public class BounceHandler {
      * @return The maximum speed observed.
      */
     public static double getMaximumBounceGain(final Player player) {
-        if (BridgeMisc.isRipGliding(player)) {
+        if (BridgeMisc.isRipgliding(player)) {
             // Completely made up. Assume that players can roughly reach twice the maximum speed they would be able to achieve when just riptiding.
             return Magic.BOUNCE_VERTICAL_MAX_DIST * 3.5;
         }

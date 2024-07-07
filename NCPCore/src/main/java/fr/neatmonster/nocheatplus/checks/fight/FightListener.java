@@ -39,16 +39,14 @@ import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
+import fr.neatmonster.nocheatplus.checks.inventory.InventoryData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.ITraceEntry;
 import fr.neatmonster.nocheatplus.checks.moving.player.UnusedVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
-import fr.neatmonster.nocheatplus.compat.BridgeHealth;
-import fr.neatmonster.nocheatplus.compat.IBridgeCrossPlugin;
+import fr.neatmonster.nocheatplus.compat.*;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;
@@ -62,6 +60,7 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.players.PlayerFactoryArgument;
 import fr.neatmonster.nocheatplus.stats.Counters;
+import fr.neatmonster.nocheatplus.utilities.InventoryUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -93,10 +92,7 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
 
     /** The god mode check. */
     private final GodMode godMode = addCheck(new GodMode());
-
-    /** The impossible hit check */
-    private final ImpossibleHit impossibleHit = addCheck(new ImpossibleHit());
-
+    
     /** The no swing check. */
     private final NoSwing noSwing = addCheck(new NoSwing());
 
@@ -218,7 +214,6 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
         final LocationTrace damagedTrace;
         final Player damagedPlayer;
         if (damaged instanceof Player) {
-
             damagedPlayer = (Player) damaged;
             // Log.
             if (debug && DataManager.getPlayerData(damagedPlayer).hasPermission(Permissions.ADMINISTRATION_DEBUG, damagedPlayer)) {
@@ -255,7 +250,28 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             }
             // Only allow damaging others if taken damage this tick.
             if (player.isDead() && data.damageTakenByEntityTick != TickTask.getTick()) {
+                Improbable.feed(player, 1.0f, System.currentTimeMillis());
                 cancelled = true;
+            }
+        }
+        
+        // Can't attack with an inventory open.
+        if (cc.enforceClosedInventory && !damaged.isDead()) {
+            if (InventoryUtil.hasInventoryOpen(player)) {
+                player.closeInventory();
+                // If closed, do reset InventoryData's stored data.
+                pData.getGenericInstance(InventoryData.class).inventoryOpenTime = 0;
+                Improbable.feed(player, 0.5f, System.currentTimeMillis());
+                // (No cancel here! Less invasive for PvP)
+            }
+        }
+        
+        // Can't attack and using an item at the same time.
+        if (cc.enforceItemRelease && !damaged.isDead()) {
+            if (BridgeMisc.isUsingItem(player)) {
+                pData.requestItemUseResync();
+                Improbable.feed(player, 0.5f, System.currentTimeMillis());
+                // (No cancel here! Less invasive for PvP)
             }
         }
 
@@ -305,19 +321,10 @@ public class FightListener extends CheckListener implements JoinLeaveListener{
             cancelled = true;
         }
         
-        // Misc. illegal hits check
-        if (!cancelled && impossibleHit.isEnabled(player, pData)) {
-            if (impossibleHit.check(player, data, cc, pData, mCc.survivalFlyResetItem && mcAccess.getHandle().resetActiveItem(player))) {
-                cancelled = true;
-                // Still feed the Improbable
-                if (cc.impossibleHitImprobableWeight > 0.0f) {
-                    Improbable.feed(player, cc.impossibleHitImprobableWeight, System.currentTimeMillis());
-                }
-            }
-        }
-        
         if (!cancelled && visible.isEnabled(player, pData)) {
-            if (visible.check(player, loc, damaged, damagedIsFake, damagedLoc, data, cc)) cancelled = true;
+            if (visible.check(player, loc, damaged, damagedIsFake, damagedLoc, data, cc)) {
+                cancelled = true;
+            }
         }
 
         // Checks that use the LocationTrace instance of the attacked entity/player.

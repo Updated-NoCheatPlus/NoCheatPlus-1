@@ -78,7 +78,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     protected ReflectLivingEntity reflectLivingEntity = null;
     protected final Map<Material, BukkitShapeModel> shapeModels = new HashMap<Material, BukkitShapeModel>();
 
-    // Blocks that can be fetched automatically from from the Bukkit API
+    // Blocks that can be fetched automatically from the Bukkit API
     private static final BukkitShapeModel MODEL_AUTO_FETCH = new BukkitFetchableBounds();
     private static final BukkitShapeModel MODEL_AUTO_FETCH_LEGACY = new BukkitFetchableBound();
 
@@ -143,7 +143,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     // Static blocks (various height and inset values).
     private static final BukkitShapeModel MODEL_CAMPFIRE = new BukkitStatic(0.0, 0.4375);
     private static final BukkitShapeModel MODEL_BAMBOO = new BukkitBamboo();
-    private static final BukkitShapeModel MODEL_POINTEDDRIPSTONE = new BukkitDripStone();
+    private static final BukkitShapeModel MODEL_POINTED_DRIPSTONE = new BukkitDripStone();
     private static final BukkitShapeModel MODEL_WATER_PLANTS = new BukkitWaterPlant();
     private static final BukkitShapeModel MODEL_LILY_PAD = new BukkitStatic(0.0625, 0.09375);
     private static final BukkitShapeModel MODEL_FLOWER_POT = new BukkitStatic(0.3125, 0.375);
@@ -492,7 +492,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
 
         // Dripstone.      
         mt = BridgeMaterial.getBlock("pointed_dripstone");
-        if (mt != null) addModel(mt, MODEL_POINTEDDRIPSTONE);
+        if (mt != null) addModel(mt, MODEL_POINTED_DRIPSTONE);
 
         // Bell.
         mt = BridgeMaterial.getBlock("bell");
@@ -550,8 +550,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         if (this.reflectLivingEntity == null || this.reflectLivingEntity.obcGetHandle == null) {
             return null;
         }
-        Object handle = ReflectionUtil.invokeMethodNoArgs(this.reflectLivingEntity.obcGetHandle, player);
-        return handle;
+        return ReflectionUtil.invokeMethodNoArgs(this.reflectLivingEntity.obcGetHandle, player);
     }
 
     private boolean canDealFallDamage() {
