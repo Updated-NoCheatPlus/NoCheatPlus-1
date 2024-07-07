@@ -343,9 +343,9 @@ public class RichEntityLocation extends RichBoundsLocation {
             for (int x = iMinX; x < iMaxX; x++) {
                 for (int y = iMinY; y < iMaxY; y++) {
                     for (int z = iMinZ; z < iMaxZ; z++) {
-                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_WATER);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_WATER, true);
                         double liquidHeightToWorld = y + liquidHeight;
-                        if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
+                        if (liquidHeightToWorld >= minY + 0.001 + extraContraction && liquidHeight != 0.0) {
                             // Collided.
                             inWater = true;
                             return inWater;
@@ -603,7 +603,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 for (int z = iMinZ; z < iMaxZ; z++) {
                     // LEGACY 1.13-
                     if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
-                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         if (liquidHeight != 0.0) {
                             double d0 = (float) (y + 1) - liquidHeight;
                             if (!p.isFlying() && iMaxY >= d0) {
@@ -615,11 +615,11 @@ public class RichEntityLocation extends RichBoundsLocation {
                     }
                     // MODERN 1.13+
                     else {
-                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         double liquidHeightToWorld = y + liquidHeight;
-                        if (liquidHeightToWorld >= minY && liquidHeight != 0.0 && !p.isFlying()) {
+                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !p.isFlying()) {
                             // Collided.
-                            d2 = Math.max(liquidHeightToWorld - minY, d2);
+                            d2 = Math.max(liquidHeightToWorld - minY + 0.001, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                             // Determine pushing speed by using the current flow of the liquid.
                             Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                             if (d2 < 0.4) {
@@ -684,12 +684,12 @@ public class RichEntityLocation extends RichBoundsLocation {
     public Vector getFlowForceVector(int x, int y, int z, final long liquidTypeFlag) {
         double xModifier = 0.0D;
         double zModifier = 0.0D;
-        float liquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag);
+        float liquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, true);
         for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
             int modX = x + hDirection.getModX();
             int modZ = z + hDirection.getModZ();
-            if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {  
-                float modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y, modZ, liquidTypeFlag); 
+            if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y, modZ, liquidTypeFlag)) {
+                float modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y, modZ, liquidTypeFlag, true); 
                 float flowForce = 0.0F;
                 if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
@@ -701,7 +701,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                     // To hack around this, we can use the isGround() check instead, since all ground blocks are able to obstruct motion.
                     if (!BlockProperties.isGround(matAtThisLoc)) { 
                         if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
-                            modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y - 1, modZ, liquidTypeFlag); 
+                            modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y - 1, modZ, liquidTypeFlag, true); 
                             if (modLiquidHeight > 0.0F) {
                                 flowForce = liquidHeight - (modLiquidHeight - 0.8888889f);
                             }

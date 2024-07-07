@@ -58,6 +58,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.PassableAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.collision.PassableRayTracing;
 import fr.neatmonster.nocheatplus.utilities.entity.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
+import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
@@ -495,21 +496,21 @@ public class BlockProperties {
     public static final double getNonVanillaVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
+        eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, player, yOnGround);
+        eLoc.set(loc, player, yOnGround);
         double friction = 1.0;
-        if (pLoc.isInWater()) {
+        if (eLoc.isInWater()) {
             friction = Magic.FRICTION_MEDIUM_WATER;
         }
-        else if (pLoc.isInLava()) {
+        else if (eLoc.isInLava()) {
             friction = Magic.FRICTION_MEDIUM_LAVA;
         }
         else {
             friction = Magic.FRICTION_MEDIUM_AIR;
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return friction;
     }
 
@@ -525,21 +526,21 @@ public class BlockProperties {
     public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
+        eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, player, yOnGround);
+        eLoc.set(loc, player, yOnGround);
         double friction = 1.0;
-        if (pLoc.isInWater()) {
+        if (eLoc.isInWater()) {
             friction = Magic.WATER_VERTICAL_INERTIA;
         }
-        else if (pLoc.isInLava()) {
+        else if (eLoc.isInLava()) {
             friction = Magic.LAVA_VERTICAL_INERTIA;
         }
         else {
             friction = Magic.FRICTION_MEDIUM_AIR;
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return friction;
     }
 
@@ -559,21 +560,21 @@ public class BlockProperties {
         }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
+        eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, entity, yOnGround);
+        eLoc.set(loc, entity, yOnGround);
         double stuckInFactor = 1.0;
-        if (pLoc.isInBerryBush()) {
+        if (eLoc.isInBerryBush()) {
             stuckInFactor = 0.75;
         }
-        else if (pLoc.isInPowderSnow()) {
+        else if (eLoc.isInPowderSnow()) {
             stuckInFactor = 1.5;
         }
-        else if (pLoc.isInWeb()) {
+        else if (eLoc.isInWeb()) {
             stuckInFactor = 0.05;
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return stuckInFactor;
     }
 
@@ -593,13 +594,13 @@ public class BlockProperties {
         }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
+        eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, entity, yOnGround);
+        eLoc.set(loc, entity, yOnGround);
         final IPlayerData pData = DataManager.getPlayerData((Player) entity);
         /** 1.15 changed the ground-seeking distance to 0.5 */
         final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
-        final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
+        final Material blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
         /** Default friction for all other blocks */
         final float DEFAULT_FRICTION = 0.6f;
         float friction = DEFAULT_FRICTION;
@@ -613,7 +614,7 @@ public class BlockProperties {
             friction = 0.8f;
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return friction;
     }
 
@@ -633,11 +634,11 @@ public class BlockProperties {
         }
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
+        eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.set(loc, entity, yOnGround);
+        eLoc.set(loc, entity, yOnGround);
         float speedFactor = 1.0f;
-        final Material block = pLoc.getTypeId();
+        final Material block = eLoc.getTypeId();
         if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
@@ -654,7 +655,7 @@ public class BlockProperties {
             // Failed to retrieve anything; do it again with the block below (getBlockPosBelowThatAffectsMyMovement() in vanilla).
             final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
-            final Material blockBelow = pLoc.getTypeId(pLoc.getBlockX(), Location.locToBlock(pLoc.getY() - yBelow), pLoc.getBlockZ());
+            final Material blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
             if (blockBelow == Material.SOUL_SAND) {
                 if (BridgeEnchant.hasSoulSpeed((Player) entity)) {
                     speedFactor = 1.0f;
@@ -666,7 +667,7 @@ public class BlockProperties {
             }
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return speedFactor;
     }
 
@@ -686,20 +687,20 @@ public class BlockProperties {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(loc, entity, yOnGround);
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(loc, entity, yOnGround);
         double stuckInFactor = 1.0D;
-        if (pLoc.isInWeb()) {
+        if (eLoc.isInWeb()) {
             stuckInFactor = 0.25D;
         }
-        else if (pLoc.isInBerryBush()) {
+        else if (eLoc.isInBerryBush()) {
             stuckInFactor = 0.8D;
         }
-        else if (pLoc.isInPowderSnow()) {
+        else if (eLoc.isInPowderSnow()) {
             stuckInFactor = 0.8999999761581421D;
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return stuckInFactor;
     }
 
@@ -718,11 +719,11 @@ public class BlockProperties {
         // Bit fat workaround, maybe put the object through from check listener ?
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isInLiquid();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isInLiquid();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -741,11 +742,11 @@ public class BlockProperties {
         // Bit fat workaround, maybe put the object through from check listener ?
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isInWater();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isInWater();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -765,11 +766,11 @@ public class BlockProperties {
         // Bit fat workaround, maybe put the object through from check listener ?
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isInWeb();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isInWeb();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -788,11 +789,11 @@ public class BlockProperties {
         // Bit fat workaround, maybe put the object through from check listener ?
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isOnGround();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isOnGround();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -810,11 +811,11 @@ public class BlockProperties {
     public static boolean isOnGroundOrResetCond(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isOnGroundOrResetCond();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isOnGroundOrResetCond();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -832,11 +833,11 @@ public class BlockProperties {
     public static boolean isResetCond(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
-        final boolean res = pLoc.isResetCond();
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
+        final boolean res = eLoc.isResetCond();
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
 
@@ -1285,8 +1286,8 @@ public class BlockProperties {
     /** The block cache. */
     private static WrapBlockCache wrapBlockCache = null; 
 
-    /** The p loc. */
-    private static PlayerLocation pLoc = null;
+    /** The entity loc. */
+    private static RichEntityLocation eLoc = null;
 
     /** The world minimum block Y */
     private static int minWorldY = 0;
@@ -1318,7 +1319,7 @@ public class BlockProperties {
         wrapBlockCache = new WrapBlockCache();
         rtRay = new PassableRayTracing();
         rtAxis = new PassableAxisTracing();
-        pLoc = new PlayerLocation(mcAccess, null);
+        eLoc = new RichEntityLocation(mcAccess, null);
         final Set<String> blocksFeatures = new LinkedHashSet<String>(); // getClass().getName() or some abstract.
         try {
             initTools(mcAccess, worldConfigProvider);
@@ -2235,14 +2236,14 @@ public class BlockProperties {
                                            final Player player, final double eyeHeight, final Location location) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, 0.3);
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, 0.3);
         // On ground.
-        final boolean onGround = pLoc.isOnGround();
+        final boolean onGround = eLoc.isOnGround();
         // Head in water.
-        final int bx = pLoc.getBlockX();
-        final int bz = pLoc.getBlockZ();
-        final double y = pLoc.getY() + eyeHeight;
+        final int bx = eLoc.getBlockX();
+        final int bz = eLoc.getBlockZ();
+        final double y = eLoc.getY() + eyeHeight;
         final int by = Location.locToBlock(y);
         final Material headId = blockCache.getType(bx, by, bz);
         final long headFlags = BlockFlags.getBlockFlags(headId);
@@ -2264,7 +2265,7 @@ public class BlockProperties {
             inWater = y - by < level; // <= ? ...
         }
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         // Haste (faster digging).
         final double haste = PotionUtil.getPotionEffectAmplifier(player, BridgePotionEffect.HASTE);
         final double fatigue = PotionUtil.getPotionEffectAmplifier(player, BridgePotionEffect.MINING_FATIGUE);
@@ -2715,25 +2716,24 @@ public class BlockProperties {
     public static boolean canSeeSky(final Player player, final Location location, final double yOnGround) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
-        pLoc.setBlockCache(blockCache);
-        pLoc.set(location, player, yOnGround);
+        eLoc.setBlockCache(blockCache);
+        eLoc.set(location, player, yOnGround);
         final IPlayerData pData = DataManager.getPlayerData(player);
         final PlayerMoveData thisMove = pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
         // Heavy on performance... Will need some more iterations
-        final boolean res = pLoc.getWorld().getBlockAt(Location.locToBlock(thisMove.to.getX()), Location.locToBlock(thisMove.to.getY()), Location.locToBlock(thisMove.to.getZ())).getLightFromSky() >= 15;
+        final boolean res = eLoc.getWorld().getBlockAt(Location.locToBlock(thisMove.to.getX()), Location.locToBlock(thisMove.to.getY()), Location.locToBlock(thisMove.to.getZ())).getLightFromSky() >= 15;
         blockCache.cleanup();
-        pLoc.cleanup();
+        eLoc.cleanup();
         return res;
     }
     
     public static boolean affectsFlow(final BlockCache access, int x, int y, int z, int x1, int y1, int z1, final long liquidTypeFlag) {
-        return getLiquidHeightAt(access, x, y, z, liquidTypeFlag) == 0 
-                || getLiquidHeightAt(access, x, y, z, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0;
+        return getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag, true) == 0 
+                || getLiquidHeightAt(access, x, y, z, liquidTypeFlag, true) > 0 && getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag, true) > 0;
     }
     
     public static boolean isSame(final BlockCache access, long liquidTypeFlag, Player player, int x1, int y1, int z1, int x2, int y2, int z2) {
-        return  getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag) > 0
-                || getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag) > 0;
+        return getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag, true) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag, true) > 0;
     }
     
     public static boolean isSolidFace(final BlockCache blockCache, Player player, int x, int y, int z, BlockFace direction, long liquidTypeFlag, final Location location) {
@@ -2821,9 +2821,10 @@ public class BlockProperties {
      * @param y
      * @param z
      * @param liquidTypeFlag flag of the liquid want to check(BlockFlags.F_WATER or BlockFlags.F_LAVA)
+     * @param clearDefinition Abstraction hell, isSame call will be different from Fluid.java or Water/LavaFluid.java
      * @return 0.0, if not a liquid.
      */
-    public static double getLiquidHeightAt(final BlockCache access, final int x, final int y, final int z, final long liquidTypeFlag) {
+    public static double getLiquidHeightAt(final BlockCache access, final int x, final int y, final int z, final long liquidTypeFlag, final boolean clearDefinition) {
         double liquidHeight;
         final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
         final IBlockCacheNode nodeAbove = access.getOrCreateBlockCacheNode(x, y + 1, z, false);
@@ -2833,6 +2834,10 @@ public class BlockProperties {
             if (nodeAbove != null && (aboveFlags & liquidTypeFlag) != 0) {
                 // Same liquid type above, full block height
                 liquidHeight = 1;
+                // Wtf - case block water has above is flowing although it look like a full block
+                if (clearDefinition && node.getData(access, x, y, z) >= 8) {
+                    liquidHeight = LIQUID_HEIGHT_LOWERED;
+                }
             }
             else {
                 // Level-dependant height otherwise
@@ -4565,6 +4570,7 @@ public class BlockProperties {
      * @return true, if is full bounds
      */
     public static final boolean isFullBounds(final double[] bounds) {
+        if (bounds == null) return false;
         for (int i = 0; i < 3; i++) {
             if (bounds[i] != 0.0 || bounds[i + 3] != 1.0) {
                 return false;
@@ -4770,9 +4776,9 @@ public class BlockProperties {
      */
     public static void cleanup() {
         // (Null checks are error cases, to be intercepted elsewhere.)
-        if (pLoc != null) {
-            pLoc.cleanup();
-            pLoc = null;
+        if (eLoc != null) {
+            eLoc.cleanup();
+            eLoc = null;
         }
         if (wrapBlockCache != null) {
             wrapBlockCache.cleanup();

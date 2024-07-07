@@ -716,9 +716,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             for (int x = iMinX; x < iMaxX; x++) {
                 for (int y = iMinY; y < iMaxY; y++) {
                     for (int z = iMinZ; z < iMaxZ; z++) {
-                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_LAVA);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_LAVA, true);
                         double liquidHeightToWorld = y + liquidHeight;
-                        if (liquidHeightToWorld > minY && liquidHeight != 0.0) {
+                        if (liquidHeightToWorld > minY + 0.001 && liquidHeight != 0.0) {
                             // Collided.
                             inLava = true;
                             return inLava;
@@ -756,9 +756,9 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             for (int x = iMinX; x < iMaxX; x++) {
                 for (int y = iMinY; y < iMaxY; y++) {
                     for (int z = iMinZ; z < iMaxZ; z++) {
-                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_WATER);
+                        double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, BlockFlags.F_WATER, true);
                         double liquidHeightToWorld = y + liquidHeight;
-                        if (liquidHeightToWorld >= minY && liquidHeight != 0.0) {
+                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0) {
                             // Collided.
                             inWater = true;
                             return inWater;
