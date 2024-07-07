@@ -106,6 +106,12 @@ public class PlayerMoveData extends MoveData {
      * Vertical allowed distance estimated by checks.
      */
     public double yAllowedDistance;
+    
+    /**
+     * The vertical collision as set by RichEntityLocation#collide() in SurvivalFly (vdistrel).
+     * Note that this does not differentiate collision above VS below: it considers both.
+     */
+    public boolean collideY;
 
 
     // Properties involving the environment.
@@ -184,6 +190,7 @@ public class PlayerMoveData extends MoveData {
         zAllowedDistance = 0.0;
         hAllowedDistance = 0.0;
         collideX = false;
+        collideY = false;
         collideZ = false;
         // Meta stuff.
         multiMoveCount = 0;

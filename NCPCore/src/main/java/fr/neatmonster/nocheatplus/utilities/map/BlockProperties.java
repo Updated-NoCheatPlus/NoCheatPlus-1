@@ -52,10 +52,7 @@ import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
-import fr.neatmonster.nocheatplus.utilities.collision.ICollidePassable;
-import fr.neatmonster.nocheatplus.utilities.collision.PassableAxisTracing;
-import fr.neatmonster.nocheatplus.utilities.collision.PassableRayTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.*;
 import fr.neatmonster.nocheatplus.utilities.entity.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
@@ -4664,22 +4661,20 @@ public class BlockProperties {
      */
     public static Location findSupportingBlockLoc(final World world, final BlockCache access, double minX, double minY, double minZ, double maxX, double maxY, double maxZ, Location loc) {
         // From VoxelShapeSpliterator.java
-        final int iMinX = MathUtil.floor(minX - 1.0E-7D) - 1;
-        final int iMaxX = MathUtil.floor(maxX + 1.0E-7D) + 1;
-        final int iMinY = MathUtil.floor(minY - 1.0E-7D) - 1;
-        final int iMaxY = Math.min(MathUtil.floor(maxY + 1.0E-7D) + 1, access.getMaxBlockY());
-        final int iMinZ = MathUtil.floor(minZ - 1.0E-7D) - 1;
-        final int iMaxZ = MathUtil.floor(maxZ + 1.0E-7D) + 1;
+        final int minBlockX = (int) Math.floor(minX - CollisionUtil.COLLISION_EPSILON) - 1;
+        final int maxBlockX = (int) Math.floor(maxX + CollisionUtil.COLLISION_EPSILON) + 1;
+        final int minBlockY = (int) Math.floor(minY - CollisionUtil.COLLISION_EPSILON) - 1;
+        final int maxBlockY = (int) Math.min(Math.floor(maxY + CollisionUtil.COLLISION_EPSILON) + 1, access.getMaxBlockY());
+        final int minBlockZ = (int) Math.floor(minZ - CollisionUtil.COLLISION_EPSILON) - 1;
+        final int maxBlockZ = (int) Math.floor(maxZ + CollisionUtil.COLLISION_EPSILON) + 1;
         // 0: Collect all valid block locations first.
         List<Location> blockLocation = new ArrayList<Location>(); // An AABB can at maximum stay on 4 different blocks simultaneously (i.e.: Being at the center of slime, soulsand, honeyblock and ice)
-        for (int x = iMinX; x <= iMaxX; x++) {
-            for (int y = iMinY; y <= iMaxY; y++) {
-                for (int z = iMinZ; z <= iMaxZ; z++) {
+        for (int x = minBlockX; x <= maxBlockX; x++) {
+            for (int y = minBlockY; y <= maxBlockY; y++) {
+                for (int z = minBlockZ; z <= maxBlockZ; z++) {
                     // Collect all block flags attached to the block at the given coordinates. 
                     final IBlockCacheNode node = access.getOrCreateBlockCacheNode(x, y, z, false);
-                    final long collectedFlags = BlockFlags.getBlockFlags(node.getType());
-                    if (!BlockFlags.hasAnyFlag(collectedFlags, BlockFlags.F_SOLID | BlockFlags.F_GROUND)) {
-                        // Oversimplified ground check: just ensure that the solid ground flags have been collected.
+                    if (isAir(node.getType()) || isPassable(node.getType())) {
                         continue;
                     }
                     // Player is (potentially) on ground: collect all locations.
@@ -4693,7 +4688,7 @@ public class BlockProperties {
         }
         // 2: Find out which block location is closest to the player's current position
         Location closestBlockLoc = null;
-        double lastDistance = Double.MAX_VALUE; 
+        double lastDistance = Double.MAX_VALUE;
         for (Location bLoc : blockLocation) {
             double thisDistance = TrigUtil.distanceToCenterSqr(bLoc, loc);
             if (thisDistance < lastDistance || thisDistance == lastDistance && (closestBlockLoc == null || TrigUtil.compareTo(closestBlockLoc, bLoc) < 0)) {

@@ -409,7 +409,7 @@ public class InventoryUtil {
                     }
                     // False positive
                     else {
-                    	resetUsingItemStatus(pData);
+                        tryResetItemUsageStatus(pData);
                     }
                 }
                 else {

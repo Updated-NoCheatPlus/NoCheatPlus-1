@@ -756,11 +756,12 @@ public class SurvivalFly extends Check {
         }
         // Slime speed
         // (Ground check is already included)
-        if (from.isOnSlimeBlock()) {
+        // TODO: Still not working...
+        if (lastMove.collideY && lastMove.to.onSlimeBlock) {
             // Use pData#isSneaking() because swimming on slime blocks is a thing.
-            if (Math.abs(lastMove.yDistance) < 0.1 && !pData.isSneaking()) { // -0.0784000015258789
-                thisMove.xAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
-                thisMove.zAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
+            if (Math.abs(lastMove.yAllowedDistance) < 0.1 && !pData.isSneaking()) { // -0.0784000015258789
+                thisMove.xAllowedDistance *= 0.4 + Math.abs(lastMove.yAllowedDistance) * 0.2;
+                thisMove.zAllowedDistance *= 0.4 + Math.abs(lastMove.yAllowedDistance) * 0.2;
             }
         }
         // Sliding speed (honey block)
@@ -1138,16 +1139,12 @@ public class SurvivalFly extends Check {
             }
             // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fall back to the jump check above).
             // updateEntityAfterFallOn(), this function is called on the next move
-            if (!player.isSneaking() && (from.getBlockFlags() & BlockFlags.F_BOUNCE25) != 0L) { // TODO: Cannot use flags from 1.20 and onwards, needs the mainSupportingBlock method.
-                Vector collisionVector = from.collide(new Vector(lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
-                if (lastMove.yDistance < 0.0 && collisionVector.getY() != thisMove.yAllowedDistance) {
-                    if ((from.getBlockFlags() & BlockFlags.F_SLIME) != 0L) {
+            if (!player.isSneaking() && lastMove.collideY) { // TODO: Cannot use flags from 1.20 and onwards, needs the mainSupportingBlock method.
+                if (lastMove.yAllowedDistance < 0.0) {
+                    if (lastMove.to.onBouncyBlock) {
                         // The effect works by inverting the distance.
-                        thisMove.yAllowedDistance = -thisMove.yAllowedDistance;
-                    }
-                    else {
                         // Beds have a weaker bounce effect (BedBlock.java).
-                        thisMove.yAllowedDistance = -thisMove.yAllowedDistance * 0.6600000262260437;
+                        thisMove.yAllowedDistance = lastMove.to.onSlimeBlock ? -lastMove.yAllowedDistance : -lastMove.yAllowedDistance * 0.6600000262260437;
                     }
                     tags.add("bounceup");
                 }
@@ -1202,6 +1199,8 @@ public class SurvivalFly extends Check {
             else {
                 thisMove.yAllowedDistance = collisionVector.getY();
             }
+            // if this vertical move resulted in a collision, remember it.
+            thisMove.collideY = collisionVector.getY() != thisMove.yAllowedDistance;
         }
         // Check for workarounds at the end and override the prediction if needed (just allow the movement in this case.)
         if (AirWorkarounds.checkPostPredictWorkaround(data, fromOnGround, toOnGround, from, to, thisMove.yAllowedDistance, player, isNormalOrPacketSplitMove)) {
@@ -1213,6 +1212,7 @@ public class SurvivalFly extends Check {
         final double offset = thisMove.yDistance - thisMove.yAllowedDistance;
         if (Math.abs(offset) < Magic.PREDICTION_EPSILON) {
             // Accuracy margin.
+            
         }
         else {
             // If velocity can be used for compensation, use it.

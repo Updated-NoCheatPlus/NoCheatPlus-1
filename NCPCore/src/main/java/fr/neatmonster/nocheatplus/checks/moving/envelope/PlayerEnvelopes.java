@@ -303,6 +303,7 @@ public class PlayerEnvelopes {
         // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
         // A better way to do this would to get the maxY through another method, just can't seem to find it :/
         if (player.isSneaking()) {
+            // isSneaking is correct here
             return false;
         }
         double blockY = (to.getY() + 0.4375) % 1 == 0 ? to.getY() : to.getBlockY();
@@ -319,12 +320,13 @@ public class PlayerEnvelopes {
                 || to.getY() - blockY < 0.286 && to.getY() - from.getY() > -0.9
                 && to.getY() - from.getY() < -Magic.GRAVITY_MIN
                 && !to.isOnGround()
-                // 0: Wildcard micro bounces
-                || to.isOnGround() && !from.isOnGround() && to.getY() - from.getY() < 0.0
-                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) <= 1.0
                 // 0: Wildcard riptiding. No point in checking for distance constraints here when speed is so high.
                 || Bridge1_13.isRiptiding(player)
-           ;
+                // 0: Wildcard micro bounces
+                || to.isOnGround() && !from.isOnGround() && to.getY() - from.getY() < 0.0 
+                && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) <= 0.5 // 0.5... Can probably be even smaller, since these are micro bounces.
+                && to.isOnBouncyBlock() && !to.isOnSlimeBlock()
+                ;
     }
 
 }
