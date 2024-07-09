@@ -206,7 +206,7 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(e.getPlayer());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // This event is called on releasing the trident (See ItemTrident.java), so the item is not in use anymore.
-        pData.setItemInUse(null);
+        pData.setItemInUseState(null);
     }
 
     private static void onItemConsume(final PlayerItemConsumeEvent e) {
@@ -214,7 +214,7 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Consume(d) (!!), so the player isn't using the item anymore
-        pData.setItemInUse(null);   
+        pData.setItemInUseState(null);   
     }
 
     private static void onInventoryOpen(final InventoryOpenEvent e) {
@@ -223,14 +223,14 @@ public class UseItemAdapter extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(p);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item with an inventory open.
-        pData.setItemInUse(null);
+        pData.setItemInUseState(null);
     }
 
     private static void onDeath(final PlayerDeathEvent e) {
         final IPlayerData pData = DataManager.getPlayerData((Player) e.getEntity());
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item if dead
-        pData.setItemInUse(null);  
+        pData.setItemInUseState(null);  
     }
 
     @SuppressWarnings("deprecation")
@@ -257,7 +257,7 @@ public class UseItemAdapter extends BaseAdapter {
 
         if (p.getGameMode() == GameMode.CREATIVE) {
             // TODO: If merging SurvivalFly with CreativeFly, creative mode needs to be taken into consideration as well.
-            pData.setItemInUse(null);
+            pData.setItemInUseState(null);
             return;
         }
         
@@ -278,34 +278,34 @@ public class UseItemAdapter extends BaseAdapter {
                 }
                 if (m == Material.POTION || m == Material.MILK_BUCKET || m.toString().endsWith("_APPLE") || m.name().startsWith("HONEY_BOTTLE")) {
                     // Can be consumed regardless of hunger level
-                    pData.setItemInUse(m);
+                    pData.setItemInUseState(m);
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
                 }
                 if (item.getType().isEdible() && p.getFoodLevel() < 20) {
                     // Hunger level dependant consumables.
-                    pData.setItemInUse(m); 
+                    pData.setItemInUseState(m); 
                     data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
                 }
             }
             // Bows...
             if (m == Material.BOW && InventoryUtil.hasArrow(p.getInventory(), false)) {
-                pData.setItemInUse(m);
+                pData.setItemInUseState(m);
                 data.offHandUse = Bridge1_9.hasGetItemInOffHand() && e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
             // Shields and swords (legacy)... Bukkit takes care here, but set anyway.
             if (Bridge1_9.hasElytra()) {
             	if (m == Material.SHIELD) {
-            	    pData.setItemInUse(m);
+            	    pData.setItemInUseState(m);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
             	}
             }
             else if (MaterialUtil.isSword(m)) {
             	// Legacy server. Blocking is done with swords.
-            	pData.setItemInUse(m);
+            	pData.setItemInUseState(m);
             	// (Off hand doesn't exist)
             	// TODO: Account for cross-version compatibility?
             	return;
@@ -314,7 +314,7 @@ public class UseItemAdapter extends BaseAdapter {
             // Crosswbows...
             if (m.toString().equals("CROSSBOW")) {
                 if (!((CrossbowMeta) item.getItemMeta()).hasChargedProjectiles() && InventoryUtil.hasArrow(p.getInventory(), true)) {
-                    pData.setItemInUse(m);
+                    pData.setItemInUseState(m);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 }
             }
@@ -332,26 +332,26 @@ public class UseItemAdapter extends BaseAdapter {
                     // 1: Otherwise, the trident can be used and thrown anywhere
                     || BridgeEnchant.getRiptideLevel(p) <= 0.0
                 )) {
-                pData.setItemInUse(m);
+                pData.setItemInUseState(m);
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
             // Spyglass (1.17)...
             if (BridgeMisc.hasIsFrozen() && m == Material.SPYGLASS) {
-                pData.setItemInUse(m);
+                pData.setItemInUseState(m);
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
             // Lastly, goat horns (1.19)...
             if (m.toString().equals("GOAT_HORN")) {
-                pData.setItemInUse(m);
+                pData.setItemInUseState(m);
                 data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                 return;
             }
         } 
         else {
             // No item in hands, no deal.
-            pData.setItemInUse(null);  
+            pData.setItemInUseState(null);  
         }
     }
     
@@ -396,13 +396,13 @@ public class UseItemAdapter extends BaseAdapter {
         if (!BridgeMisc.hasGetItemInUseMethod()) {
             // DROP_ALL_ITEMS when dead?
             if (digtype == PlayerDigType.DROP_ALL_ITEMS || digtype == PlayerDigType.DROP_ITEM) {
-                pData.setItemInUse(null);
+                pData.setItemInUseState(null);
             }
         }
         
         //Advanced check: do handle this one
         if (digtype == PlayerDigType.RELEASE_USE_ITEM) {
-            pData.setItemInUse(null);
+            pData.setItemInUseState(null);
             long now = System.currentTimeMillis();
             if (data.releaseItemTime != 0) {
                 if (now < data.releaseItemTime) {

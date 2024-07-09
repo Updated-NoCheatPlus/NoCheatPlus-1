@@ -127,7 +127,7 @@ public class PlayerLocation extends RichEntityLocation {
             y *= force / distance;
             z *= force / distance;
             if (onGround) {
-                x += 1.1999999284744263f;
+                y += 1.1999999284744263f;
             }
             return new Vector(x, y, z);
         }

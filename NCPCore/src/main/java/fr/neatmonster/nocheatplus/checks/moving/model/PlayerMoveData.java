@@ -131,7 +131,7 @@ public class PlayerMoveData extends MoveData {
     // Meta stuff.
     /**
      * Due to the thresholds and other subtleties with the PlayerMoveEvent, there could have been other
-     * (micro-) moves by the player which could not be checked, because Bukkit skipped them. One moving event
+     * (micro-) moves by the player which could not be checked, because Bukkit did not fire an event for them. One moving event
      * is split into several other moves, with a cap.
      */
     public int multiMoveCount;

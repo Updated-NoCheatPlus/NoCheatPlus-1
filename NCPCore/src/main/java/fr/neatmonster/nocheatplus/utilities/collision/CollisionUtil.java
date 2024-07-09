@@ -56,7 +56,7 @@ public class CollisionUtil {
 
 
     /**
-     * A function taken from NMS to judge if the horizontal collision is to be considered as negligible. <br>
+     * A function taken from NMS (LocalPlayer#aiStep()) to judge if the horizontal collision is to be considered as negligible. <br>
      * Used to determine whether the sprinting status needs to be reset on colliding with a wall (if this returns true, sprinting won't be reset then).
      *
      * @param collisionVector
@@ -1094,7 +1094,7 @@ public class CollisionUtil {
                                     ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
                                     ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);
                     if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0) 
-                            && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
+                        && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
                         // Don't add to a list if we only care if the player intersects with the block
                         //if (!onlyCheckCollide) {
                             double[] multiAABB = move(blockCache.fetchBounds(x, y, z), x, y, z);
@@ -1231,16 +1231,16 @@ public class CollisionUtil {
     }
 
     public static double collideX(double[] AABB, double[] other, double offsetX) {
-        if (offsetX != 0 && (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON &&
-                (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
-
+        if (offsetX != 0 && (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON 
+            && (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
             if (offsetX >= 0.0) {
                 double max_move = AABB[0] - other[3];
                 if (max_move < -COLLISION_EPSILON) {
                     return offsetX;
                 }
                 return Math.min(max_move, offsetX);
-            } else {
+            } 
+            else {
                 double max_move = AABB[3] - other[0];
                 if (max_move > COLLISION_EPSILON) {
                     return offsetX;
@@ -1252,15 +1252,16 @@ public class CollisionUtil {
     }
 
     public static double collideY(double[] AABB, double[] other, double offsetY) {
-        if (offsetY != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON &&
-                (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
+        if (offsetY != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON 
+            && (other[2] - AABB[5]) < -COLLISION_EPSILON && (other[5] - AABB[2]) > COLLISION_EPSILON) {
             if (offsetY >= 0.0) {
                 double max_move = AABB[1] - other[4];
                 if (max_move < -COLLISION_EPSILON) {
                     return offsetY;
                 }
                 return Math.min(max_move, offsetY);
-            } else {
+            } 
+            else {
                 double max_move = AABB[4] - other[1];
                 if (max_move > COLLISION_EPSILON) {
                     return offsetY;
@@ -1272,15 +1273,16 @@ public class CollisionUtil {
     }
 
     public static double collideZ(double[] AABB, double[] other, double offsetZ) {
-        if (offsetZ != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON &&
-                (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON) {
+        if (offsetZ != 0 && (other[0] - AABB[3]) < -COLLISION_EPSILON && (other[3] - AABB[0]) > COLLISION_EPSILON 
+            && (other[1] - AABB[4]) < -COLLISION_EPSILON && (other[4] - AABB[1]) > COLLISION_EPSILON) {
             if (offsetZ >= 0.0) {
                 double max_move = AABB[2] - other[5];
                 if (max_move < -COLLISION_EPSILON) {
                     return offsetZ;
                 }
                 return Math.min(max_move, offsetZ);
-            } else {
+            } 
+            else {
                 double max_move = AABB[5] - other[2];
                 if (max_move > COLLISION_EPSILON) {
                     return offsetZ;

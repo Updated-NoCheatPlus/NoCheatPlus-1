@@ -22,6 +22,7 @@ import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
@@ -75,6 +76,9 @@ public class LostGround {
         }
         if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
             // Ignore levitation
+            return false;
+        }
+        if (PlayerEnvelopes.isVerticallyConstricted(from, to, DataManager.getPlayerData(player))) {
             return false;
         }
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
@@ -163,7 +167,7 @@ public class LostGround {
      * @param tag
      * @param data
      * @param thisX 
-     *           Player's current coordinates...
+     *           Player's most recent coordinates...
      * @param thisY
      * @param thisZ
      * @param lastX 

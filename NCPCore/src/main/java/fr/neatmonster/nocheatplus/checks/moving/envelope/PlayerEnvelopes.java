@@ -131,7 +131,7 @@ public class PlayerEnvelopes {
     
     /**
      * Test if the player is constricted in a 1.5 blocks-high area (applies to 1.14 clients and above).
-     * We cannot detect if players try to jump in here: on the server side, player is seen as never leaving the ground and without any vertical motion.
+     * We cannot detect if players try to jump in here: on the server side, player is seen as never leaving the ground and without any vertical motion change.
      * 
      * @param from
      * @param pData
@@ -145,7 +145,7 @@ public class PlayerEnvelopes {
             // Just ensure to not be too exploitable: ensure that lost ground is ruled out.
             return false;
         }
-        if (!pData.isSneaking()) {
+        if (!pData.isCrouching()) {
             return false;
         }
         return from.seekHeadObstruction(0.09, false) && from.isOnGround() && to.isOnGround();
@@ -164,7 +164,6 @@ public class PlayerEnvelopes {
      * @return True, if isJump() returned true while the player is sprinting and not in a liquid.
      */
     public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
-        final MovingData data = pData.getGenericInstance(MovingData.class);
         if (from.isInLiquid()) {
             return false;
         }
@@ -172,12 +171,11 @@ public class PlayerEnvelopes {
     }
 
     /**
-     * NoCheatPlus' definition of a jump.<br>
+     * Test if this movement may fit into NCP's jumping envelope definition.<br>
      * (Minecraft does not offer a direct way to know if players could have jumped)
-     * This is mostly intended for vertical motion, not for horizontal. Use PlayerEnvelopes#isBunnyhop() for that.
+     * This is mostly intended for vertical motion, not for horizontal. Use PlayerEnvelopes#isBunnyhop() for that. <br>
+     * Accounts for all/most edge cases.
      *
-     * @param fromOnGround Uses the BCT.
-     * @param toOnGround Uses the BCT.
      * @return True, if the player is leaving ground with Minecraft's assigned jump speed.
      */
     public static boolean isJump(final PlayerLocation from, final PlayerLocation to, final Player player, boolean fromOnGround, boolean toOnGround) {
@@ -232,8 +230,6 @@ public class PlayerEnvelopes {
     /**
      * NoCheatPlus' definition of "step".<br>
      *
-     * @param fromOnGround Uses the BCT.
-     * @param toOnGround   Uses the BCT.
      * @return True if this movement is from and to ground with positive yDistance, as determined by the CachedConfig.sfStepHeight parameter.
      */
     public static boolean isStepUpByNCPDefinition(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {

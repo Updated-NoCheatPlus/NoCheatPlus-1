@@ -106,7 +106,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * ExemptionContext.LEGACY_NON_NESTED will not be touched.
      * <hr>
      * Primary thread and asynchronous access are separated and yield different
-     * results, it's imperative to always unexempt properly for asyncrhonous
+     * results, it's imperative to always unexempt properly for asynchronous
      * thread contexts, as isExempted reflects a mixture of both.
      * 
      * @param checkType
@@ -120,7 +120,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * unexempt(CheckType, ExemptionContext).
      * <hr>
      * Primary thread and asynchronous access are separated and yield different
-     * results, it's imperative to always unexempt properly for asyncrhonous
+     * results, it's imperative to always unexempt properly for asynchronous
      * thread contexts, as isExempted reflects a mixture of both.
      * 
      * @param checkType
@@ -138,7 +138,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * unexemptAll as is done with the legacy signature unexempt(CheckType).
      * <hr>
      * Primary thread and asynchronous access are separated and yield different
-     * results, it's imperative to always unexempt properly for asyncrhonous
+     * results, it's imperative to always unexempt properly for asynchronous
      * thread contexts, as isExempted reflects a mixture of both.
      * 
      * @param checkType
@@ -151,7 +151,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * and descendants recursively.
      * <hr>
      * Primary thread and asynchronous access are separated and yield different
-     * results, it's imperative to always unexempt properly for asyncrhonous
+     * results, it's imperative to always unexempt properly for asynchronous
      * thread contexts, as isExempted reflects a mixture of both.
      * 
      * @param checkType
@@ -366,27 +366,28 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
 
     /**
      * Set the sneaking state of the client.<br>
-     * There are cases where the information sent to the server can be incosistent, so we need to estimate
+     * There are cases where the information sent to the server can be inconsistent, so we need to estimate
      * ourselves if the player could be sneaking.
      * 
      * @param sneaking
      */
-    public void setSneaking(final boolean sneaking);
+    public void setCrouchingState(final boolean sneaking);
 
     /**
-     * Gets the sneaking state of the client, as set by PlayerData#setSneaking().
+     * Gets the sneaking state of the client, as set by PlayerData#setSneaking(). <br>
+     * Note that this is determined by player poses, not shift key presses.
      * @return True, if sneaking.
      */
-    public boolean isSneaking();
+    public boolean isCrouching();
 
     /**
      * Set the sprinting state of the client.<br>
-     * There are cases where the information sent to the server can be incosistent, so we need to estimate
+     * There are cases where the information sent to the server can be inconsistent, so we need to estimate
      * ourselves if the player could be sprinting.
      * 
      * @param sprinting
      */
-    public void setSprinting(final boolean sprinting);
+    public void setSprintingState(final boolean sprinting);
     
     /**
      * Gets the sprinting state of the client, as set by PlayerData#setSprinting().<br>
@@ -402,7 +403,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * 
      * @param itemInUse
      */
-    public void setItemInUse(final Material itemInUse);
+    public void setItemInUseState(final Material itemInUse);
     
     /**
      * Gets the item currently in use, as set by PlayerData#setItemInUse

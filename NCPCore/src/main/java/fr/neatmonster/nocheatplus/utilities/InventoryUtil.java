@@ -426,6 +426,6 @@ public class InventoryUtil {
             // No need to do anything as we did not have to set the item in the first place
             return;
         }
-        pData.setItemInUse(null);
+        pData.setItemInUseState(null);
     }
 }

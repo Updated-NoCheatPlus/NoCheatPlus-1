@@ -498,19 +498,6 @@ public class PlayerData implements IPlayerData {
         }
         requestLazyPermissionUpdate(permissionRegistry.getPreferKeepUpdatedOffline());
         lastJoinTime = timeNow;
-        // Needed because a player may log in and be already crouching or crawling.
-        final MovingConfig cc = this.getGenericInstance(MovingConfig.class);
-        if (BridgeMisc.hasEntityChangePoseEvent()) {
-            if (player.getPose().equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround)) {
-                // isVisuallyCrawling()...
-                this.setSneaking(true);
-                // Cannot sprint here 
-                this.setSprinting(false);
-            }
-            else if (player.getPose().equals(Pose.SNEAKING)) {
-                // Sneaking...
-                this.setSneaking(true);
-            }
         }
     }
 
@@ -811,17 +798,17 @@ public class PlayerData implements IPlayerData {
     }
 
     @Override
-    public void setSneaking(final boolean sneaking) {
+    public void setCrouchingState(final boolean sneaking) {
         this.sneaking = sneaking;
     }
 
     @Override
-    public void setSprinting(final boolean sprinting) {
+    public void setSprintingState(final boolean sprinting) {
         this.sprinting = sprinting;
     }
 
     @Override
-    public void setItemInUse(final Material itemInUse) {
+    public void setItemInUseState(final Material itemInUse) {
         this.itemInUse = itemInUse;
     }
     
@@ -846,7 +833,7 @@ public class PlayerData implements IPlayerData {
     }
 
     @Override
-    public boolean isSneaking() {
+    public boolean isCrouching() {
         return sneaking;
     }
 

@@ -80,7 +80,7 @@ public class Magic {
     /** EntityLiving, travel */
     public static final double LAVA_VERTICAL_INERTIA = 0.5;
     /** EntityLiving, travel */
-    public static final double DEFAULT_SLOW_FALL_GRAVITY = 0.01;
+    public static final double SLOW_FALL_GRAVITY = 0.01;
     /** EntityLiving, travel */
     public static final double DEFAULT_GRAVITY = 0.08;
     /** EntityLiving, travel */
@@ -133,7 +133,7 @@ public class Magic {
     /** Span of gravity between maximum and minimum. 0.021 */
     public static final double GRAVITY_SPAN = GRAVITY_MAX - GRAVITY_MIN;
     /** This is actually 0.01, but this value matches with gravity formula (lastDelta * friction - gravity). Old vdistrel */
-    public static final double SLOW_FALL_GRAVITY = 0.0097; 
+    public static final double NCP_SLOW_FALL_GRAVITY = 0.0097; 
     /** Somewhat arbitrary value to use with the legacy vAcc check with slowfall */
     public static final float GRAVITY_SLOW_FALL_VACC = (float)(SLOW_FALL_GRAVITY * 0.6);
     

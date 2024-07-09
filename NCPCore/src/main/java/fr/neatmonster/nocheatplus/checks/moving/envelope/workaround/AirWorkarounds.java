@@ -20,7 +20,6 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
@@ -128,7 +127,7 @@ public class AirWorkarounds {
                 * 0: Sbyte overflow. Still not fixed by Mojang (!!)
                 * Levitation level over 127 = fall down at a fast or slow rate, depending on the value.
                 * Nothing much to add here, this will effectively let players move freely. The Extreme subcheck will however ensure that players cannot perform insane moves.
-                * Why would we have to keep up with Mojang's negligence? Playing cat-and-mice with cheaters is more than enough. 
+                * Why would we have to also keep up with Mojang's negligence? Playing cat-and-mice with cheaters is more than enough. 
                 */
                 || Bridge1_9.getLevitationAmplifier(player) >= 127
                 && data.ws.use(WRPT.W_M_SF_SBYTE_OVERFLOW)

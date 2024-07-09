@@ -228,7 +228,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     
     /** NOTE: this is updated at the end of the tick */
     private void handlePoseChangeEvent(final Entity entity, final Pose newPose) {
-        if (!(entity instanceof Player) || entity == null) {
+        if (!(entity instanceof Player)) {
             return;
         }
         final Player player = (Player) entity;
@@ -240,28 +240,30 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         // This is needed because of the discrepancy on what "sneaking" means between Bukkit and Minecraft. And we need to know the exact status to determine if we should enforce slower speed on players.
         // For Bukkit: sneaking= shift key press. Both player#isSneaking() and PlayerToggleSneakEvents are fired with action packets (PRESS/RELEASE_SHIFT_KEY).
         // For Minecraft: sneaking= being in crouch pose or in "crawl" pose (the latter added in 1.14. Check "isMovingSlowly()" method in client code).
-        // Historically (up until Minecraft 1.14), a player could have entered the crouching pose by tapping the shift key only, thus, Bukkit's coincidence of SNEAKING == SHIFTING was okay.
-        // This coincidence however is no longer true, because of the aforementioned version introducing two new mechanics related to poses/sneaking.
-        //  -> The bounding box is contracted if sneaking, allowing players to enter 1.5 blocks-high areas and STAY in crouch pose, REGARDLESS of shift key presses (until they get out).
+        // Historically (up until Minecraft 1.9), a player could have entered the crouching pose only by tapping the shift key, thus, Bukkit's coincidence of SNEAKING == SHIFTING was okay.
+        // This coincidence however is no longer true, because of Mojang adding several player actions that can change the pose.
+        //  -> Gliding with an elytra will change the pose of the player.
+        //  -> Same goes for swimming and riptiding (1.13+)
+        //  -> On 1.14+ the bounding box is contracted if sneaking, allowing players to enter 1.5 blocks-high areas and STAY in crouch pose, REGARDLESS of shift key presses (until they get out).
         //     (Thus, a player can enter such an area and proceed to spam shift key presses without ever leaving the pose)
-        //  -> 1.14 added "crawl mode", which activates if the player is somehow constricted in areas lower than 1.5 blocks (i.e.: with trapdoors).
+        //  -> 1.14 also added "crawl mode", which automatically activates if the player is somehow constricted in areas with a ceiling lower than 1.5 blocks (i.e.: with trapdoors).
         //     When players are in this mode, inputs are always slowed down, regardless of shift key presses (once again).
         //     [Since crawling conveniently shares the same pose of swimming, Minecraft simply checks if the player is in SWIMMING pose and not in water (Check client code in: LocalPlayer.java -> aiStep() -> isMovingSlowly() -> isVisuallyCrawling())]
-        // In other words, Bukkit's status check/event can no longer be used to know if the player needs to be slowed down, because they are associated with shift key presses, not player poses. 
+        // In other words, Bukkit's status check/event can no longer be relied upon to know if the player needs to be slowed down, because they are both associated with shift key presses, not player poses. 
         // Thus, on 1.14 and higher, sneaking setting is done via EntityPoseChangeEvent, not PlayerToggleSneakEvent. For legacy clients, we can simply ignore all other poses, and set sneaking status if the shift key was pressed, since the mechanics above don't exist.
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         if (newPose.equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround)) {
             // isVisuallyCrawling()...
-            pData.setSneaking(true);
+            pData.setCrouchingState(true);
             return;
         }
         if (newPose.equals(Pose.SNEAKING)) {
             // Sneaking...
-            pData.setSneaking(true);
+            pData.setCrouchingState(true);
             return;
         }
         // Entered another pose...
-        pData.setSneaking(false);
+        pData.setCrouchingState(false);
     }
     
     @Override
@@ -275,19 +277,31 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             // TODO: maybe make a heuristic for small fall distances with ground under feet (prevents future abuse with jumping) ?
             final int invulnerableTicks = mcAccess.getHandle().getInvulnerableTicks(player);
             if (invulnerableTicks == Integer.MAX_VALUE) {
-            	if (debug) {
-            		debug(player, "Invulnerable ticks could not be determined.");
-            	}   	
-            } 
-            else {
+                if (debug) {
+                    debug(player, "Invulnerable ticks could not be determined.");
+                }
+            } else {
                 final int ticks = cc.invulnerableInitialTicksJoin >= 0 ? cc.invulnerableInitialTicksJoin : invulnerableTicks;
                 data.invulnerableTick = TickTask.getTick() + ticks;
                 mcAccess.getHandle().setInvulnerableTicks(player, 0);
             }
         }
-        // Logging in while already crouching or crawling is set in PlayerData
+        // Needed because a player may log in and be already crouching or crawling.
+        final MovingConfig mCC = pData.getGenericInstance(MovingConfig.class);
+        if (BridgeMisc.hasEntityChangePoseEvent()) {
+            if (player.getPose().equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), mCC.yOnGround)) {
+                // isVisuallyCrawling()...
+                pData.setCrouchingState(true);
+                // Cannot sprint here 
+                pData.setSprintingState(false);
+            } 
+            else if (player.getPose().equals(Pose.SNEAKING)) {
+                // Sneaking...
+                pData.setCrouchingState(true);
+            }
+        }
     }
-
+    
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(final PlayerRespawnEvent event) {
         final Player player = event.getPlayer();
@@ -295,8 +309,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
         // (Let the player decide)
-        // pData.setSprinting(false);
-        // pData.setSneaking(false);
+        // pData.setSprintingState(false);
+        // pData.setCrouchingState(false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -305,8 +319,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        pData.setSprinting(false);
-        pData.setSneaking(false);
+        pData.setSprintingState(false);
+        pData.setCrouchingState(false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -336,16 +350,16 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         if (!event.isSneaking()) {
             // Player was sneaking and they now toggled it off.
-            pData.setSneaking(false);
+            pData.setCrouchingState(false);
             return;
         }
         if (Bridge1_13.isSwimming(event.getPlayer()) || Bridge1_9.isGliding(event.getPlayer()) || Bridge1_13.isRiptiding(event.getPlayer())) {
             // Bukkit's ambiguous "isSneaking()" method would return true for all these cases, but like we've said above, sneaking is determined by player poses, not shift key presses. Just ignore.
-            pData.setSneaking(false);
+            pData.setCrouchingState(false);
             return;
         }
         // Legacy clients can only enter the CROUCHING pose if they press the shift key, so in this case shifting does equal sneaking.
-        pData.setSneaking(true);
+        pData.setCrouchingState(true);
     }
 
     /** NOTE: Cancelling does nothing. It won't stop players from sprinting. So, don't ignore cancelled events. */
@@ -355,32 +369,34 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final PlayerMoveData thisMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
         if (!event.isSprinting()) {
             // Player was sprinting and they now toggled it off.
-            pData.setSprinting(false);
+            pData.setSprintingState(false);
             return;
         }
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14) && pData.isSneaking()) {
+        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14) && pData.isCrouching()) {
             // In 1.14 and lower, players cannot sprint and sneak at the same time.
             // Source: Minecraft Parkour wiki, sneaking section.
-            pData.setSprinting(false);
+            pData.setSprintingState(false);
             return;
         }
-        // Player toggled sprinting on: ensure that it is legit (Bukkit does not check).
         // TODO: This stuff might need to be latency compensated.
+        // TODO: Wall collision
         if (event.getPlayer().getFoodLevel() <= 5) {
-            pData.setSprinting(false);
+            // Cannot sprint with low hunger.
+            pData.setSprintingState(false);
             return;
         }
         if (event.getPlayer().hasPotionEffect(PotionEffectType.BLINDNESS)) {
             // Blindness does not break sprinting if the player receives it while already sprinting.
             // The next toggle sprint event however will set it to false.
-            pData.setSprinting(false);
+            pData.setSprintingState(false);
             return;
         }
         if (thisMove.forwardImpulse != InputDirection.ForwardDirection.FORWARD) {
             // Cannot sprint into any other direction besides forward.
-            pData.setSprinting(false);
+            pData.setSprintingState(false);
+            return;
         }
-        pData.setSprinting(true);
+        pData.setSprintingState(true);
     }
     
     /** Cancelled events can still affect movement speed, since the mechanic we're checking is client-sided, so don't skip this listener */
@@ -391,7 +407,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         if (!(attacker instanceof Player)) {
             return;
         }
-        if (!(damaged instanceof LivingEntity) || damaged == null || damaged.isDead() || !damaged.isValid()) {
+        if (!(damaged instanceof LivingEntity) || damaged.isDead() || !damaged.isValid()) {
             return;
         }
         // (uh... Maybe cut down boilerplate just a smidge...)
@@ -446,7 +462,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         if (modifier == null) modifier = cc.invulnerableModifierDefault;
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // TODO: account for tick task reset ? [it should not though, due to data resetting too, but API would allow it]
-        if (TickTask.getTick() >= data.invulnerableTick + modifier.intValue()) {
+        if (TickTask.getTick() >= data.invulnerableTick + modifier) {
             return;
         }
         // Still invulnerable.
