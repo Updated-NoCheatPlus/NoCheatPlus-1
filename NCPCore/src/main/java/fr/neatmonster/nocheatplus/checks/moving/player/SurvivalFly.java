@@ -46,9 +46,11 @@ import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.logging.Streams;
+import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
@@ -418,6 +420,7 @@ public class SurvivalFly extends Check {
             // Violation ...
             tags.add("bedfly");
             data.survivalFlyVL += 100D;
+            Improbable.check(player, (float) 5.0, System.currentTimeMillis(), "moving.survivalfly.bedfly", DataManager.getPlayerData(player));
             final ViolationData vd = new ViolationData(this, player, data.survivalFlyVL, 100D, cc.survivalFlyActions);
             if (vd.needsParameters()) vd.setParameter(ParameterName.TAGS, StringUtil.join(tags, "+"));
             cancel = executeActions(vd).willCancel();
@@ -950,6 +953,7 @@ public class SurvivalFly extends Check {
                     found = false;
                 }
                 else if ((inputs[i].getForwardDir().equals(ForwardDirection.BACKWARD) // Moving backwards
+                        || inputs[i].getForward() < 0.8 // hasEnoughImpulseToStartSprinting, in LocalPlayer,java -> aiStep()
                         || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)) // Moving sideways only.
                         && pData.isSprinting()) { 
                     // Stop omnisprinting.
@@ -963,6 +967,7 @@ public class SurvivalFly extends Check {
                     // Found a candidate to set in this move; these collisions are valid.
                     thisMove.collideX = collideX[i];
                     thisMove.collideZ = collideZ[i];
+                    thisMove.negligibleHorizontalCollision = (thisMove.collideX || thisMove.collideZ) && CollisionUtil.isHorizontalCollisionNegligible(new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]), to, inputs[i].getStrafe(), inputs[i].getForward());
                     break;
                 }
             }

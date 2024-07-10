@@ -162,6 +162,13 @@ public class PlayerMoveData extends MoveData {
 
     /** Signal the direction of this forward movement (FORWARD/BACKWARD/NONE) */
     public InputDirection.ForwardDirection forwardImpulse;
+    
+    /**
+     * Judge if this horizontal (x/z) collision is to be considered as minor.
+     * This is for Minecraft's sprinting reset mechanic.
+     * Only set if the appropriate speed to set was found.
+     */
+    public boolean negligibleHorizontalCollision;
 
 
     @Override
@@ -196,6 +203,7 @@ public class PlayerMoveData extends MoveData {
         multiMoveCount = 0;
         verVelUsed = null;
         hasNoMovementDueToDuplicatePacket = false;
+        negligibleHorizontalCollision = false;
         hasImpulse = false;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();

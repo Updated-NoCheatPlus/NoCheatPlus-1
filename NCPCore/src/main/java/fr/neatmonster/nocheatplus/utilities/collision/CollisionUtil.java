@@ -1099,7 +1099,8 @@ public class CollisionUtil {
                         if (!onlyCheckCollide) {
                             double[] multiAABB = move(blockCache.fetchBounds(x, y, z), x, y, z);
                             collisionBoxes.addAll(splitIntoSingle(multiAABB));
-                        } else if (isCollided(blockCache.getBounds(x, y, z), x, y, z, AABB, true)) {
+                        } 
+                        else if (isCollided(blockCache.getBounds(x, y, z), x, y, z, AABB, true)) {
                             return true;
                         }
                     }
@@ -1191,6 +1192,10 @@ public class CollisionUtil {
             }
         }
         return false;
+    }
+    
+    public static boolean isEmpty(BlockCache blockCache, Entity entity, double[] AABB) {
+        return !getCollisionBoxes(blockCache, entity, AABB, null, true);
     }
 
     /**

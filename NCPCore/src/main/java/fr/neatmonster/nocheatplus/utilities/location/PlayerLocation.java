@@ -27,8 +27,8 @@ import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
-import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
@@ -95,12 +95,11 @@ public class PlayerLocation extends RichEntityLocation {
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         double[] aaBBCopy = getAABBCopy();
         double yBelow = player.getFallDistance() - cc.sfStepHeight;
+        double[] AABB = new double[]{minX, minY+yBelow, minZ, maxX, maxY+yBelow, maxZ};
         return  isOnGround() 
                 || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16_2) 
                 && (
-                    player.getFallDistance() < cc.sfStepHeight 
-                    // TODO: Needs CollisionUtil.getCollisionBoxes
-                    && BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND)
+                    player.getFallDistance() < cc.sfStepHeight && CollisionUtil.isEmpty(blockCache, player, AABB)
                 )
             ;
     }
@@ -150,13 +149,11 @@ public class PlayerLocation extends RichEntityLocation {
         double xDistance = vector.getX();
         double zDistance = vector.getZ();
         /** Parameter for searching for collisions below */
-        double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1;
-        double[] aaBBCopy = getAABBCopy();
+        double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1 + CollisionUtil.COLLISION_EPSILON;
 
         // Move AABB alongside the X axis.
-        // TODO: Needs CollisionUtil.getCollisionBoxes
-        boolean collidesX = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2], aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5], BlockFlags.SOLID_GROUND);
-        while (xDistance != 0.0 && !collidesX) {
+        double[] offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, maxY+yBelow, maxZ};
+        while (xDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_X)) {
             if (xDistance < 0.05 && xDistance >= -0.05) {
                 xDistance = 0.0;
             } 
@@ -166,8 +163,8 @@ public class PlayerLocation extends RichEntityLocation {
             else xDistance += 0.05;
         }
         // Move AABB alongside the Z axis.
-        boolean collidesZ = BlockProperties.collides(blockCache, aaBBCopy[0], aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3], aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
-        while (zDistance != 0.0 && !collidesZ) {
+        double[] offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, maxY+yBelow, maxZ+zDistance};
+        while (zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_Z)) {
             if (zDistance < 0.05 && zDistance >= -0.05) {
                 zDistance = 0.0;
             } 
@@ -177,8 +174,8 @@ public class PlayerLocation extends RichEntityLocation {
             else zDistance += 0.05;
         }
         // Move AABB alongside both (diagonally)
-        boolean collidesXZ = BlockProperties.collides(blockCache, aaBBCopy[0]+xDistance, aaBBCopy[1]+yBelow, aaBBCopy[2]+zDistance, aaBBCopy[3]+xDistance, aaBBCopy[4]+yBelow, aaBBCopy[5]+zDistance, BlockFlags.SOLID_GROUND);
-        while (xDistance != 0.0 && zDistance != 0.0 && !collidesXZ) {
+        double[] offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, maxY+yBelow, maxZ+zDistance};
+        while (xDistance != 0.0 && zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_XZ)) {
             if (xDistance < 0.05 && xDistance >= -0.05) {
                 xDistance = 0.0;
             } 
