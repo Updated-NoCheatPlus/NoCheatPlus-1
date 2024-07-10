@@ -1087,7 +1087,7 @@ public class CollisionUtil {
             for (int x = minBlockX; x <= maxBlockX; x++) {
                 for (int z = minBlockZ; z <= maxBlockZ; z++) {
                     Material mat = blockCache.getType(x, y, z);
-                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) {
+                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat) || blockCache.fetchBounds(x, y, z) == null) {
                         continue;
                     }
                     int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
@@ -1096,12 +1096,12 @@ public class CollisionUtil {
                     if (edgeCount != 3 && (edgeCount != 1 || (BlockFlags.getBlockFlags(mat) & BlockFlags.F_HEIGHT150) != 0) 
                         && (edgeCount != 2 || mat == BridgeMaterial.MOVING_PISTON)) {
                         // Don't add to a list if we only care if the player intersects with the block
-                        //if (!onlyCheckCollide) {
+                        if (!onlyCheckCollide) {
                             double[] multiAABB = move(blockCache.fetchBounds(x, y, z), x, y, z);
                             collisionBoxes.addAll(splitIntoSingle(multiAABB));
-                        //} else if (CollisionData.getData(data.getType()).getMovementCollisionBox(player, player.getClientVersion(), data, x, y, z).isCollided(wantedBB)) {
-                        //    return true;
-                        //}
+                        } else if (isCollided(blockCache.getBounds(x, y, z), x, y, z, AABB, true)) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -1158,6 +1158,38 @@ public class CollisionUtil {
 //                }
 //            }
 //        }
+        return false;
+    }
+
+    /**
+     * Test if a single bounding box if collided with a block bounding boxes
+     * 
+     * @param rawAABB Bounding box of a block. Can be complex bounds
+     * @param x Coordinate of block
+     * @param y Coordinate of block
+     * @param z Coordinate of block
+     * @param sAABB Single bounding box to check. If complex bounds was inputed, only the primary box is taken
+     * @param allowEdge
+     * @return true if collide
+     */
+    private static boolean isCollided(final double[] rawAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge) {
+        if (rawAABB != null && sAABB != null && rawAABB.length % 6 == 0) {
+            for (int i = 1; i <= (int)rawAABB.length / 6; i++) {
+
+                // Clearly outside of AABB.
+                if (sAABB[0] > rawAABB[i*6-3] + x || sAABB[3] < rawAABB[i*6-6] + x || sAABB[1] > rawAABB[i*6-2] + y || sAABB[4] < rawAABB[i*6-5] + y
+                    || sAABB[2] > rawAABB[i*6-1] + z || sAABB[5] < rawAABB[i*6-4] + z) {
+                    continue;
+                }
+                // Hitting the max-edges (if allowed).
+                if (sAABB[0] == rawAABB[i*6-3] + x && (rawAABB[i*6-3] < 1.0 || allowEdge)
+                    || sAABB[1] == rawAABB[i*6-2] + y && (rawAABB[i*6-2] < 1.0 || allowEdge) 
+                    || sAABB[2] == rawAABB[i*6-1] + z && (rawAABB[i*6-1] < 1.0 || allowEdge)) {
+                    continue;
+                }
+                return true;
+            }
+        }
         return false;
     }
 

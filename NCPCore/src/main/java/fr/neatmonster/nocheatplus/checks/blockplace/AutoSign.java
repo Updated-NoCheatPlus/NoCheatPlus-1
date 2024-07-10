@@ -27,6 +27,7 @@ import fr.neatmonster.nocheatplus.actions.ParameterName;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
+import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
@@ -66,24 +67,7 @@ public class AutoSign extends Check {
         final BlockPlaceConfig cc = pData.getGenericInstance(BlockPlaceConfig.class);
         Material mat = block.getType();
         String s = mat.toString();
-        if (s.endsWith("_WALL_HANGING_SIGN")) {
-            s = s.replace("WALL_HANGING", "HANGING");
-            // A "wooden_wall_hanging_sign" block is just an "wooden_hanging_sign" as an item.
-            mat = Material.getMaterial(s);
-        }
-        else if (s.endsWith("_WALL_SIGN")) {
-            s = s.replace("_WALL_SIGN", "_SIGN");
-            // a "wooden_wall_sign" block is just a "wooden_sign" as an item.
-            mat = Material.getMaterial(s);
-        } 
-        else if (s.endsWith("WALL_SIGN")) {
-            s = s.replace("WALL_", "");
-            // A "wall_sign" block is just a "sign" as an item.
-            mat = Material.getMaterial(s);
-        }
-        else if (s.equals("SIGN_POST")) {
-            mat = Material.getMaterial("SIGN");
-        }
+        mat = BridgeMaterial.getSignItemFromBlock(mat);
 
         if (pData.isDebugActive(CheckType.BLOCKPLACE_AUTOSIGN)) {
             debug(player, "Block-place hash: " + BlockPlaceListener.getBlockPlaceHash(block, mat) + ", Material type: " + mat + " / " + s);

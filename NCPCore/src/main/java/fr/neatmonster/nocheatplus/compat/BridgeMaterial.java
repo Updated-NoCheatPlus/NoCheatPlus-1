@@ -40,14 +40,27 @@ public class BridgeMaterial {
     /** Actual lower case name to Material map for all existing materials. */
     private static final Map<String, Material> all = new HashMap<String, Material>();
 
+    private static final Map<Material, Material> signblocksmap = new HashMap<Material, Material>();
+
     static {
         for (Material mat : Material.values()) {
             String name = mat.name().toLowerCase(Locale.ROOT);
             all.put(name, mat);
+            if (name.equals("sign_post") || name.equals("wall_sign")) {
+                signblocksmap.put(mat, Material.getMaterial("SIGN"));
+            } else
+            if (name.endsWith("_wall_sign") || name.endsWith("_wall_hanging_sign")) {
+                signblocksmap.put(mat, Material.getMaterial(name.replace("_wall", "").toUpperCase(Locale.ROOT)));
+            } else
+            if (name.endsWith("_sign")) signblocksmap.put(mat, mat);
             if (name.startsWith("legacy_")) {
                 legacy.put(name.substring(7), mat);
             }
         }
+    }
+
+    public static Material getSignItemFromBlock(Material mat) {
+        return signblocksmap.get(mat);
     }
 
     public static Material legacy(String name) {

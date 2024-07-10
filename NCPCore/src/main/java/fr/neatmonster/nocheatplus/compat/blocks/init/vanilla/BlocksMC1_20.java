@@ -44,7 +44,7 @@ public class BlocksMC1_20 implements BlockPropertiesSetup {
         
         for (Material mat : MaterialUtil.WALL_HANGING_SIGNS) {
             // These are solid
-            BlockFlags.addFlags(mat, BlockFlags.SOLID_GROUND);
+            BlockFlags.setBlockFlags(mat, BlockFlags.SOLID_GROUND);
         }
         // (Hanging signs are treated as a normal sign and added in BlocksMC1_14)
 
