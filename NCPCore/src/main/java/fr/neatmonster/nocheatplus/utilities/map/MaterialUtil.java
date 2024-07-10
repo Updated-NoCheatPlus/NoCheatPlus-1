@@ -245,8 +245,8 @@ public class MaterialUtil {
         ALL_SEEDS = Collections.unmodifiableSet(seedsTemp);
     }
 
-    private static final List<EntityType> BOATSTYPE = collectTypesBySuffix("BOAT");
-
+    private static final List<EntityType> BOATS_TYPE = collectTypesBySuffix("BOAT");
+    
     public static final Set<Material> CARPETS = Collections.unmodifiableSet(addBlocks(
             BridgeMaterial.getBySuffix("_carpet", AlmostBoolean.YES, "legacy"), 
             "carpet"));
@@ -446,10 +446,10 @@ public class MaterialUtil {
     public static final Set<Material> WOODEN_SIGNS = Collections.unmodifiableSet(addBlocks(
             BridgeMaterial.getByPrefixAndSuffix(
                     woodTypes, 
-                    Arrays.asList("_sign", "_hanging_sign"),
+                    Arrays.asList("_sign"),
                     AlmostBoolean.YES
                     // , ...
-                    ), "sign", "wall_sign"));
+                    ), "sign", "wall_sign", "_wall_hanging_sign"));
     
     // These are SOLID
     public static final Set<Material> WALL_HANGING_SIGNS = Collections.unmodifiableSet(
@@ -712,7 +712,7 @@ public class MaterialUtil {
      * @return 
      */
     public static boolean isBoat(final EntityType entity) {
-        return BOATSTYPE.contains(entity);
+        return BOATS_TYPE.contains(entity);
     }
     
     /**
@@ -727,7 +727,7 @@ public class MaterialUtil {
     }
     
     /**
-     * Check if is the material is a sign of any kind (normal(post, wall, hanging, wall hanging)
+     * Check if the material is a sign of any kind (normal, post, wall, hanging, wall hanging)
      * 
      * @param mat
      * @return 

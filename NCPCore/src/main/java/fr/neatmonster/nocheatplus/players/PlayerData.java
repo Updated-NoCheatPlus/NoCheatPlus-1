@@ -14,14 +14,8 @@
  */
 package fr.neatmonster.nocheatplus.players;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,23 +23,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Pose;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
-import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
-import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.config.value.OverrideType;
-import fr.neatmonster.nocheatplus.components.data.ICanHandleTimeRunningBackwards;
-import fr.neatmonster.nocheatplus.components.data.IData;
-import fr.neatmonster.nocheatplus.components.data.IDataOnJoin;
-import fr.neatmonster.nocheatplus.components.data.IDataOnLeave;
-import fr.neatmonster.nocheatplus.components.data.IDataOnReload;
-import fr.neatmonster.nocheatplus.components.data.IDataOnRemoveSubCheckData;
-import fr.neatmonster.nocheatplus.components.data.IDataOnWorldChange;
-import fr.neatmonster.nocheatplus.components.data.IDataOnWorldUnload;
+import fr.neatmonster.nocheatplus.components.data.*;
 import fr.neatmonster.nocheatplus.hooks.ExemptionContext;
 import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 import fr.neatmonster.nocheatplus.permissions.PermissionInfo;
@@ -59,7 +43,6 @@ import fr.neatmonster.nocheatplus.utilities.ds.corw.DualSet;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
 import fr.neatmonster.nocheatplus.utilities.ds.map.HashMapLOW;
 import fr.neatmonster.nocheatplus.utilities.ds.map.InstanceMapLOW;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 import fr.neatmonster.nocheatplus.worlds.IWorldData;
 import fr.neatmonster.nocheatplus.worlds.WorldDataManager;
@@ -498,7 +481,6 @@ public class PlayerData implements IPlayerData {
         }
         requestLazyPermissionUpdate(permissionRegistry.getPreferKeepUpdatedOffline());
         lastJoinTime = timeNow;
-        }
     }
 
     private void updateCurrentWorld(final World world, final WorldDataManager worldDataManager) {
@@ -524,14 +506,14 @@ public class PlayerData implements IPlayerData {
         while (it.hasNext()) {
             final PermissionNode node = it.next().getValue();
             final PermissionInfo info = node.getPermissionInfo();
-            if (info.invalidationOffline() 
-                /*
-                 * TODO: world based should only be invalidated with world
-                 * changing. Therefore store the last world info
-                 * (UUID/name?) in PlayerData and use on login for
-                 * comparison.
-                 */
-                || info.invalidationWorld()) {
+            if (info.invalidationOffline()
+                    /*
+                     * TODO: world based should only be invalidated with world
+                     * changing. Therefore store the last world info
+                     * (UUID/name?) in PlayerData and use on login for
+                     * comparison.
+                     */
+                    || info.invalidationWorld()) {
                 // TODO: Really count leave as world change?
                 node.invalidate();
             }

@@ -751,13 +751,13 @@ public class SurvivalFly extends Check {
             thisMove.zAllowedDistance += liquidFlowVector.getZ();
         }
         // Slime speed
-        // (Ground check is already included)
-        // TODO: Still not working...
-        if (lastMove.collideY && lastMove.to.onSlimeBlock) {
-            // Use pData#isSneaking() because swimming on slime blocks is a thing.
-            if (Math.abs(lastMove.yAllowedDistance) < 0.1 && !pData.isCrouching()) { // -0.0784000015258789
-                thisMove.xAllowedDistance *= 0.4 + Math.abs(lastMove.yAllowedDistance) * 0.2;
-                thisMove.zAllowedDistance *= 0.4 + Math.abs(lastMove.yAllowedDistance) * 0.2;
+        if (from.isOnSlimeBlock() && onGround) {
+            final double diff = Math.abs(0.0784000015258789 - lastMove.yDistance);
+            boolean isGravity = MathUtil.inRange( 0.0784, diff,  0.0784000015258789); // diff <= 0.0784000015258789 && diff >= 0.0784;
+            final double result = isGravity ? 0.0784000015258789 : lastMove.yDistance;
+            if (Math.abs(result) < 0.1 && !player.isSneaking()) { // isSteppingCarefully -> isShiftKeyDown. Using isSneaking is correct.
+                thisMove.xAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
+                thisMove.zAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
             }
         }
         // Sliding speed (honey block)
@@ -925,11 +925,7 @@ public class SurvivalFly extends Check {
           Will also perform some auxiliary checks.<br>
           Otherwise, only the combined horizontal distance will be checked against the offset.
          */
-        boolean strict = cc.survivalFlyStrictHorizontal; 
-        /*
-          If true, it means that there could be a theoretical speed to set, but a subcheck has requested not to.
-         */
-        boolean forceViolation = false;
+        boolean strict = cc.survivalFlyStrictHorizontal;
         for (i = 0; i < 9; i++) {
             if (strict) {
                 if (MathUtil.almostEqual(thisMove.xDistance, xTheoreticalDistance[i], Magic.PREDICTION_EPSILON)
@@ -950,17 +946,16 @@ public class SurvivalFly extends Check {
                     tags.add("noslowpacket");
                     cData.isHackingRI = false;
                     Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.noslow", pData);
-                    forceViolation = true;
                     // Keep looping
                     found = false;
                 }
-                else if (inputs[i].getForwardDir().equals(ForwardDirection.BACKWARD) // Moving backwards
-                        || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)) { // Moving sideways only.
+                else if ((inputs[i].getForwardDir().equals(ForwardDirection.BACKWARD) // Moving backwards
+                        || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)) // Moving sideways only.
+                        && pData.isSprinting()) { 
                     // Stop omnisprinting.
                     tags.add("omnisprint");
                     pData.setSprintingState(false);
-                    Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.noslow", pData);
-                    forceViolation = true;
+                    Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.omnisprint", pData);
                     // Keep looping
                     found = false;
                 }
@@ -973,26 +968,12 @@ public class SurvivalFly extends Check {
             }
         }
 
+
         //////////////////////////////////////////////////////////////
         // Finish. Check if the move had been predictable at all    //
         //////////////////////////////////////////////////////////////
-        postPredictionProcessing(data, pData, player, xTheoreticalDistance, zTheoreticalDistance, from, to, i, debug, inputs, forceViolation);
-    }
-
-
-    /**
-     * Finalize this speed processing: check if we should apply a workaround, if needed. Otherwise, just throw a violation.
-     * (See AirWorkarounds class desc)
-     *
-     * @param xTheoreticalDistance The list of all 8 possible x distances.
-     * @param zTheoreticalDistance The list of all 8 possible z distances.
-     * @param inputsIdx Index of the array containing all theoretical directions (8 - left/forward/backward/right/b.left/b.right/f.right/f.left).
-     */
-    private void postPredictionProcessing(final MovingData data, final IPlayerData pData, final Player player,
-                                          double[] xTheoreticalDistance, double[] zTheoreticalDistance, final PlayerLocation from, final PlayerLocation to,
-                                          int inputsIdx, final boolean debug, InputDirection[] inputs, final boolean forceViolation) {
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        int inputsIdx = i;
+        final MovingConfig cc1 = pData.getGenericInstance(MovingConfig.class);
         /* All moves are assumed to be predictable, unless we explicitly state in here otherwise. */
         boolean isPredictable = true;
         int x_idx = -1;
@@ -1015,8 +996,8 @@ public class SurvivalFly extends Check {
             player.sendMessage("[SurvivalFly] (postPredict) " + (!isPredictable ? "Uncertain" : "Predicted") + " direction: " + inputs[isPredictable ? inputsIdx : x_idx].getForwardDir() +" | "+ inputs[isPredictable ? inputsIdx : x_idx].getStrafeDir());
         }
     }
-
-
+    
+    
     /**
      * Relative (to workarounds) horizontal distance checking.
      *
@@ -1366,7 +1347,16 @@ public class SurvivalFly extends Check {
             hDistanceAboveLimit = res[1];
         }
         /*
-         * 3: Above limit again? Check for past onGround states caused by block changes (i.e.: ground was pulled off from the player's feet)
+         * 3: Specific issue with slime speed: the client tries to fall down with gravity -0.0784, and then bounce back up to 0 >=. Ground status is set to false then.
+         *  However, we don't see this on server; we always see the player as being on ground with 0 dist.
+         */
+        if (from.isOnSlimeBlock() && hDistanceAboveLimit > 0.0) {
+            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, isNormalOrPacketSplitMove, false, true);
+            hAllowedDistance = res[0];
+            hDistanceAboveLimit = res[1];
+        }
+        /*
+         * 4: Above limit again? Check for past onGround states caused by block changes (i.e.: ground was pulled off from the player's feet)
          */
         if (useBlockChangeTracker && hDistanceAboveLimit > 0.0) {
             // Be sure to test this only if the player is seemingly off ground

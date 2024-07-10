@@ -2832,7 +2832,7 @@ public class BlockProperties {
                 // Same liquid type above, full block height
                 liquidHeight = 1;
                 // Wtf - case block water has above is flowing although it look like a full block
-                if (clearDefinition && node.getData(access, x, y, z) >= 8) {
+                if (clearDefinition) {
                     liquidHeight = LIQUID_HEIGHT_LOWERED;
                 }
             }

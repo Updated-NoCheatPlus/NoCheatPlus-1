@@ -258,7 +258,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             addModel(mat, MODEL_AUTO_FETCH);
         }
         
-        // Wall hanging signs have a collision box. Hanging signs don't, so they are treated as an ordinary sign.
+        // *WALL* hanging signs have a collision box. Simple hanging signs don't, so they are treated as an ordinary sign.
         for (Material mat : MaterialUtil.WALL_HANGING_SIGNS) {
             // Only the post has an actual collision box, the rest is all hit box. 
             addModel(mat, MODEL_AUTO_FETCH);

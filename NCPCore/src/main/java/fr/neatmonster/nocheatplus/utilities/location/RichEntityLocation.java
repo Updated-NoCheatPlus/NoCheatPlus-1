@@ -193,8 +193,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
             final Material typeId = getTypeIdBelow();
-            final long thisFlags = BlockFlags.getBlockFlags(typeId);
-            onSlimeBlock = isOnGround() && (thisFlags & BlockFlags.F_SLIME) != 0;
+            final long theseFlags = BlockFlags.getBlockFlags(typeId);
+            onSlimeBlock = (theseFlags & BlockFlags.F_SLIME) != 0;
             return onSlimeBlock;
         }
         // Not a legacy client.

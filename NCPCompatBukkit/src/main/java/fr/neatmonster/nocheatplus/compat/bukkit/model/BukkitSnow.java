@@ -23,20 +23,39 @@ import org.bukkit.block.data.type.Snow;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
 public class BukkitSnow implements BukkitShapeModel {
+    
+    private static final double[][] SNOW_LAYERS = {
+            null,
+            {0.0, 0.0, 0.0, 1.0, 0.125, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.250, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.375, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.5, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.625, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.75, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 0.875, 1.0},
+            {0.0, 0.0, 0.0, 1.0, 1.0, 1.0}
+    };
 
     @Override
     public double[] getShape(BlockCache blockCache, World world, int x, int y, int z) {
+        // TODO: Backward Handling
+        final Block block = world.getBlockAt(x, y, z);
+        final BlockState state = block.getState();
+        final BlockData blockData = state.getBlockData();
+        if (blockData instanceof Snow) {
+            return SNOW_LAYERS[((Snow)blockData).getLayers() - 1];
+        }
         return new double[] {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
     }
 
     @Override
     public int getFakeData(BlockCache blockCache, World world, int x, int y, int z) {
-        final Block block = world.getBlockAt(x, y, z);
-        final BlockState state = block.getState();
-        final BlockData blockData = state.getBlockData();
-        if (blockData instanceof Snow) {
-            return ((Snow)blockData).getLayers() - 1;
-        }
+        // final Block block = world.getBlockAt(x, y, z);
+        // final BlockState state = block.getState();
+        // final BlockData blockData = state.getBlockData();
+        // if (blockData instanceof Snow) {
+        //     return ((Snow)blockData).getLayers() - 1;
+        // }
         return 0;
     }
 }

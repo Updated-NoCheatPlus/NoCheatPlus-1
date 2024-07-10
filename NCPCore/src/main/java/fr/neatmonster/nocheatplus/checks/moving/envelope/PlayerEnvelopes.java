@@ -130,7 +130,7 @@ public class PlayerEnvelopes {
     }
     
     /**
-     * Test if the player is constricted in a 1.5 blocks-high area (applies to 1.14 clients and above).
+     * Test if the player is constricted in an area with a 1.5 blocks-high ceiling (applies to 1.14 clients and above).
      * We cannot detect if players try to jump in here: on the server side, player is seen as never leaving the ground and without any vertical motion change.
      * 
      * @param from

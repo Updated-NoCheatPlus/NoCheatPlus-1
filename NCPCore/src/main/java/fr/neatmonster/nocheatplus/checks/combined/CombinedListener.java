@@ -43,7 +43,6 @@ import fr.neatmonster.nocheatplus.checks.CheckListener;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.model.InputDirection;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveInfo;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
@@ -380,6 +379,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         // TODO: This stuff might need to be latency compensated.
         // TODO: Wall collision
+        // TODO: Attack slow-down
         if (event.getPlayer().getFoodLevel() <= 5) {
             // Cannot sprint with low hunger.
             pData.setSprintingState(false);
@@ -388,11 +388,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         if (event.getPlayer().hasPotionEffect(PotionEffectType.BLINDNESS)) {
             // Blindness does not break sprinting if the player receives it while already sprinting.
             // The next toggle sprint event however will set it to false.
-            pData.setSprintingState(false);
-            return;
-        }
-        if (thisMove.forwardImpulse != InputDirection.ForwardDirection.FORWARD) {
-            // Cannot sprint into any other direction besides forward.
             pData.setSprintingState(false);
             return;
         }
