@@ -755,6 +755,7 @@ public class SurvivalFly extends Check {
         }
         // Slime speed
         if (from.isOnSlimeBlock() && onGround) {
+            // Workaround for undetectable bounce-back
             final double diff = Math.abs(0.0784000015258789 - lastMove.yDistance);
             boolean isGravity = MathUtil.inRange( 0.0784, diff,  0.0784000015258789); // diff <= 0.0784000015258789 && diff >= 0.0784;
             final double result = isGravity ? 0.0784000015258789 : lastMove.yDistance;
@@ -953,7 +954,7 @@ public class SurvivalFly extends Check {
                     found = false;
                 }
                 else if ((inputs[i].getForwardDir().equals(ForwardDirection.BACKWARD) // Moving backwards
-                        || inputs[i].getForward() < 0.8 // hasEnoughImpulseToStartSprinting, in LocalPlayer,java -> aiStep()
+                        // || inputs[i].getForward() < 0.8 // hasEnoughImpulseToStartSprinting, in LocalPlayer,java -> aiStep()
                         || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)) // Moving sideways only.
                         && pData.isSprinting()) { 
                     // Stop omnisprinting.
@@ -1353,7 +1354,8 @@ public class SurvivalFly extends Check {
         }
         /*
          * 3: Specific issue with slime speed: the client tries to fall down with gravity -0.0784, and then bounce back up to 0 >=. Ground status is set to false then.
-         *  However, we don't see this on server; we always see the player as being on ground with 0 dist.
+         *  However, we don't see this on the server-side; we always see the player as being on ground with 0 dist.
+         *  Yet another case of an undetectable ascending phase, likewise isVerticallyConstricted(...)
          */
         if (from.isOnSlimeBlock() && hDistanceAboveLimit > 0.0) {
             double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, isNormalOrPacketSplitMove, false, true);

@@ -579,28 +579,41 @@ public class BlockProperties {
      * NMS block friction library for horizontal speed
      *
      * @param entity
-     * @param location  Inaccurate with split moves, should be avoided.
+     * @param rawLoc Non-corrected location (split moves, looking direction (...) See MovingListener.java, split move mechanic), should be avoided.
      * @param yOnGround
-     * @param thisMove  Should be used over location to compose the correct position (split moves)
+     * @param thisMove Movement to compose the corrected location's coordinate with.
      * @return the factor
      */
-    public static final float getBlockFrictionFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+    public static final float getBlockFrictionFactor(final LivingEntity entity, final Location rawLoc, final double yOnGround, PlayerMoveData thisMove) {
         if (entity instanceof Player && ((Player) entity).isFlying()|| Bridge1_9.isGliding(entity)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
+        // Set-up caching
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
-        blockCache.setAccess(location.getWorld());
+        blockCache.setAccess(rawLoc.getWorld());
         eLoc.setBlockCache(blockCache);
-        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        eLoc.set(loc, entity, yOnGround);
+        // Compose the split-move-corrected location.
+        final Location correctedLoc = new Location(rawLoc.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        // Then set.
+        eLoc.set(correctedLoc, entity, yOnGround);
+        // Determine which position should be used to grab the block.
         final IPlayerData pData = DataManager.getPlayerData((Player) entity);
         /** 1.15 changed the ground-seeking distance to 0.5 */
         final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
-        final Material blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
-        /** Default friction for all other blocks */
-        final float DEFAULT_FRICTION = 0.6f;
-        float friction = DEFAULT_FRICTION;
+        final Material blockBelow;
+        // On 1.20, the block that is closest to the player position is considered, not the one on which the player is at the center.
+        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+            final Location loc = getOnPos(blockCache, eLoc, findSupportingBlockLoc(eLoc.getWorld(), blockCache, eLoc.getMinX(), eLoc.getMinY(), eLoc.getMinZ(), eLoc.getMaxX(), eLoc.getMaxY(), eLoc.getMaxZ(), correctedLoc), yBelow);
+            blockBelow = blockCache.getOrCreateBlockCacheNode(loc.getX(), loc.getY(), loc.getZ(), false).getType();
+        }
+        else {
+            // getOnBlock()
+            blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
+        }
+        // Finally, determine the friction for the grabbed block.
+        /** 0.6 is Default friction for all other blocks */
+        float friction = 0.6f;
         if (isBlueIce(blockBelow)) {
             friction = 0.989f;
         }
@@ -620,44 +633,48 @@ public class BlockProperties {
      * This is retrieved according to how vanilla does it (Entity.java, getBlockSpeedFactor()).
      *
      * @param entity
-     * @param location  Inaccurate with split moves, should be avoided.
+     * @param rawLoc Non-corrected location (split moves, looking direction (...) See MovingListener.java, split move mechanic), should be avoided.
      * @param yOnGround
-     * @param thisMove  Should be used over location to compose the correct position (split moves)
+     * @param thisMove Movement to compose the corrected location's coordinate with.
      */
-    public static final float getBlockSpeedFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+    public static final float getBlockSpeedFactor(final LivingEntity entity, final Location rawLoc, final double yOnGround, PlayerMoveData thisMove) {
         if (entity instanceof Player && ((Player) entity).isFlying() || Bridge1_9.isGliding(entity)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
+
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
-        blockCache.setAccess(location.getWorld());
+        final IPlayerData pData = DataManager.getPlayerData((Player) entity);
+        blockCache.setAccess(rawLoc.getWorld());
         eLoc.setBlockCache(blockCache);
-        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        eLoc.set(loc, entity, yOnGround);
+        final Location correctedLoc = new Location(rawLoc.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
+        eLoc.set(correctedLoc, entity, yOnGround);
         float speedFactor = 1.0f;
         final Material block = eLoc.getTypeId();
         if (block == Material.SOUL_SAND) {
             // Soul speed nullifies the slow down.
             // (The boost is already included in the player's attribute speed)
-            if (BridgeEnchant.hasSoulSpeed((Player) entity)) {
-                speedFactor = 1.0f;
-            } 
-            else speedFactor = 0.4f;
+            speedFactor = BridgeEnchant.hasSoulSpeed((Player) entity) ? 1.0f : 0.4f;
         } 
         else if ((BlockFlags.getBlockFlags(block) & BlockFlags.F_STICKY) != 0) {
             // Inside honey.
             speedFactor = 0.4f;
         }
+        
         if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
             // Failed to retrieve anything; do it again with the block below (getBlockPosBelowThatAffectsMyMovement() in vanilla).
-            final IPlayerData pData = DataManager.getPlayerData((Player) entity);
             final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
-            final Material blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
+            final Material blockBelow;
+            // On 1.20, the block that is closest to the player position is considered, not the one on which the player is at the center.
+            if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+                final Location loc = getOnPos(blockCache, eLoc, findSupportingBlockLoc(eLoc.getWorld(), blockCache, eLoc.getMinX(), eLoc.getMinY(), eLoc.getMinZ(), eLoc.getMaxX(), eLoc.getMaxY(), eLoc.getMaxZ(), correctedLoc), yBelow);
+                blockBelow = blockCache.getOrCreateBlockCacheNode(loc.getX(), loc.getY(), loc.getZ(), false).getType();
+            }
+            else {
+                blockBelow = eLoc.getTypeId(eLoc.getBlockX(), Location.locToBlock(eLoc.getY() - yBelow), eLoc.getBlockZ());
+            }
             if (blockBelow == Material.SOUL_SAND) {
-                if (BridgeEnchant.hasSoulSpeed((Player) entity)) {
-                    speedFactor = 1.0f;
-                } 
-                else speedFactor = 0.4f;
+                speedFactor = BridgeEnchant.hasSoulSpeed((Player) entity) ? 1.0f : 0.4f;
             } 
             else if ((BlockFlags.getBlockFlags(blockBelow) & BlockFlags.F_STICKY) != 0) {
                 speedFactor = 0.4f;
@@ -2739,7 +2756,6 @@ public class BlockProperties {
          final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
          final Material mat = node.getType();
          final BlockData data = location.getWorld().getBlockAt(modX, y, modZ).getBlockData();
-         final long collectedFlags = BlockFlags.getBlockFlags(node.getType());
          final IPlayerData pData = DataManager.getPlayerData(player);
         
          if (isSame(blockCache, liquidTypeFlag, player, modX, y, modZ, x, y, z)) {
@@ -4668,7 +4684,7 @@ public class BlockProperties {
         final int minBlockZ = (int) Math.floor(minZ - CollisionUtil.COLLISION_EPSILON) - 1;
         final int maxBlockZ = (int) Math.floor(maxZ + CollisionUtil.COLLISION_EPSILON) + 1;
         // 0: Collect all valid block locations first.
-        List<Location> blockLocation = new ArrayList<Location>(); // An AABB can at maximum stay on 4 different blocks simultaneously (i.e.: Being at the center of slime, soulsand, honeyblock and ice)
+        List<Location> blockLocations = new ArrayList<Location>(); // An AABB can at maximum stay on 4 different blocks simultaneously (i.e.: Being at the center of slime, soulsand, honeyblock and ice)
         for (int x = minBlockX; x <= maxBlockX; x++) {
             for (int y = minBlockY; y <= maxBlockY; y++) {
                 for (int z = minBlockZ; z <= maxBlockZ; z++) {
@@ -4677,19 +4693,18 @@ public class BlockProperties {
                     if (isAir(node.getType()) || isPassable(node.getType())) {
                         continue;
                     }
-                    // Player is (potentially) on ground: collect all locations.
-                    blockLocation.add(new Location(null, x, y, z));
+                    blockLocations.add(new Location(loc.getWorld(), x, y, z));
                 }
             }
         }
         // 1: Surely not on ground.
-        if (blockLocation.isEmpty()) {
+        if (blockLocations.isEmpty()) {
             return null;
         }
         // 2: Find out which block location is closest to the player's current position
         Location closestBlockLoc = null;
         double lastDistance = Double.MAX_VALUE;
-        for (Location bLoc : blockLocation) {
+        for (Location bLoc : blockLocations) {
             double thisDistance = TrigUtil.distanceToCenterSqr(bLoc, loc);
             if (thisDistance < lastDistance || thisDistance == lastDistance && (closestBlockLoc == null || TrigUtil.compareTo(closestBlockLoc, bLoc) < 0)) {
                 closestBlockLoc = bLoc;
@@ -4697,6 +4712,23 @@ public class BlockProperties {
             }
         }
         return closestBlockLoc;
+    }
+
+    public static Location getOnPos(final BlockCache access, final RichEntityLocation eLoc, final Location mainBlockPos, double yBelow) {
+        if (mainBlockPos != null) {
+            final IBlockCacheNode node = access.getOrCreateBlockCacheNode(mainBlockPos.getX(), mainBlockPos.getY(), mainBlockPos.getZ(), false);
+            final long flags = BlockFlags.getBlockFlags(node.getType());
+            final Material mat = node.getType();
+            // I genuinely don't understand this code, or why fences are special
+            boolean shouldReturn = (!(yBelow <= 0.5D) || (flags & BlockFlags.F_HEIGHT150) == 0) 
+                                   && !MaterialUtil.ALL_WALLS.contains(mat)
+                                   && !MaterialUtil.WOODEN_FENCE_GATES.contains(mat);
+            if (shouldReturn) {
+                return new Location(null, mainBlockPos.getX(), MathUtil.floor(eLoc.getY() - yBelow), mainBlockPos.getBlockZ());
+            }
+            return mainBlockPos;
+        } 
+        return new Location(null, eLoc.getBlockX(), MathUtil.floor(eLoc.getY() - yBelow), eLoc.getBlockZ());
     }
     
     /**

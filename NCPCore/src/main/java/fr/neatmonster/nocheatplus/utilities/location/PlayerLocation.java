@@ -93,7 +93,6 @@ public class PlayerLocation extends RichEntityLocation {
     public boolean isAboveGround() {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
-        double[] aaBBCopy = getAABBCopy();
         double yBelow = player.getFallDistance() - cc.sfStepHeight;
         double[] AABB = new double[]{minX, minY+yBelow, minZ, maxX, maxY+yBelow, maxZ};
         return  isOnGround() 
