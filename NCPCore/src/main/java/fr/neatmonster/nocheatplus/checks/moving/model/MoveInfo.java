@@ -65,7 +65,7 @@ public abstract class MoveInfo <REL extends RichEntityLocation, E extends Entity
     public final void set(final E entity, final Location from, final Location to, final double yOnGround){
         final BlockCache cache = wrapCache.getBlockCache();
         if (entity instanceof Player) {
-            cache.setBedrockCache(DataManager.getPlayerData((Player)entity).isBedrockPlayer());
+            cache.setPlayerData(DataManager.getPlayerData((Player)entity));
         } 
         cache.setAccess(from.getWorld());
         this.from.setBlockCache(cache);

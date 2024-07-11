@@ -816,12 +816,6 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         return  BlockProperties.collides(blockCache, minX, maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_GROUND | BlockFlags.F_SOLID)
-                // (Is there a more elegant way to do this?)
-                /* 
-                 * Powder snow: hack around NCP not having per-player blocks / dynamic removal or addition of flags.
-                 * This would always return true due to the block having the GROUND flag, but for the purpose of THIS check, powder snow cannot obstruct a player's head/jump (jumping with powder snow above will simply let the player go through it).
-                 */
-                && !BlockProperties.collides(blockCache, minX, maxY, minZ, maxX, maxY + marginAboveEyeHeight, maxZ, BlockFlags.F_POWDERSNOW)
                 // Here the player's AABB would be INSIDE the block sideways(thus, the maxY's AABB would result as hitting the honey block above)
                 && !isNextToBlock(0.01, BlockFlags.F_STICKY);
     }

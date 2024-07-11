@@ -1087,7 +1087,7 @@ public class CollisionUtil {
             for (int x = minBlockX; x <= maxBlockX; x++) {
                 for (int z = minBlockZ; z <= maxBlockZ; z++) {
                     Material mat = blockCache.getType(x, y, z);
-                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat) || blockCache.fetchBounds(x, y, z) == null) {
+                    if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) {
                         continue;
                     }
                     int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +

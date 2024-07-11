@@ -834,6 +834,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             data.joinOrRespawn = false;
             return;
         }
+        // TODO: Is this right place? Just throw in entity/player in blockcache is better or this one? Too tired for now, maybe later
+        data.hasLeatherBoots = BridgeMisc.hasLeatherBootsOn(player);
+        data.lastY = from.getY();
 
         
         // (newTo should be null here)

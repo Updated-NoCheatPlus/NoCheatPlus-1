@@ -20,7 +20,9 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordHashMap;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordMap;
 
@@ -194,11 +196,11 @@ public abstract class BlockCache {
     private final CoordMap<BlockCacheNode> nodeMap = new CoordHashMap<BlockCacheNode>(23);
 
     /** The max block y. */
-    protected int maxBlockY =  255;
+    protected int maxBlockY = 255;
     /** The min block y. */
     protected int minBlockY = 0;
 
-    private boolean isBedrockCache = false;
+    private IPlayerData pData = null;
 
     private final BlockCacheNode airNode = new BlockCacheNode(Material.AIR);
     // TODO: setBlockCacheConfig -> set static nodes (rather only by id).
@@ -298,7 +300,7 @@ public abstract class BlockCache {
      */
     public void cleanup() {
         nodeMap.clear();
-        isBedrockCache = false;
+        pData = null;
     }
 
     /**
@@ -499,11 +501,11 @@ public abstract class BlockCache {
         return minBlockY;
     }
 
-    public boolean isBedrockCache() {
-        return isBedrockCache;
+    public void setPlayerData(IPlayerData pData) {
+        this.pData = pData;
     }
 
-    public void setBedrockCache(boolean isBedrockCache) {
-        this.isBedrockCache = isBedrockCache;
+    public IPlayerData getPlayerData() {
+        return pData;
     }
 }

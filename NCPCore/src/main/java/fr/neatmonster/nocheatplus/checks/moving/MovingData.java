@@ -82,6 +82,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     // Data shared between the moving checks    //
     //////////////////////////////////////////////
+    /** Has leather boot on*/
+    public boolean hasLeatherBoots = false;
+    public double lastY = -64.0;
     /** Delay (in ticks) from jump to back on ground */
     public int jumpDelay;
     public double lastLevitationLevel;
@@ -95,6 +98,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public int speedTick = 0;
     /** Walk speed */
     public float walkSpeed = 0.0f;
+    public float nextWalkSpeed = 0.0f;
     /** Fly speed */
     public float flySpeed = 0.0f;
     /** Keep track of the amplifier given by the jump potion. */
@@ -1159,19 +1163,21 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     public void adjustWalkSpeed(final float walkSpeed, final int tick, final int speedGrace) {
-        if (walkSpeed > this.walkSpeed) {
-            this.walkSpeed = walkSpeed;
-            this.speedTick = tick;
-        } 
-        else if (walkSpeed < this.walkSpeed) {
-            if (tick - this.speedTick > speedGrace) {
-                this.walkSpeed = walkSpeed;
-                this.speedTick = tick;
-            }
-        } 
-        else {
-            this.speedTick = tick;
-        }
+        if (this.walkSpeed == 0f) this.walkSpeed = walkSpeed; else this.walkSpeed = this.nextWalkSpeed;
+        this.nextWalkSpeed = walkSpeed;
+        //if (walkSpeed > this.walkSpeed) {
+        //    this.walkSpeed = walkSpeed;
+        //    this.speedTick = tick;
+        //} 
+        //else if (walkSpeed < this.walkSpeed) {
+        //    if (tick - this.speedTick > speedGrace) {
+        //        this.walkSpeed = walkSpeed;
+        //        this.speedTick = tick;
+        //    }
+        //} 
+        //else {
+        //    this.speedTick = tick;
+        //}
     }
 
 

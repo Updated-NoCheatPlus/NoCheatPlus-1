@@ -25,7 +25,7 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 public class BukkitSnow implements BukkitShapeModel {
     
     private static final double[][] SNOW_LAYERS = {
-            null,
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
             {0.0, 0.0, 0.0, 1.0, 0.125, 1.0},
             {0.0, 0.0, 0.0, 1.0, 0.250, 1.0},
             {0.0, 0.0, 0.0, 1.0, 0.375, 1.0},
@@ -50,12 +50,12 @@ public class BukkitSnow implements BukkitShapeModel {
 
     @Override
     public int getFakeData(BlockCache blockCache, World world, int x, int y, int z) {
-        // final Block block = world.getBlockAt(x, y, z);
-        // final BlockState state = block.getState();
-        // final BlockData blockData = state.getBlockData();
-        // if (blockData instanceof Snow) {
-        //     return ((Snow)blockData).getLayers() - 1;
-        // }
+        final Block block = world.getBlockAt(x, y, z);
+        final BlockState state = block.getState();
+        final BlockData blockData = state.getBlockData();
+        if (blockData instanceof Snow) {
+            return ((Snow)blockData).getLayers() - 1;
+        }
         return 0;
     }
 }

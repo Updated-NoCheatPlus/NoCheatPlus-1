@@ -47,6 +47,7 @@ import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitLantern;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitLevelled;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitPiston;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitPistonHead;
+import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitPowderSnow;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitRail;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitSeaPickle;
 import fr.neatmonster.nocheatplus.compat.bukkit.model.BukkitShapeModel;
@@ -122,6 +123,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
     private static final BukkitShapeModel MODEL_SEA_PICKLE = new BukkitSeaPickle();
     private static final BukkitShapeModel MODEL_COCOA = new BukkitCocoa();
     private static final BukkitShapeModel MODEL_TURTLE_EGG = new BukkitTurtleEgg();
+    private static final BukkitShapeModel MODEL_POWDER_SNOW = new BukkitPowderSnow();
 
     // Blocks that have a different shape, based on how they have been placed.
     private static final BukkitShapeModel MODEL_CAKE = new BukkitCake();
@@ -236,7 +238,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         for (final Material mat : BridgeMaterial.getAllBlocks(
             "light", "glow_lichen", "big_dripleaf_stem",
             // TODO: Not fully tested
-            "scaffolding", "powder_snow")) {
+            "scaffolding")) {
             processedBlocks.add(mat);
         }
 
@@ -485,6 +487,10 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         // Lectern.
         Material mt = BridgeMaterial.getBlock("lectern");
         if (mt != null) addModel(mt, MODEL_LECTERN);
+
+        // PowderSnow.      
+        mt = BridgeMaterial.getBlock("powder_snow");
+        if (mt != null) addModel(mt, MODEL_POWDER_SNOW);
 
         // Bamboo.      
         mt = BridgeMaterial.getBlock("bamboo");

@@ -206,12 +206,14 @@ public class AirWorkarounds {
                 * FALLING_COLLISION_SHAPE: 0.8999999761581421D (height) in PowderSnowBlock.java.
                 * Can't be fixed without some kind of rework to the block-shape retrieval and definition.
                 * TODO: This needs to be handled in a more decent way in RichEntityLocation. Will be removed.
+                * TODO: Does this actually work?
                 */
                 || data.noFallFallDistance > 2.5 && thisMove.from.inPowderSnow && !lastMove.from.inPowderSnow && thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0
                 && data.ws.use(WRPT.W_M_SF_LANDING_ON_PWDSNW_FALLDIST_25)
                /*
                 * 0: Allow the subsequent move of the one above as well, as it will still yield a false positive.
                 * TODO: This needs to be handled in a more decent way in RichEntityLocation. Will be removed.
+                * TODO: Does this actually work?
                 */
                 || thisMove.to.inPowderSnow && !secondLastMove.from.inPowderSnow && thisMove.yDistance < 0.0 && lastMove.yDistance < 0.0
                 && data.ws.use(WRPT.W_M_SF_LANDING_ON_PWDSNW_FALLDIST_25)

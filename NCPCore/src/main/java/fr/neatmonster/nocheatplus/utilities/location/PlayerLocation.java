@@ -65,26 +65,6 @@ public class PlayerLocation extends RichEntityLocation {
     public Player getPlayer() {
         return player;
     }
-    
-    /**
-     * Set the ground false, in case the player is on powder snow without boots.
-     * This only concerns players, not entities.
-     * 
-     * @return True, for the ordinary case.
-     */
-    public boolean isOnGround() {
-        // Only players can wear boots (humanoid mobs are not ridable :)) (hence why this is in PlayerLocation and not RichEntity).
-        // Always override the result with powder snow, even if the value is cached already.
-        if (BlockProperties.isPowderSnow(getTypeId(Location.locToBlock(x), Location.locToBlock(y - 0.01), Location.locToBlock(z)))
-            && !BridgeMisc.hasLeatherBootsOn(player)) { 
-            onGround = false;
-            // Powder snow below without boots: no candidate for ground.
-            // Standing in between max and min isn't possible with or without boots.
-            // Standing on a block different from powder snow will fallback to the usual onGround logic (will return true).
-            return onGround;
-        }   
-        return super.isOnGround();
-    }
 
     /**
      * Straw-man method to account for this specific bug: https://bugs.mojang.com/browse/MC-2404

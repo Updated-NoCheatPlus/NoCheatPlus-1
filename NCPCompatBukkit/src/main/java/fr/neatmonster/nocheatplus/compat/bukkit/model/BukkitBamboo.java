@@ -26,7 +26,7 @@ public class BukkitBamboo implements BukkitShapeModel {
 
     @Override
     public double[] getShape(final BlockCache blockCache, final World world, final int x, final int y, final int z) {
-        if (blockCache.isBedrockCache()) {
+        if (blockCache.getPlayerData() != null && blockCache.getPlayerData().isBedrockPlayer()) {
             final Block block = world.getBlockAt(x, y, z);
             final BlockData blockData = block.getBlockData();
             if (blockData instanceof Bamboo) {

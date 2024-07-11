@@ -36,7 +36,7 @@ public class BukkitDripStone implements BukkitShapeModel {
         final Block block = world.getBlockAt(x, y, z);
         final BlockData blockData = block.getBlockData();
         if (blockData instanceof PointedDripstone) {
-            boolean bedrock = blockCache.isBedrockCache();
+            boolean bedrock = blockCache.getPlayerData() != null && blockCache.getPlayerData().isBedrockPlayer();
             final long randomseed = bedrock ? LocUtil.randomSeedBedrock(x, 0, z) : LocUtil.randomSeedJava(x, 0, z);
             double xOffset = MathUtil.clamp(calcOffset(randomseed, false, bedrock), -0.125, 0.125);
             double zOffset = MathUtil.clamp(calcOffset(randomseed, true, bedrock), -0.125, 0.125);
