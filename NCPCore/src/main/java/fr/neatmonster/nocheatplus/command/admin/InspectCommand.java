@@ -139,7 +139,7 @@ public class InspectCommand extends BaseCommand {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is swimming (1.13).");
         }
         
-        if (pData.isCrouching()) {
+        if (pData.isInCrouchingPose()) {
             builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is sneaking (NCP).");
         }
 

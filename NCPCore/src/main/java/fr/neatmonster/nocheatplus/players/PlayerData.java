@@ -166,6 +166,7 @@ public class PlayerData implements IPlayerData {
     private int versionID = -1;
     private ClientVersion clientVersion = ClientVersion.UNKNOWN;
     private boolean sneaking = false;
+    private boolean isShiftKeyPressed = false;
     private boolean sprinting = false;
     private Material itemInUse = null;
 
@@ -456,6 +457,7 @@ public class PlayerData implements IPlayerData {
         bedrockPlayer = false;
         sneaking = false;
         sprinting = false;
+        isShiftKeyPressed = false;
         versionID = -1;
         itemInUse = null;
         clientVersion = ClientVersion.UNKNOWN;
@@ -778,9 +780,14 @@ public class PlayerData implements IPlayerData {
     public void setNotifyOff(final boolean notifyOff) {
         setTag(TAG_NOTIFY_OFF, notifyOff);
     }
+    
+    @Override
+    public void setIsShiftKeyPressed(final boolean isShiftKeyPressed) {
+        this.isShiftKeyPressed = isShiftKeyPressed;
+    }
 
     @Override
-    public void setCrouchingState(final boolean sneaking) {
+    public void setIsInCrouchingPoseState(final boolean sneaking) {
         this.sneaking = sneaking;
     }
 
@@ -790,7 +797,7 @@ public class PlayerData implements IPlayerData {
     }
 
     @Override
-    public void setItemInUseState(final Material itemInUse) {
+    public void setItemInUse(final Material itemInUse) {
         this.itemInUse = itemInUse;
     }
     
@@ -813,9 +820,14 @@ public class PlayerData implements IPlayerData {
     public boolean isSprinting() {
         return sprinting;
     }
+    
+    @Override
+    public boolean isShiftKeyPressed() {
+        return isShiftKeyPressed;
+    }
 
     @Override
-    public boolean isCrouching() {
+    public boolean isInCrouchingPose() {
         return sneaking;
     }
 

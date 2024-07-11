@@ -363,22 +363,36 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
      * @param ID
      */
     public void setClientVersionID(final int ID);
-
+    
     /**
-     * Set the sneaking state of the client.<br>
-     * There are cases where the information sent to the server can be inconsistent, so we need to estimate
-     * ourselves if the player could be sneaking.
+     * Test if the player has pressed the shift key, as set by PlayerToggleSneakEvent.
+     * This is mostly intended to better disambiguate Crouching VS Sneaking. Using player#isSneaking() can be misleading (See note in CombinedListener.java)
      * 
-     * @param sneaking
+     * @return True, if the key is pressed.
      */
-    public void setCrouchingState(final boolean sneaking);
+    public boolean isShiftKeyPressed();
+    
+    /**
+     * Set if the player has pressed the shift key.
+     *
+     * @param isKeyPressed
+     */
+    public void setIsShiftKeyPressed(final boolean isKeyPressed);
+    
+    /**
+     * Set whether the player is in its crouching pose.<br>
+     * 
+     * @param isInCrouchPose
+     */
+    public void setIsInCrouchingPoseState(final boolean isInCrouchPose);
 
     /**
-     * Gets the sneaking state of the client, as set by PlayerData#setSneaking(). <br>
-     * Note that this is determined by player poses, not shift key presses.
+     * Test if the player is in its crouching pose.<br>
+     * Do not use IPlayerData#isShiftKeyPressed() if you wish to know if the player is moving slower than normal.
+     * Because sneaking is related to poses, not shift key presses.
      * @return True, if sneaking.
      */
-    public boolean isCrouching();
+    public boolean isInCrouchingPose();
 
     /**
      * Set the sprinting state of the client.<br>
@@ -390,7 +404,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setSprintingState(final boolean sprinting);
     
     /**
-     * Gets the sprinting state of the client, as set by PlayerData#setSprinting().<br>
+     * Get the sprinting state of the client, as set by PlayerData#setSprinting().<br>
      * This ensures that sprinting is actually possible (i.e.: not with low food level)
      * 
      * @return True, if sprinting.
@@ -399,14 +413,14 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
 
     /**
      * Set the item currently in use by the player (eating, blocking etc...).<br>
-     * This is set only if the server doesn't provide the HumanEntity#getItemInUse() method.
+     * This is set only if the server doesn't provide the appropriate method (1.11 and below).
      * 
      * @param itemInUse
      */
-    public void setItemInUseState(final Material itemInUse);
+    public void setItemInUse(final Material itemInUse);
     
     /**
-     * Gets the item currently in use, as set by PlayerData#setItemInUse
+     * Get the item currently in use, as set by PlayerData#setItemInUse
      * 
      * @return The enum Material of the item in use.
      */

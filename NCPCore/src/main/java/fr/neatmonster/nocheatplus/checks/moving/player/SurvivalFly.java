@@ -716,7 +716,7 @@ public class SurvivalFly extends Check {
         // From KeyboardInput.java (MC-Reborn tool)
         // Sneaking and item-use aren't directly applied to the player's motion. The game reduces the input force instead.
         // Note that this is determined by player poses, not shift key presses.
-        if (pData.isCrouching()) {
+        if (pData.isInCrouchingPose()) {
             tags.add("crouching");
             float SwiftSneakIncrement = BridgeEnchant.getSwiftSneakIncrement(player);
             for (i = 0; i < 9; i++) {
@@ -1410,7 +1410,7 @@ public class SurvivalFly extends Check {
         final boolean swimmingInLegacyServer = player.isSprinting() && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13);
         final double baseSpeed = thisMove.from.onGround ? Magic.swimBaseSpeedV(Bridge1_13.isSwimming(player) || swimmingInLegacyServer) + 0.1 : Magic.swimBaseSpeedV(Bridge1_13.isSwimming(player) || swimmingInLegacyServer);
         /* Slow fall gravity is applied only if the player is not sneaking (in that case, the player will descend in water with regular gravity) */
-        final boolean Slowfall = !pData.isCrouching() && thisMove.hasSlowfall;
+        final boolean Slowfall = !pData.isInCrouchingPose() && thisMove.hasSlowfall;
 
         //////////////////////////////////////////////////////
         // 0: Checks for no gravity when moving in a liquid.//
@@ -1535,7 +1535,7 @@ public class SurvivalFly extends Check {
         //////////////////////////////////
         tags.add(yDistance < 0.0 ? "swimdown" : "swimup");
         // Can't ascend in liquid if sneaking.
-        if (pData.isCrouching()
+        if (pData.isInCrouchingPose()
                 // (Clearly ascending)
                 && yDistance > 0.0 && lastMove.yDistance > 0.0 && yDistance >= lastMove.yDistance) {
             return new double[]{0.0, yDistance};

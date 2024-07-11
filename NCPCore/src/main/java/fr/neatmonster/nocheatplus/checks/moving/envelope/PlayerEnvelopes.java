@@ -145,7 +145,7 @@ public class PlayerEnvelopes {
             // Just ensure to not be too exploitable: ensure that lost ground is ruled out.
             return false;
         }
-        if (!pData.isCrouching()) {
+        if (!pData.isInCrouchingPose()) {
             return false;
         }
         return from.seekHeadObstruction(0.09, false) && from.isOnGround() && to.isOnGround();
@@ -167,7 +167,8 @@ public class PlayerEnvelopes {
         if (from.isInLiquid()) {
             return false;
         }
-        return isJump(from, to, player, fromOnGround, toOnGround) && pData.isSprinting();
+        // TODO: How can we detect bunyhopping with isVerticallyConstricted when vertical motion cannot be detected?
+        return pData.isSprinting() && isJump(from, to, player, fromOnGround, toOnGround);
     }
 
     /**
