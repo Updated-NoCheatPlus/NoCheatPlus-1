@@ -1176,7 +1176,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.isGliding = Bridge1_9.isGliding(player);
         thisMove.isRiptiding = Bridge1_13.isRiptiding(player);
         thisMove.isSprinting = pData.isSprinting();
-        thisMove.isSneaking = pData.isInCrouchingPose();
+        thisMove.isCrouching = pData.isInCrouchingPose();
         thisMove.isSwimming = Bridge1_13.isSwimming(player);
         thisMove.slowedByUsingAnItem = BridgeMisc.isUsingItem(player);
 
@@ -2723,8 +2723,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (pData.isSprinting()) {
                 builder.append("\n(NCP sprinting)");
             }
-            if (player.isSneaking()) {
-                builder.append("\n(Bukkit sneaking)");
+            if (pData.isShiftKeyPressed()) {
+                builder.append("\n(Shift key down)");
             }
             if (pData.isInCrouchingPose()) {
                 builder.append("\n(NCP sneaking)");

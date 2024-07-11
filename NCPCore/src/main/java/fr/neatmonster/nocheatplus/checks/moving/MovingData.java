@@ -103,8 +103,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public float flySpeed = 0.0f;
     /** Keep track of the amplifier given by the jump potion. */
     public double jumpAmplifier = 0;
-    /** Used in workaroundFlyCheckTransition() in the MovingListener for velocity. */
-    public long delayWorkaround = 0;
     /** Last time the player was riptiding */
     public long timeRiptiding = 0;
     /** Represents how long a vehicle has been tossed up by a bubble column */
@@ -230,6 +228,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Count in air events for this jumping phase, resets when landing on ground, with set-backs and similar. */
     public int sfJumpPhase = 0;
     /** "Dirty" flag, for receiving velocity and similar while in air. */
+    @Deprecated
     private boolean sfDirty = false;
     /** Basic envelope constraints/presets for lifting off ground. */
     public LiftOffEnvelope liftOffEnvelope = defaultLiftOffEnvelope;
@@ -367,7 +366,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Assume the player to start falling from there rather, or be on ground.
         // TODO: Check if to adjust some counters to state before setback? 
         // Keep jump amplifier
-        // Keep bunny-hop delay. Harsher on bunnyhop cheats.
         // keep jump phase.
         sfHoverTicks = -1; // 0 ?
         sfDirty = false;
@@ -1382,7 +1380,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public void handleTimeRanBackwards() {
         final long time = System.currentTimeMillis();
         timeRiptiding = Math.min(timeRiptiding, time);
-        delayWorkaround = Math.min(delayWorkaround, time);
         vehicleMorePacketsLastTime = Math.min(vehicleMorePacketsLastTime, time);
         removeAllPlayerSpeedModifiers(); // TODO: This likely leads to problems.
         // (ActionFrequency can handle this.)

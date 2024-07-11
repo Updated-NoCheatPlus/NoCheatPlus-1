@@ -55,7 +55,7 @@ public class PlayerMoveData extends MoveData {
 	public boolean isSprinting;
 	
 	/** Player action set on PlayerMoveEvents */
-	public boolean isSneaking;
+	public boolean isCrouching;
 	
 	/** Player action set on PlayerMoveEvents */
 	public boolean isSwimming;
@@ -181,7 +181,7 @@ public class PlayerMoveData extends MoveData {
         isGliding = false;
     	isRiptiding = false;
     	isSprinting = false;
-    	isSneaking = false;
+    	isCrouching = false;
     	isSwimming = false;
         slowedByUsingAnItem = false;
         forwardImpulse = InputDirection.ForwardDirection.NONE;

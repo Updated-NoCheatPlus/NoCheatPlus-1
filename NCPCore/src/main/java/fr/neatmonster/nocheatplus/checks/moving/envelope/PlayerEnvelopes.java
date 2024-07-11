@@ -299,8 +299,7 @@ public class PlayerEnvelopes {
         
         // Workaround/fix for bed bouncing. getBlockY() would return an int, while a bed's maxY is 0.5625, causing this method to always return false.
         // A better way to do this would to get the maxY through another method, just can't seem to find it :/
-        if (player.isSneaking()) {
-            // isSneaking is correct here
+        if (pData.isShiftKeyPressed()) {
             return false;
         }
         double blockY = (to.getY() + 0.4375) % 1 == 0 ? to.getY() : to.getBlockY();

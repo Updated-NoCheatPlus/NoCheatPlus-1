@@ -52,7 +52,7 @@ public class MoreInventory extends Check {
         
         // TODO: bring in the moving subcheck in invMove.
         if (type == InventoryType.CRAFTING 
-            && (player.isSprinting() || PoYdiff || player.isSneaking() || BridgeMisc.isUsingItem(player))) {
+            && (player.isSprinting() || PoYdiff || pData.isShiftKeyPressed() || BridgeMisc.isUsingItem(player))) {
             return true;
         }
         return false;

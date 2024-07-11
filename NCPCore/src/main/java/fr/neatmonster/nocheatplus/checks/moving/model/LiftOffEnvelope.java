@@ -21,7 +21,7 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
  *
  */
 public enum LiftOffEnvelope {
-    /** Normal in-air lift off, without any restrictions/specialties. */
+    /** Normal in-air lift off, without any restrictions/specialties. Source: BASE_JUMP_POWER field in EntityLiving.java. All other envelopes are just: this constant * getBlockJumpFactor() */
     NORMAL(0.42, 1.29, 6, true),
     /** (Non-vanilla) Simple calm water surface, strong limit */
     LIMIT_LIQUID(0.1, 0.27, 3, false),
@@ -52,6 +52,7 @@ public enum LiftOffEnvelope {
 
     /**
      * The expected speed with lift-off.
+     * Values are from EntityLiving.java -> getJumpPower()
      * 
      * @param jumpAmplifier
      * @return The lift-off speed.
@@ -65,7 +66,7 @@ public enum LiftOffEnvelope {
 
     /**
      * The expected speed with lift-off, with a custom factor for the jump amplifier.
-     * Values are from EntityLiving.java
+     * Values are from EntityLiving.java -> getJumpPower()
      * 
      * @param jumpAmplifier
      * @param factor 
@@ -81,7 +82,7 @@ public enum LiftOffEnvelope {
     
     /**
      * Maximum estimate for jump height in blocks.
-     * Might not be the most accurate value; partly taken from various sources, partly from testing.
+     * Might not be the most accurate value.
      * 
      * @param jumpAmplifier
      * @return The maximum jump height for this envelope

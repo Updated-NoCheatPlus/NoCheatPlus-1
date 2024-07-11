@@ -759,7 +759,7 @@ public class SurvivalFly extends Check {
             final double diff = Math.abs(0.0784000015258789 - lastMove.yDistance);
             boolean isGravity = MathUtil.inRange( 0.0784, diff,  0.0784000015258789); // diff <= 0.0784000015258789 && diff >= 0.0784;
             final double result = isGravity ? 0.0784000015258789 : lastMove.yDistance;
-            if (Math.abs(result) < 0.1 && !player.isSneaking()) { // isSteppingCarefully -> isShiftKeyDown. Using isSneaking is correct.
+            if (Math.abs(result) < 0.1 && !pData.isShiftKeyPressed()) { // isSteppingCarefully -> isShiftKeyDown. Using isSneaking is correct.
                 thisMove.xAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
                 thisMove.zAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
             }
@@ -869,7 +869,7 @@ public class SurvivalFly extends Check {
         }
         // Try to back off players from edges, if sneaking.
         // NOTE: here the game uses isShiftKeyDown (so this is shifting not sneaking, using Bukkit's isSneaking is correct)
-        if (!player.isFlying() && player.isSneaking() && from.isAboveGround() && thisMove.yDistance <= 0.0) {
+        if (!player.isFlying() && pData.isShiftKeyPressed() && from.isAboveGround() && thisMove.yDistance <= 0.0) {
             for (i = 0; i < 9; i++) {
                 // TODO: Optimize. Brute forcing collisions with all 9 speed combinations will tank performance.
                 Vector backOff = from.maybeBackOffFromEdge(new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]));
@@ -1137,7 +1137,7 @@ public class SurvivalFly extends Check {
             //////////////////////////////////////
             // NOTE: pressing space bar on a bouncy block will override the bounce (in that case, vdistrel will fall back to the jump check above).
             // updateEntityAfterFallOn(), this function is called on the next move
-            if (!player.isSneaking() && lastMove.collideY) { // TODO: Cannot use flags from 1.20 and onwards, needs the mainSupportingBlock method.
+            if (!pData.isShiftKeyPressed() && lastMove.collideY) { // TODO: Cannot use flags from 1.20 and onwards, needs the mainSupportingBlock method.
                 if (lastMove.yAllowedDistance < 0.0) { // NOTE: Must be the allowed distance, not the actual one (exploit)
                     if (lastMove.to.onBouncyBlock) {
                         // The effect works by inverting the distance.
