@@ -1163,7 +1163,10 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
 
     public void adjustWalkSpeed(final float walkSpeed, final int tick, final int speedGrace) {
-        if (this.walkSpeed == 0f) this.walkSpeed = walkSpeed; else this.walkSpeed = this.nextWalkSpeed;
+        if (this.walkSpeed == 0f) {
+            this.walkSpeed = walkSpeed;
+        }
+        else this.walkSpeed = this.nextWalkSpeed;
         this.nextWalkSpeed = walkSpeed;
         //if (walkSpeed > this.walkSpeed) {
         //    this.walkSpeed = walkSpeed;
@@ -1290,8 +1293,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * jump phase. Use hasAnyVerVel() to test if active or queued vertical
      * velocity should still be able to influence the in-air jump phase.
      * 
+     * TODO: To be phased out by the new prediction modeling
+     * 
      * @return
      */
+    @Deprecated
     public boolean isVelocityJumpPhase() {
         return sfDirty;
     }
@@ -1300,9 +1306,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /**
      * Refactoring stage: Test which value sfDirty should have and set
      * accordingly. This should only be called, if the player reached ground.
+     * TODO: To be phased out by the new prediction modeling
      * 
      * @return If the velocity jump phase is still active (sfDirty).
      */
+    @Deprecated
     public boolean resetVelocityJumpPhase() {
         return resetVelocityJumpPhase(null);
     }
@@ -1310,9 +1318,11 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
     /**
      * See {@link #resetVelocityJumpPhase()}.
+     * TODO: To be phased out by the new prediction modeling
      * @param tags
      * @return
      */
+    @Deprecated
     public boolean resetVelocityJumpPhase(final Collection<String> tags) {
         if (horVel.hasActive() || horVel.hasQueued() 
             || sfDirty && shouldRetainSFDirty(tags)) {
@@ -1323,8 +1333,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
             return sfDirty = false;
         }
     }
-
-
+    
+    // TODO: To be phased out by the new prediction modeling
     private final boolean shouldRetainSFDirty(final Collection<String> tags) {
         final PlayerMoveData thisMove = playerMoves.getLatestValidMove();
 
@@ -1349,7 +1359,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /**
      * Force set the move to be affected by previous speed. Currently
      * implemented as setting velocity jump phase.
+     * TODO: To be phased out by the new prediction modeling
      */
+     @Deprecated
     public void setFrictionJumpPhase() {
         // TODO: Better and more reliable modeling.
         sfDirty = true;
