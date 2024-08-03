@@ -107,7 +107,7 @@ public class NoFall extends Check {
                                 final boolean reallyOnGround, final MovingData data, final MovingConfig cc,
                                 final IPlayerData pData) {
         // Get the fall distance and modify it accordingly to the fallen on block (currently only related to pointed dripstone)
-        float fallDist = fallOn(player, y, previousSetBackY, data);
+        float fallDist = getAndRunFallDistanceDependentTasks(player, y, previousSetBackY, data);
         // Calculate damage and apply all possible modifiers.
         double maxDamage = getDamage(fallDist);
         maxDamage = applyFeatherFalling(player, applyBlockDamageModifier(player, data, maxDamage), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
@@ -140,7 +140,7 @@ public class NoFall extends Check {
      * Get the applicable fall-distance for the given data and run some tasks related to fall-distance specifically. <br>
      * (I.e.: altering the block the player fell on (farmland, turtle eggs) or modify the fall-distance (stalagmites))
      */
-    private float fallOn(final Player player, double y, double previousSetBackY, final MovingData data) {
+    private float getAndRunFallDistanceDependentTasks(final Player player, double y, double previousSetBackY, final MovingData data) {
         // Base fall-distance
         float fallDist = (float) getApplicableFallHeight(player, y, previousSetBackY, data);
         // TODO: Need move data pTo, this location isn't updated
@@ -194,6 +194,15 @@ public class NoFall extends Check {
                     return fallDist;
                 }
             }
+        }
+        // TODO: Might want to clean up NoFall to only track for ground state and override as mention above 
+        // (save performance, less code but packet dependent and precise ground state requirement)
+        // or still maintain it
+        // (lot of tracking stuffs for impulse, change blocks on land, damage recalculation -> degraded efficiency but packet independent
+        if (fallDist - Magic.FALL_DAMAGE_DIST > 0.0 && data.noFallCurrentLocOnWindChargeHit != null) {
+            final double lastImpluseY = data.noFallCurrentLocOnWindChargeHit.getY();
+            data.clearWindChargeImpulse();
+            fallDist = (float) (lastImpluseY < y ? 0.0 : lastImpluseY - y);
         }
         useLoc2.setWorld(null);
         return fallDist;

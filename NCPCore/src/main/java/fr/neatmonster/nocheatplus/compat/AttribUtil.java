@@ -16,9 +16,10 @@ package fr.neatmonster.nocheatplus.compat;
 
 import java.util.UUID;
 
+import org.bukkit.NamespacedKey;
+
 import fr.neatmonster.nocheatplus.utilities.IdUtil;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class AttribUtil.
  */
@@ -30,6 +31,7 @@ public class AttribUtil {
     public static final UUID ID_SOUL_SPEED = IdUtil.UUIDFromString("87f46a96-686f-4796-b035-22e16ee9e038");
     /** The Constant ID_POWDER_SNOW. */
     public static final UUID ID_POWDER_SNOW = IdUtil.UUIDFromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
+    public static final NamespacedKey NSID_SPRINT_BOOST = new NamespacedKey("minecraft", "sprinting");
 
     /**
      * Get a multiplier for an AttributeModifier.

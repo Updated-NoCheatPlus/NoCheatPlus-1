@@ -60,19 +60,20 @@ public class BridgeEntityType {
         }
     }
     
-    private static final EntityType EYE_OF_ENDER = getFirstNotNull("eye_of_ender", "ender_signal");
-    private static final EntityType EXPERIENCE_BOTTLE = getFirstNotNull("experience_bottle", "thrown_exp_bottle");
-    private static final EntityType SPLASH_POTION = getFirstNotNull("potion", "splash_potion");
+    public static final EntityType EYE_OF_ENDER = getFirstNotNull("eye_of_ender", "ender_signal");
+    public static final EntityType EXPERIENCE_BOTTLE = getFirstNotNull("experience_bottle", "thrown_exp_bottle");
+    public static final EntityType SPLASH_POTION = getFirstNotNull("potion", "splash_potion");
     
-    private static final EntityType FIREWORK = getFirstNotNull("firework", "firework_rocket");
-    private static final EntityType FISHING_HOOK = getFirstNotNull("fishing_hook", "fishing_bobber");
-    private static final EntityType ITEM = getFirstNotNull("dropped_item", "item");
-    private static final EntityType SNOW_GOLEM = getFirstNotNull("snowman", "snow_golem");
-    private static final EntityType TNT = getFirstNotNull("primed_tnt", "tnt");
-    private static final EntityType MUSHROOM_COW = getFirst("mushroom_cow");
-    private static final EntityType ENDER_CRYSTAL = getFirstNotNull("ender_crystal", "end_crystal");
-    private static final EntityType LEASH_KNOT = getFirst("leash_hitch", "leash_knot");
-    private static final EntityType ZOMBIFIED_PIGLIN = getFirstNotNull("pig_zombie", "zombiefied_piglin");
+    public static final EntityType FIREWORK = getFirstNotNull("firework", "firework_rocket");
+    public static final EntityType FISHING_HOOK = getFirstNotNull("fishing_hook", "fishing_bobber");
+    public static final EntityType ITEM = getFirstNotNull("dropped_item", "item");
+    public static final EntityType SNOW_GOLEM = getFirstNotNull("snowman", "snow_golem");
+    public static final EntityType TNT = getFirstNotNull("primed_tnt", "tnt");
+    public static final EntityType MUSHROOM_COW = getFirst("mushroom_cow");
+    public static final EntityType ENDER_CRYSTAL = getFirstNotNull("ender_crystal", "end_crystal");
+    public static final EntityType LEASH_KNOT = getFirst("leash_hitch", "leash_knot");
+    public static final EntityType ZOMBIFIED_PIGLIN = getFirstNotNull("pig_zombie", "zombified_piglin");
+    public static final EntityType WIND_CHARGE = getFirst("wind_charge");
     
     public static final Map<EntityType, Double> LEGACY_ENTITY_WIDTH = init();
     

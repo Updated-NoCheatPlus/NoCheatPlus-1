@@ -185,7 +185,7 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
 
     @Override
     public String getMCVersion() {
-        return "1.13-1.20";
+        return "1.13-1.21";
     }
 
     @Override

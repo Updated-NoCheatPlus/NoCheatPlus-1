@@ -31,6 +31,7 @@ public class ReflectDamageSources {
 
     public ReflectDamageSources(ReflectBase base, ReflectDamageSource reflectDamageSource, Class<?> nmsEntityClass) throws ClassNotFoundException {
         nmsClass = Class.forName("net.minecraft.world.damagesource.DamageSources");
+        nmsfall = ReflectionUtil.getMethodNoArgs(nmsClass, "k", reflectDamageSource.nmsClass);
         // 1.19 Entity.damageSources()
         nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dG", nmsClass);
         // 1.20
@@ -49,7 +50,11 @@ public class ReflectDamageSources {
         if (nmsDamageSources == null) {
             nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dQ", nmsClass);
         }
-        nmsfall = ReflectionUtil.getMethodNoArgs(nmsClass, "k", reflectDamageSource.nmsClass);
+        // 1.21
+        if (nmsDamageSources == null) {
+            nmsDamageSources = ReflectionUtil.getMethodNoArgs(nmsEntityClass, "dP", nmsClass);
+            nmsfall = ReflectionUtil.getMethodNoArgs(nmsClass, "l", reflectDamageSource.nmsClass);
+        }
     }
 
     public Object getDamageSource(Object handle) {

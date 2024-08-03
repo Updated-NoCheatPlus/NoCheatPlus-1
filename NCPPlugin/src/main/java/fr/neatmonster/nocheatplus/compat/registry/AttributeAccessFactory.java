@@ -16,6 +16,8 @@ package fr.neatmonster.nocheatplus.compat.registry;
 
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.bukkit.BukkitAttributeAccess;
+import fr.neatmonster.nocheatplus.compat.bukkit.NSBukkitAttributeAccess;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.modifier.DummyAttributeAccess;
 import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 
@@ -34,7 +36,7 @@ public class AttributeAccessFactory {
         final IAttributeAccess fallBackReflect = new DummyAttributeAccess();
         IAttributeAccess fallBackDedicated = null;
         try {
-            fallBackDedicated = new BukkitAttributeAccess();
+            fallBackDedicated = ServerVersion.compareMinecraftVersion("1.21") < 0 ? new BukkitAttributeAccess() : new NSBukkitAttributeAccess();
         }
         catch (Throwable t) {}
         RegistryHelper.setupGenericInstance(new String[] {
