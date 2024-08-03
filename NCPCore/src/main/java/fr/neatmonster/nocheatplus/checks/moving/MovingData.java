@@ -188,7 +188,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     private Location setBack = null;
     /** Telepot location, shared between fly checks */
     private Location teleported = null;
-    public World currentWorldToChange = null;
+    /** Workaround for Folia servers missing the PlayerChangeWorld event: world is set on PlayerMoveEvents, lowest priority */
+    public World fromMissedWorldChange = null;
 
 
 
@@ -339,6 +340,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         setBack = null;
         clearNoFallData();
         removeAllPlayerSpeedModifiers();
+        clearWindChargeImpulse();
         sfHoverTicks = sfHoverLoginTicks = -1;
         sfDirty = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
