@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.build.BuildParameters;
-import fr.neatmonster.nocheatplus.utilities.collision.RayTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.RayTracing;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
 public class TestRayTracing {

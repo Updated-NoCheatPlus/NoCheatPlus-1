@@ -109,7 +109,7 @@ public class BridgeMisc {
             return false;
         }
         final IPlayerData pData = DataManager.getPlayerData(player);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_14)) {
             // Can't possibly be crawling.
             return false;
         }
@@ -185,8 +185,7 @@ public class BridgeMisc {
         }
         final PlayerInventory inv = player.getInventory();
         final ItemStack[] contents = inv.getArmorContents();
-        for (int i = 0; i < contents.length; i++){
-            final ItemStack armor = contents[i];
+        for (final ItemStack armor : contents) {
             if (armor != null && armor.getType().toString().startsWith("LEATHER")) {
                 return false;
             }
@@ -281,9 +280,7 @@ public class BridgeMisc {
      * @return
      */
     public static boolean maybeElytraBoost(final Player player, final Material materialInHand) {
-        // TODO: Account for MC version (needs configuration override or auto adapt to protocol support).
-        // TODO: Non-static due to version checks (...).
-        return BridgeMaterial.FIREWORK_ROCKET != null && materialInHand == BridgeMaterial.FIREWORK_ROCKET && Bridge1_9.isGlidingWithElytra(player);
+        return DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_11_1) && BridgeMaterial.FIREWORK_ROCKET != null && materialInHand == BridgeMaterial.FIREWORK_ROCKET && Bridge1_9.isGlidingWithElytra(player);
     }
 
     /**
@@ -305,5 +302,4 @@ public class BridgeMisc {
         final FireworkMeta fwMeta = (FireworkMeta) meta;
         return fwMeta.getPower();
     }
-
 }

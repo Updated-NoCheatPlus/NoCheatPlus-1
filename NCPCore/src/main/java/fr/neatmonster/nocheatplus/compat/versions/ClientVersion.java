@@ -15,7 +15,7 @@
 package fr.neatmonster.nocheatplus.compat.versions;
 
 /**
- * This is to avoid having to memorize protocol IDs.
+ * A library to translate client protocol IDs to Minecraft versions.  
  * The protocol ID is retrieved through CompatNoCheatPlus currently.<br>
  * Supports clients from 1.7.2 and onwards (protocol indexing was changed with 1.7).
  */
@@ -81,7 +81,7 @@ public enum ClientVersion {
      */
     V_1_20_3(765),
     /**
-     * 1.20.5 has the same protocol version
+     * 1.20.5 / 1.20.6 have the same protocol version
      */
      V_1_20_6(766),
      V_1_21(767),
@@ -134,6 +134,21 @@ public enum ClientVersion {
             return UNKNOWN;
         }
     }
+    
+    /**
+     * Get a ClientVersion enum by the given version name.
+     *
+     * @param versionName the version name (e.g., "1.19.4").
+     * @return The ClientVersion. UNKNOWN, if unable to determine
+     */
+    public static ClientVersion getByString(String versionName) {
+        for (ClientVersion version : VALUES) {
+            if (version.name.equals(versionName)) {
+                return version;
+            }
+        }
+        return UNKNOWN;
+    }
 
     /**
      * Get the release name of this ClientVersion.
@@ -146,7 +161,7 @@ public enum ClientVersion {
     }
 
     /**
-     * Protocol version ID of this client version.
+     * Protocol ID of this client version.
      *
      * @return Protocol version ID.
      */
@@ -155,7 +170,7 @@ public enum ClientVersion {
     }
 
     /**
-     * Get the lastest version
+     * Get the latest version
      *
      * @return Latest known version
      */
@@ -187,22 +202,22 @@ public enum ClientVersion {
      */
     public boolean isVersionBetween(ClientVersion versionLow, boolean includeLow, ClientVersion versionHigh, boolean includeHigh) {
         if (includeLow) {
-            if (isOlderThan(versionLow)) {
+            if (isLowerThan(versionLow)) {
                 return false;
             }
         } 
         else {
-            if (isOlderThanOrEquals(versionLow)) {
+            if (isAtMost(versionLow)) {
                 return false;
             }
         }
         if (includeHigh) {
-            if (isNewerThan(versionHigh)) {
+            if (isHigherThan(versionHigh)) {
                 return false;
             }
         } 
         else {
-            if (isNewerThanOrEquals(versionHigh)) {
+            if (isAtLeast(versionHigh)) {
                 return false;
             }
         }
@@ -213,9 +228,9 @@ public enum ClientVersion {
      * Check if the player's client version is higher than the given ClientVersion (no equality check)
      *
      * @param target ClientVersion enum to test
-     * @return true if the player is in a higher version than the given client version, false otherwise.
+     * @return True, if so.
      */
-    public boolean isNewerThan(ClientVersion target) {
+    public boolean isHigherThan(ClientVersion target) {
         return protocolID > target.protocolID;
     }
 
@@ -223,9 +238,9 @@ public enum ClientVersion {
      * Check if the player's client version is higher than or equals the given ClientVersion
      *
      * @param target ClientVersion enum to test
-     * @return true if yes and viceversa
+     * @return True, if so.
      */
-    public boolean isNewerThanOrEquals(ClientVersion target) {
+    public boolean isAtLeast(ClientVersion target) {
         return protocolID >= target.protocolID;
     }
 
@@ -233,9 +248,9 @@ public enum ClientVersion {
      * Check if the player's client version is lower than the given ClientVersion (no equality check)
      *
      * @param target ClientVersion enum to test
-     * @return true if the player is in a lower version than the given ClientVersion, false otherwise.
+     * @return True, if so.
      */
-    public boolean isOlderThan(ClientVersion target) {
+    public boolean isLowerThan(ClientVersion target) {
         return protocolID < target.protocolID;
     }
 
@@ -243,9 +258,31 @@ public enum ClientVersion {
      * Check if the player's client version is lower than or equals the given ClientVersion
      *
      * @param target ClientVersion enum to test
-     * @return true if yes and viceversa
+     * @return True, if so.
      */
-    public boolean isOlderThanOrEquals(ClientVersion target) {
+    public boolean isAtMost(ClientVersion target) {
         return protocolID <= target.protocolID;
+    }
+    
+    /**
+     * Test if the player's client version is in range of the given ones.
+     * 
+     * @param min Minimum client version
+     * @param max Maximum client version
+     * @return True, if the client version is in between or equals the given ones.
+     */
+    public boolean isInRange(ClientVersion min, ClientVersion max) {
+        return isAtLeast(min) && isAtMost(max);
+    }
+    
+    /**
+     * Test if the player's client version is in between the given ones.
+     *      
+     * @param min
+     * @param max
+     * @return True, if the client version is in between the min and max versions (no equality)
+     */
+    public boolean isBetween(ClientVersion min, ClientVersion max) {
+        return isHigherThan(min) && isLowerThan(max);
     }
 }

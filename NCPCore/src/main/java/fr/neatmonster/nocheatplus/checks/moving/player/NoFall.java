@@ -313,10 +313,10 @@ public class NoFall extends Check {
                 return damage / 5D;
             }
             final IPlayerData pData = DataManager.getPlayerData(player);
-            if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12) && MaterialUtil.BEDS.contains(mat)) {
+            if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_12) && MaterialUtil.BEDS.contains(mat)) {
                 return damage / 2D;
             }
-            if (Bridge1_9.hasEndRod() && mat == Material.HAY_BLOCK) {
+            if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_9) && mat == Material.HAY_BLOCK) {
                 return damage / 5D;
             }
         }

@@ -69,8 +69,6 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
  * 
  */
 public class UseItemAdapter extends BaseAdapter {
-
-    private final boolean ServerIsAtLeast1_9 = ServerVersion.compareMinecraftVersion("1.9") >= 0;
     
     private final static String dftag = "system.nocheatplus.useitemadapter";
         
@@ -195,7 +193,6 @@ public class UseItemAdapter extends BaseAdapter {
     /** Attempt to fix server-side-only blocking after respawn. */
     private static void onRespawning(final PlayerRespawnEvent e) {
         final IPlayerData pData = DataManager.getPlayerData(e.getPlayer());
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Patch up issues on Bukkit's (Minecraft's ?) side (item has been reset already on death).
         if (Bridge1_9.hasGetItemInOffHand() && e.getPlayer().isBlocking()) {
             pData.requestItemUseResync();
@@ -204,7 +201,6 @@ public class UseItemAdapter extends BaseAdapter {
 
     private static void onTridentRelease(final PlayerRiptideEvent e) {
         final IPlayerData pData = DataManager.getPlayerData(e.getPlayer());
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // This event is called on releasing the trident (See ItemTrident.java), so the item is not in use anymore.
         pData.setItemInUse(null);
     }
@@ -212,7 +208,6 @@ public class UseItemAdapter extends BaseAdapter {
     private static void onItemConsume(final PlayerItemConsumeEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Consume(d) (!!), so the player isn't using the item anymore
         pData.setItemInUse(null);   
     }
@@ -221,14 +216,12 @@ public class UseItemAdapter extends BaseAdapter {
         if (e.isCancelled()) return;
         final Player p = (Player) e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item with an inventory open.
         pData.setItemInUse(null);
     }
 
     private static void onDeath(final PlayerDeathEvent e) {
         final IPlayerData pData = DataManager.getPlayerData((Player) e.getEntity());
-        final CombinedData data = pData.getGenericInstance(CombinedData.class);
         // Can't use item if dead
         pData.setItemInUse(null);  
     }
@@ -377,7 +370,7 @@ public class UseItemAdapter extends BaseAdapter {
         final PacketContainer packet = event.getPacket();
         final StructureModifier<Integer> ints = packet.getIntegers();
         // Legacy: pre 1.9
-        if (ints.size() > 0 && !ServerIsAtLeast1_9) {
+        if (ints.size() > 0 && !ServerVersion.isAtLeast("1.9")) {
             final int faceIndex = ints.read(0); // arg 3 if 1.7.10 below
             if (faceIndex <= 5) {
                 data.mightUseItem = false;

@@ -124,7 +124,7 @@ public class TrigUtil {
      * @return the vector
      */
     public static final Vector getLookingDirection(float yaw, float pitch, final Player player) {
-        if (DataManager.getPlayerData(player).getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_12_2)) {
+        if (DataManager.getPlayerData(player).getClientVersion().isAtMost(ClientVersion.V_1_12_2)) {
             // Legacy
             float f = cos(-yaw * toRadians - (float)Math.PI);
             float f1 = sin(-yaw * toRadians - (float)Math.PI);

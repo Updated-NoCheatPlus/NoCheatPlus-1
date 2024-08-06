@@ -138,7 +138,7 @@ public class PlayerEnvelopes {
      * @return If onGround with ground-like blocks above within a margin of 0.09
      */
     public static boolean isVerticallyConstricted(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData) {
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_14)) {
             return false;
         }
         if (pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove().touchedGroundWorkaround) {
@@ -148,27 +148,31 @@ public class PlayerEnvelopes {
         if (!pData.isInCrouchingPose()) {
             return false;
         }
-        return from.seekHeadObstruction(0.09, false) && from.isOnGround() && to.isOnGround();
+        return from.seekCollisionAbove(0.0899, false) && from.isOnGround() && to.isOnGround();
     }
 
     /**
      * Test if this move is a bunnyhop <br>
      * (Aka: sprint-jump. Increases the player's speed up to roughly twice the usual base speed)
-     * 
-     * @param from
-     * @param to
-     * @param pData
-     * @param fromOnGround
-     * @param toOnGround
-     * @param player
+     *
+     * @param forceSetOffGround Currently used to ensure that bunnyhopping isn't applied when we're brute-forcing speed with onGround = false, while the player is constricted in a low-ceiling area,
+     *                          due to the fact the client does not send any vertical movement change while in this state.
      * @return True, if isJump() returned true while the player is sprinting and not in a liquid.
      */
-    public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player) {
+    public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player, boolean forceSetOffGround) {
         if (from.isInLiquid()) {
             return false;
         }
-        // TODO: How can we detect bunyhopping with isVerticallyConstricted when vertical motion cannot be detected?
-        return pData.isSprinting() && isJump(from, to, player, fromOnGround, toOnGround);
+        final PlayerMoveData lastMove = pData.getGenericInstance(MovingData.class).playerMoves.getFirstPastMove();
+        return 
+               pData.isSprinting()
+               && (
+                    // 1:  99.9% of cases...
+                    isJump(from, to, player, fromOnGround, toOnGround)
+                    // 1: The odd one out. We can't know the ground status of the player, so this will have to do.
+                    || isVerticallyConstricted(from, to, pData) && !lastMove.bunnyHop // This is to ensure that this workaround/fix doesn't end up being a wildcard
+                    && !forceSetOffGround
+               );
     }
 
     /**
@@ -209,10 +213,10 @@ public class PlayerEnvelopes {
                 && ( 
                     // 1: The ordinary lift-off/case.
                     fromOnGround && !toOnGround
-                    // 1: With jump being delayed a tick after (Player jumps client-side, but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air)
+                    // 1: With jump being delayed a tick after (Player jumps client-side (from ground -> to air), but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air (air -> air))
                     // Usually happens when jumping on the corners of blocks
                     // Technically, this should be considered a lost ground case, however the ground status is detected in this case, just with a delay.
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekHeadObstruction() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case. We only need to rule out that the player is jumping in too tight areas.
+                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekCollisionAbove() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case. We only need to rule out that the player is jumping in too tight areas.
                     && (
                             // 2: The usual case.
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
@@ -318,7 +322,7 @@ public class PlayerEnvelopes {
                 && !to.isOnGround()
                 // 0: Wildcard riptiding. No point in checking for distance constraints here when speed is so high.
                 || Bridge1_13.isRiptiding(player)
-                // 0: Wildcard micro bounces
+                // 0: Wildcard micro bounces on beds
                 || to.isOnGround() && !from.isOnGround() && to.getY() - from.getY() < 0.0 
                 && MovingUtil.getRealisticFallDistance(player, from.getY(), to.getY(), data, pData) <= 0.5 // 0.5... Can probably be even smaller, since these are micro bounces.
                 && to.isOnBouncyBlock() && !to.isOnSlimeBlock()

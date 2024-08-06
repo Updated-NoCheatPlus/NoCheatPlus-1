@@ -191,7 +191,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     private final int idMoveEvent = counters.registerKey("event.player.move");
 
-    private final boolean ServerIsAtLeast1_19_4 = ServerVersion.compareMinecraftVersion("1.19.4") >= 0;
+    private final boolean ServerIsAtLeast1_19_4 = ServerVersion.isAtLeast("1.19.4");
 
     @SuppressWarnings("unchecked")
     public MovingListener() {
@@ -530,7 +530,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 final Location teleported = data.getTeleported();
                 event.setTo(teleported);
                 /*
-                 * Setting from ... not sure this is relevant. Idea was to avoid
+                 * Setting from ... not sure if this is relevant. Idea was to avoid
                  * subtleties with other plugins, but it probably can't be
                  * estimated, if this means more or less 'subtleties' in the end
                  * (amortized).
@@ -799,9 +799,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             token = "awaitsetback";
         }
         else if (TrigUtil.isSamePos(from, to) && !data.lastMoveNoMove 
-            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_17)
+            && pData.getClientVersion().isAtLeast(ClientVersion.V_1_17)
             // This was apparently fixed by mojang in 1.21. 
-            && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_20_6)
+            && pData.getClientVersion().isAtMost(ClientVersion.V_1_20_6)
             ) { 
             //if (data.sfHoverTicks > 0) data.sfHoverTicks += hoverTicksStep;
             earlyReturn = data.lastMoveNoMove = thisMove.hasNoMovementDueToDuplicatePacket = true;
@@ -957,7 +957,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     data.joinOrRespawn = false;
                     aux.returnPlayerMoveInfo(moveInfo);
                     if (debug) {
-                        debug(player, "Failed to locate Bukkit's 'from' and 'to' locations in the flying queue, fallback to Bukkit-based split moves. (Flying queue indices - from: " + fromIndex + ", to: " + toIndex +")");
+                        debug(player, "Fallback to Bukkit-based split moves. (Flying queue indices - from: " + fromIndex + ", to: " + toIndex +")");
                     }
                     return;
                 }
@@ -2086,7 +2086,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     private void checkFallDamageEvent(final Player player, final EntityDamageEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         if (player.isInsideVehicle()) {
             // Ignore vehicles (noFallFallDistance will be inaccurate anyway).
             data.clearNoFallData();
@@ -2211,7 +2210,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
     }
 
 
-    private final boolean noFallVL(final Player player, final String tag, final MovingData data, final MovingConfig cc) {
+    private boolean noFallVL(final Player player, final String tag, final MovingData data, final MovingConfig cc) {
         data.noFallVL += 1.0;
         final ViolationData vd = new ViolationData(noFall, player, data.noFallVL, 1.0, cc.noFallActions);
         if (tag != null) vd.setParameter(ParameterName.TAGS, tag);
@@ -2584,7 +2583,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
      */
     private void outputMoveDebug(final Player player, final PlayerLocation from, final PlayerLocation to, final double maxYOnGround, final MCAccess mcAccess) {
         final StringBuilder builder = new StringBuilder(250);
-        final CombinedData cData = DataManager.getPlayerData(player).getGenericInstance(CombinedData.class);
         final Location loc = player.getLocation();
         builder.append(CheckUtils.getLogMessagePrefix(player, checkType));
         builder.append("MOVE in world (" + from.getWorld().getName() + ") ------>\n");

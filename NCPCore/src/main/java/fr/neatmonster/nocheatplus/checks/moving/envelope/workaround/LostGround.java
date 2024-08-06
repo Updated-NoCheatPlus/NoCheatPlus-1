@@ -32,7 +32,6 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
-import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
@@ -81,6 +80,7 @@ public class LostGround {
         if (PlayerEnvelopes.isVerticallyConstricted(from, to, DataManager.getPlayerData(player))) {
             return false;
         }
+        
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         // Very specific case with players jumping with head obstructed by lanterns or after respawning
         if (hDistance <= Magic.Minecraft_minMoveSqDistance && from.isOnGround(Magic.Minecraft_minMoveSqDistance)
@@ -91,9 +91,7 @@ public class LostGround {
             // Lost ground only happens with enough horizontal motion.
             return false;
         }
-
-        // TODO: Remove this stupid fix (temporary)
-        data.snowFix = (from.getBlockFlags() & BlockFlags.F_HEIGHT_8_INC) != 0;
+        
         // Test for "couldstep" early: player might step up, but could also move to another direction. Unpredictable outcome.
         // See this screenshot: https://gyazo.com/779f98b7c2467af57dd8116bf0a193fc
         double horizontalMargin = to.getBoxMarginHorizontal() + 0.1;
@@ -118,7 +116,7 @@ public class LostGround {
             }
             // Try interpolating the ground collision from last-from to this-from.
             // Usually, this corresponds to a missed "fromOnGround" position with this move (with last missing a ground collision too, but with the "to" position).
-            // (In other words: lastMove: AIR -> TO LOST GROUND(AIR)   -   thisMove: FROM LOST GROUND(AIR) -> AIR
+            // (In other words: lastMove: AIR -> TO LOST GROUND[see below](AIR)   -   thisMove: FROM LOST GROUND(AIR) -> AIR
             if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_from", tags, data,
                                  from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
                 thisMove.fromLostGround = true;
@@ -204,7 +202,7 @@ public class LostGround {
 
         // Finally, test for ground.
         // (We don't add another xz-margin here, as the move should cover ground.)
-        if (BlockProperties.isOnGroundShuffled(world, blockCache, thisX, thisY, thisZ, lastX, thisY + (data.snowFix ? 0.125 : 0.0), lastZ, boxMarginHorizontal + (data.snowFix ? 0.1 : 0.0), yOnGround, 0.0)) {
+        if (BlockProperties.isOnGroundShuffled(world, blockCache, thisX, thisY, thisZ, lastX, thisY, lastZ, boxMarginHorizontal, yOnGround, 0.0)) {
             // NOTE: data.fromY for set back is not correct, but currently it is more safe (needs instead: maintain a "distance to ground").
             return applyLostGround(player, new Location(world, lastX, lastY, lastZ), true, data.playerMoves.getCurrentMove(), data, "interpolate" + tag, tags, mcAccess);
         } 

@@ -232,7 +232,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         final Player player = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(player);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_14)) {
             // Sneaking status is set on PlayerToggleSneakEvents.
             return;
         }
@@ -285,7 +285,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                 mcAccess.getHandle().setInvulnerableTicks(player, 0);
             }
         }
-        // Needed because a player may log in and be already crouching or crawling.
+        // Needed because a player may log in and be already crouching or crawling due to accessibility features..
         final MovingConfig mCC = pData.getGenericInstance(MovingConfig.class);
         if (BridgeMisc.hasEntityChangePoseEvent()) {
             if (player.getPose().equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), mCC.yOnGround)) {
@@ -334,7 +334,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(player);
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
         data.resetImprobableData();
-        // Sprinting/Sneaking is reset in PlayerData
     }
     
     /** NOTE: Cancelling does nothing. It won't stop players from sneaking.*/
@@ -343,7 +342,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
         // Always set whenever the player presses the shift key.
         pData.setIsShiftKeyPressed(event.isSneaking());
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+        if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_14) && BridgeMisc.hasEntityChangePoseEvent()) {
             // Handle via actual poses.
             return;
         }
@@ -367,39 +366,47 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onToggleSprint(final PlayerToggleSprintEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
+        final PlayerMoveData lastMove = pData.getGenericInstance(MovingData.class).playerMoves.getFirstPastMove();
         if (!event.isSprinting()) {
             // Player was sprinting and they now toggled it off.
             pData.setSprintingState(false);
             return;
         }
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14) && pData.isInCrouchingPose()) {
-            // In 1.14 and lower, players cannot sprint and sneak at the same time.
-            // Source: Minecraft Parkour wiki, sneaking section.
-            pData.setSprintingState(false);
-            return;
-        }
+        ////////////////////////////////////////////////////////////////////////////////
+        // Player toggled sprinting on: check if they can actually start to sprint... //
+        ////////////////////////////////////////////////////////////////////////////////
         // TODO: This stuff might need to be latency compensated.
         // TODO: Wall collision
         // TODO: Attack slow-down
+        if (pData.isInCrouchingPose()) {
+            // ...In 1.14 and lower, players cannot sprint and sneak at the same time.
+            // On 1.14 and higher, players can sneak while sprinting if they were sprinting beforehand.
+            pData.setSprintingState(false);
+            return;
+        }
+        if (BridgeMisc.isUsingItem(event.getPlayer())) {
+            // ...In 1.14 and lower, players cannot sprint and use an item at the same time.
+            // On 1.14 and higher, players can use an item while sprinting if they were sprinting beforehand.
+            pData.setSprintingState(false);
+            return;
+        }
         if (event.getPlayer().getFoodLevel() <= 5) {
-            // Cannot sprint with low hunger.
+            // ...Cannot toggle sprint with low hunger.
             pData.setSprintingState(false);
             return;
         }
         if (event.getPlayer().hasPotionEffect(PotionEffectType.BLINDNESS)) {
-            // Blindness does not break sprinting if the player receives it while already sprinting.
+            // ...Blindness does not break sprinting if the player receives it while already sprinting.
             // The next toggle sprint event however will set it to false.
             pData.setSprintingState(false);
             return;
         }
         if (BridgeMisc.isVisuallyCrawling(event.getPlayer())) {
-           // You cannot toggle sprint in a crawling area, unless you enter it while already sprinting.
-           if (event.isSprinting()) {
-               // Cheat! Set to false.
-               pData.setSprintingState(false);
-               return;
-           }
+            // ...You cannot toggle sprint in a crawling area, unless you enter it while already sprinting.
+            pData.setSprintingState(false);
+            return;
         }
+        // Otherwise, legit.
         pData.setSprintingState(true);
     }
     

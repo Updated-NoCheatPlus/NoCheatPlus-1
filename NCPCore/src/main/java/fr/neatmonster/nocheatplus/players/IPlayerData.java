@@ -323,7 +323,9 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void requestUpdateInventory();
 
     /**
-     * Attempt to update the player's item. This also calls requestUpdateInventory().
+     * Hacky way to circumvent item usage de-synchronization issues between the server and the client.
+     * This also calls requestUpdateInventory().
+     * See InventoryUtil#itemResyncTask for more details.
      */
     public void requestItemUseResync();
 
@@ -365,7 +367,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setClientVersionID(final int ID);
     
     /**
-     * Test if the player has pressed the shift key, as set by PlayerToggleSneakEvent.
+     * Test if the player has pressed the shift key, as set by the PlayerToggleSneakEvent.
      * This is mostly intended to better disambiguate Crouching VS Sneaking. Using player#isSneaking() can be misleading (See note in CombinedListener.java)
      * 
      * @return True, if the key is pressed.
@@ -387,7 +389,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setIsInCrouchingPoseState(final boolean isInCrouchPose);
 
     /**
-     * Test if the player is in its crouching pose.<br>
+     * Test if the player is in its crouching pose, as set by the EntityChangePoseEvent or PlayerToggleSneakEvent <br>
      * Do not use IPlayerData#isShiftKeyPressed() if you wish to know if the player is moving slower than normal.
      * Because sneaking is related to poses, not shift key presses.
      * @return True, if sneaking.

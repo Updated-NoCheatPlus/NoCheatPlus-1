@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
 
 import fr.neatmonster.nocheatplus.components.location.IGetBox3D;
 import fr.neatmonster.nocheatplus.components.location.IGetPosition;
@@ -53,7 +53,7 @@ public interface ICollideRayVsAABB extends IGetPosition {
      * @return The same instance for chaining.
      */
     public ICollideRayVsAABB setRay(double startX, double startY, double startZ,
-            double dirX, double dirY, double dirZ);
+                                    double dirX, double dirY, double dirZ);
 
     /**
      * Set the properties of the AABB, using foot-center positions and margins.
@@ -72,7 +72,7 @@ public interface ICollideRayVsAABB extends IGetPosition {
      * @return The same instance for chaining.
      */
     public ICollideRayVsAABB setAABB(double targetX, double targetY, double targetZ,
-            double boxMarginHorizontal, double boxMarginVertical);
+                                     double boxMarginHorizontal, double boxMarginVertical);
 
     /**
      * Set the properties of the AABB, using a given boxIGetBox3D instance.
@@ -112,8 +112,8 @@ public interface ICollideRayVsAABB extends IGetPosition {
      * @param maxZ
      * @return The same instance for chaining.
      */
-    public ICollideRayVsAABB setAABB(double minX, double minY, double minZ, 
-            double maxX, double maxY, double maxZ);
+    public ICollideRayVsAABB setAABB(double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ);
 
     /**
      * Set if the nearest point is to be estimated instead, in case the ray does

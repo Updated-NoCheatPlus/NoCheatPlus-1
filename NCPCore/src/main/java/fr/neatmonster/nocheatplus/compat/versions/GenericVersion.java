@@ -16,6 +16,11 @@ package fr.neatmonster.nocheatplus.compat.versions;
 
 import java.util.Arrays;
 
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+
+import fr.neatmonster.nocheatplus.players.DataManager;
+
 /**
  * Some generic version parsing and comparison utility methods.
  * 
@@ -296,5 +301,48 @@ public class GenericVersion {
         }
         return true;
     }
-
+    
+    /**
+     * Retrieves the Minecraft version associated with the given entity.
+     * <p>
+     * If the entity is a player, the method returns the client's Minecraft version.
+     * For all other entities, the server's Minecraft version is returned.
+     * </p>
+     *
+     * @param entity The entity whose Minecraft version is to be determined
+     * @return The Minecraft version as a string; the client's version if the entity is a player,
+     *         otherwise the server's version
+     */
+    public static String getEntityVersion(Entity entity) {
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            return DataManager.getPlayerData(player).getClientVersion().getReleaseName();
+        }
+        // Not a Player. In which the version is determined by the server the entity is on.
+        return ServerVersion.getMinecraftVersion();
+    }
+    
+    public static int compareEntityVersion(Entity entity, String targetVersion) {
+        return compareVersions(getEntityVersion(entity), targetVersion);
+    }
+    
+    /** Convenience method (no equality check). Delegate to compareEntityVersion(Entity entity, String targetVersion) */
+    public static boolean isLowerThan(Entity entity, String version) {
+        return compareEntityVersion(entity, version) == -1;
+    }
+    
+    /** Convenience method (no equality check). Delegate to compareEntityVersion(Entity entity, String targetVersion) */
+    public static boolean isHigherThan(Entity entity, String version) {
+        return compareEntityVersion(entity, version) == 1;
+    }
+    
+    /** Convenience method. Delegate to compareEntityVersion(Entity entity, String targetVersion) */
+    public static boolean isAtLeast(Entity entity, String version) {
+        return compareEntityVersion(entity, version) >= 0;
+    }
+    
+    /** Convenience method. Delegate to compareEntityVersion(Entity entity, String targetVersion) */
+    public static boolean isAtMost(Entity entity, String version){
+        return compareEntityVersion(entity, version) <= 0;
+    }
 }

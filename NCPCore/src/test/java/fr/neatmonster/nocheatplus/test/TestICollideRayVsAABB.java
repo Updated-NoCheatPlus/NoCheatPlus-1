@@ -18,8 +18,8 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import fr.neatmonster.nocheatplus.utilities.collision.CollideRayVsAABB;
-import fr.neatmonster.nocheatplus.utilities.collision.ICollideRayVsAABB;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.CollideRayVsAABB;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.ICollideRayVsAABB;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 
 public class TestICollideRayVsAABB {

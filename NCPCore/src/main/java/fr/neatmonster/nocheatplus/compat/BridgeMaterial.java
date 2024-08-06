@@ -48,11 +48,11 @@ public class BridgeMaterial {
             all.put(name, mat);
             if (name.equals("sign_post") || name.equals("wall_sign")) {
                 signblocksmap.put(mat, Material.getMaterial("SIGN"));
-            } else
-            if (name.endsWith("_wall_sign") || name.endsWith("_wall_hanging_sign")) {
+            } 
+            else if (name.endsWith("_wall_sign") || name.endsWith("_wall_hanging_sign")) {
                 signblocksmap.put(mat, Material.getMaterial(name.replace("_wall", "").toUpperCase(Locale.ROOT)));
-            } else
-            if (name.endsWith("_sign")) signblocksmap.put(mat, mat);
+            } 
+            else if (name.endsWith("_sign")) signblocksmap.put(mat, mat);
             if (name.startsWith("legacy_")) {
                 legacy.put(name.substring(7), mat);
             }

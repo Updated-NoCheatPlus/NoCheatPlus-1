@@ -14,37 +14,62 @@
  */
 package fr.neatmonster.nocheatplus.utilities.ds.map;
 
+import org.bukkit.Location;
+
 public class BlockCoord {
     private final int x;
     private final int y;
     private final int z;
     
+    /**
+     * Constructs a BlockCoord with integer coordinates.
+     *
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @param z The z-coordinate.
+     */
     public BlockCoord(int x, int y, int z) {
         this.x = x;
         this.y = y;
         this.z = z;
     }
     
+    /**
+     * Constructs a BlockCoord from double coordinates by converting them
+     * to block integer coordinates using Location.locToBlock().
+     *
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @param z The z-coordinate.
+     */
+    public BlockCoord(double x, double y, double z) {
+        this.x = Location.locToBlock(x);
+        this.y = Location.locToBlock(y);
+        this.z = Location.locToBlock(z);
+    }
+    
     public int getX() {
         return x;
     }
+    
     public int getY() {
         return y;
     }
+    
     public int getZ() {
         return z;
     }
-
+    
     @Override
     public int hashCode() {
         return CoordHash.hashCode3DPrimes(x, y, z);
     }
-
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        BlockCoord bc = (BlockCoord)obj;
+        BlockCoord bc = (BlockCoord) obj;
         return bc.getX() == x && bc.getY() == y && bc.getZ() == z;
     }
 }

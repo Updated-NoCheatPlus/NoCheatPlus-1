@@ -111,14 +111,11 @@ public class SurvivalFly extends Check {
         final boolean resetTo = toOnGround || to.isResetCond();
         /* Moving off from anything that is not air (liquids, stuck-speed, ground, ALL). */
         final boolean resetFrom = fromOnGround || from.isResetCond();
+        // Run lostground checks.
+        LostGround.lostGround(player, from, to, thisMove.hDistance, thisMove.yDistance, pData.isSprinting(), lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
 
         // Set workarounds for the registry
         data.ws.setJustUsedIds(justUsedWorkarounds);
-
-        // Run lostground checks.
-        if (!resetFrom) {
-            LostGround.lostGround(player, from, to, thisMove.hDistance, thisMove.yDistance, pData.isSprinting(), lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
-        }
 
         // Recover from data removal (somewhat random insertion point).
         if (data.liftOffEnvelope == LiftOffEnvelope.UNKNOWN) {
@@ -513,7 +510,11 @@ public class SurvivalFly extends Check {
             }
         }
         // Reset speed if judged to be negligible.
-        checkNegligibleMomentum(pData, thisMove);
+        checkNegligibleMomentum(pData, thisMove); // Horizontal
+        // Vertical
+        if (Math.abs(thisMove.yAllowedDistance) < (pData.getClientVersion().isAtLeast(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
+            thisMove.yAllowedDistance = 0.0;
+        }
         
         // TODO: Reduce verbosity (at least, make it easier to look at)
         Vector viewVector = TrigUtil.getLookingDirection(to, player);
@@ -525,7 +526,7 @@ public class SurvivalFly extends Check {
         // Overall length of the look direction.
         double viewVectorLength = viewVector.length();
         // Mojang switched from their own cosine function to the standard Math.cos() one in 1.18.2
-        double cosPitch = pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_18_2) ? TrigUtil.cos((double)radianPitch) : Math.cos((double)radianPitch);
+        double cosPitch = pData.getClientVersion().isAtMost(ClientVersion.V_1_18_2) ? TrigUtil.cos((double)radianPitch) : Math.cos((double)radianPitch);
         cosPitch = cosPitch * cosPitch * Math.min(1.0, viewVectorLength / 0.4);
         // Base gravity when gliding.
         thisMove.yAllowedDistance += (thisMove.hasSlowfall && lastMove.yDistance <= 0.0 ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY) * (-1.0 + cosPitch * 0.75);
@@ -573,7 +574,7 @@ public class SurvivalFly extends Check {
         // Yes, players can glide and riptide at the same time, increasing speed at a faster rate than chunks can load...
         // Surely a questionable decision on Mojang's part.
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
-            Vector propellingForce = to.getTridentPropellingForce(player, fromOnGround);
+            Vector propellingForce = to.getTridentPropellingForce(player, false);
             // Fortunately, we do not have to account for onGround push here, as gliding does not work on ground.
             thisMove.xAllowedDistance += propellingForce.getX();
             thisMove.yAllowedDistance += propellingForce.getY();
@@ -624,18 +625,16 @@ public class SurvivalFly extends Check {
     }
     
     /**
-     * Check if the allowed speed set in thisMove should be canceled due to it being lower than the negligible speed threshold.
+     * Check if the allowed speed set in thisMove should be canceled due to it being lower than the negligible speed threshold. <br>
+     * (Horizontal only)
      * 
      * @param pData
      * @param thisMove
      */
     private void checkNegligibleMomentum(IPlayerData pData, PlayerMoveData thisMove) {
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9)) {
+        if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_9)) {
             if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
                 thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
-                thisMove.yAllowedDistance = 0.0;
             }
             if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD) {
                 thisMove.zAllowedDistance = 0.0;
@@ -645,9 +644,6 @@ public class SurvivalFly extends Check {
             // In 1.8 and lower, momentum is compared to 0.005 instead.
             if (Math.abs(thisMove.xAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
                 thisMove.xAllowedDistance = 0.0;
-            }
-            if (Math.abs(thisMove.yAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
-                thisMove.yAllowedDistance = 0.0;
             }
             if (Math.abs(thisMove.zAllowedDistance) < Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY) {
                 thisMove.zAllowedDistance = 0.0;
@@ -660,7 +656,7 @@ public class SurvivalFly extends Check {
      */
     private void processNextSpeed(final Player player, float movementSpeed, final IPlayerData pData, final Collection<String> tags,
                                   final PlayerLocation to, final PlayerLocation from, final boolean debug,
-                                  final boolean fromOnGround, final boolean toOnGround, final boolean onGround) {
+                                  final boolean fromOnGround, final boolean toOnGround, final boolean onGround, boolean forceSetOffGround) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
@@ -671,11 +667,11 @@ public class SurvivalFly extends Check {
          * Order of client-movement operations (MCP):
          * - LivingEntity.tick()
          * - Entity.tick()
-         *    -> Entity.baseTick()
-         *    -> Entity.updateInWaterStateAndDoFluidPushing() - 9
+         *    -> baseTick()
+         *    -> updateInWaterStateAndDoFluidPushing() - 9
          * - LivingEntity.aiStep()
          *    -> Negligible speed(0.003) - 10
-         *    -> LivingEntity.jumpFromGround() - 11
+         *    -> jumpFromGround() - 11
          * - Begin running LivingEntity.travel() - 12
          *    - Call Entity.moveRelative() (apply acceleration, getInputVector() [!]) - 13
          *    - Call Entity.move()
@@ -695,16 +691,16 @@ public class SurvivalFly extends Check {
          *>>>>>>> Send movement to the server<<<<<<<
          * - Repeat
          *
-         * From the order above, we will start from horizontalCollision: first all calculations done by the client on the next tick, then the last
+         * From the order above, we will reconstruct the movement starting from the horizontal collision reset: we first calculate all the stuff that has been done by the client on its next move, then everything they did prior. 
          */
 
         // Because Minecraft does not offer any way to listen to player's inputs, we brute force through all combinations and see which input combo matches the current speed of the player.
         ///////////////////////////////
         // Setup theoretical inputs  //
         ///////////////////////////////
-        // The input's matrix is 9:  NONE, LEFT, RIGHT, FORWARD, FORWARD_LEFT, FORWARD_RIGHT, BACKWARD, BACKWARD_LEFT, BACKWARD_RIGHT.
+        // The input's matrix is:  NONE, LEFT, RIGHT, FORWARD, FORWARD_LEFT, FORWARD_RIGHT, BACKWARD, BACKWARD_LEFT, BACKWARD_RIGHT.
         InputDirection[] inputs = new InputDirection[9]; 
-        /** The index representing the input */
+        /* The index representing the input */
         int i = 0;
         for (int x = -1; x <= 1; x++) {
             for (int z = -1; z <= 1; z++) {
@@ -714,9 +710,9 @@ public class SurvivalFly extends Check {
             }
         }
         // From KeyboardInput.java (MC-Reborn tool)
-        // Sneaking and item-use aren't directly applied to the player's motion. The game reduces the input force instead.
-        // Note that this is determined by player poses, not shift key presses.
+        // Sneaking and item-use aren't directly applied to the player's motion. The game reduces the force of the input instead.
         if (pData.isInCrouchingPose()) {
+            // Note that this is determined by player poses, not shift key presses.
             tags.add("crouching");
             float SwiftSneakIncrement = BridgeEnchant.getSwiftSneakIncrement(player);
             for (i = 0; i < 9; i++) {
@@ -755,13 +751,24 @@ public class SurvivalFly extends Check {
         }
         // Slime speed
         if (from.isOnSlimeBlock() && onGround) {
-            // Workaround for undetectable bounce-back
-            final double diff = Math.abs(0.0784000015258789 - lastMove.yDistance);
-            boolean isGravity = MathUtil.inRange( 0.0784, diff,  0.0784000015258789); // diff <= 0.0784000015258789 && diff >= 0.0784;
-            final double result = isGravity ? 0.0784000015258789 : lastMove.yDistance;
-            if (Math.abs(result) < 0.1 && !pData.isShiftKeyPressed()) { // isSteppingCarefully -> isShiftKeyDown. Using isSneaking is correct.
-                thisMove.xAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
-                thisMove.zAllowedDistance *= 0.4 + Math.abs(result) * 0.2;
+            /*
+             * Specific issue with slime speed: the client tries to fall down with gravity -0.0784, and then bounce back up to 0 >=. Ground status is set to false then.
+             * However, if the bounce-back is smaller than 0.0784, we don't see it on the server-side; we always see the player as being on ground with 0 dist.
+             * In other words, this movement is effectively hidden and cannot be predicted, likewise isVerticallyConstricted()...
+             * Our solution: simply stop players from performing these micro, undetectable bounces by forcibly setting their velocity to 0 if we detect them to be on ground.
+             * Yes, this will alter vanilla behaviour ever so slightly, but it's better than adding (more) convoluted workarounds or brute forcing slime speed as well.
+             * Besides, what is this micro-bounce even used for? Are there legit vanilla techniques (employed by skilled players) that make use of it?
+             * 
+             * Assume it to be a bug. Mojang is never going to fix this stuff anyway.
+             */
+            if (Math.abs(lastMove.yDistance) < 0.1 && !pData.isShiftKeyPressed()) {
+                if (from.isOnGround() && to.isOnGround()) {
+                    Vector bukkitMomentum = player.getVelocity().clone();
+                    bukkitMomentum.setY(-bukkitMomentum.getY());
+                    player.setVelocity(bukkitMomentum);
+                }
+                thisMove.xAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
+                thisMove.zAllowedDistance *= 0.4 + Math.abs(lastMove.yDistance) * 0.2;
             }
         }
         // Sliding speed (honey block)
@@ -810,7 +817,7 @@ public class SurvivalFly extends Check {
         // Sprint-jumping...
         // NOTE: here you must use to.getYaw not from. To is the most recent rotation. Using from lags behind a few ticks, causing false positives when switching looking direction.
         // This does not apply for locations (from.(...) correctly reflects the player's current position)
-        if (PlayerEnvelopes.isBunnyhop(from, to, pData, fromOnGround, toOnGround, player)) {
+        if (PlayerEnvelopes.isBunnyhop(from, to, pData, fromOnGround, toOnGround, player, forceSetOffGround)) {
             thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST);
             thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST);
             thisMove.bunnyHop = true;
@@ -867,7 +874,16 @@ public class SurvivalFly extends Check {
                 zTheoreticalDistance[i] *= (double) data.nextStuckInBlockHorizontal;
             }
         }
+        if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
+            // Riptide works by propelling the player after releasing the trident (the effect only pushes the player, unless is on ground)
+            Vector propellingForce = to.getTridentPropellingForce(player, lastMove.touchedGround);
+            for (i = 0; i < 9; i++) {
+                xTheoreticalDistance[i] += propellingForce.getX();
+                zTheoreticalDistance[i] += propellingForce.getZ();
+            }
+        }
         // Try to back off players from edges, if sneaking.
+        // NOTE: this is after the riptiding propelling force.
         // NOTE: here the game uses isShiftKeyDown (so this is shifting not sneaking, using Bukkit's isSneaking is correct)
         if (!player.isFlying() && pData.isShiftKeyPressed() && from.isAboveGround() && thisMove.yDistance <= 0.0) {
             for (i = 0; i < 9; i++) {
@@ -875,14 +891,6 @@ public class SurvivalFly extends Check {
                 Vector backOff = from.maybeBackOffFromEdge(new Vector(xTheoreticalDistance[i], thisMove.yDistance, zTheoreticalDistance[i]));
                 xTheoreticalDistance[i] = backOff.getX();
                 zTheoreticalDistance[i] = backOff.getZ();
-            }
-        }
-        if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
-            // Riptide works by propelling the player after releasing the trident (the effect only pushes the player, unless is on ground)
-            Vector propellingForce = to.getTridentPropellingForce(player, lastMove.touchedGround);
-            for (i = 0; i < 9; i++) {
-                xTheoreticalDistance[i] += propellingForce.getX();
-                zTheoreticalDistance[i] += propellingForce.getZ();
             }
         }
         // TODO: Optimize. Brute forcing collisions with all 9 speed combinations will tank performance.
@@ -926,7 +934,6 @@ public class SurvivalFly extends Check {
         boolean found = false;
         /*
           True will check if BOTH axis have an offset smaller than 0.0001 (against strafe-like cheats and anything of that sort that relies on the specific direction of the move).
-          Will also perform some auxiliary checks.<br>
           Otherwise, only the combined horizontal distance will be checked against the offset.
          */
         boolean strict = cc.survivalFlyStrictHorizontal;
@@ -955,7 +962,8 @@ public class SurvivalFly extends Check {
                 }
                 else if ((inputs[i].getForwardDir().equals(ForwardDirection.BACKWARD) // Moving backwards
                         // || inputs[i].getForward() < 0.8 // hasEnoughImpulseToStartSprinting, in LocalPlayer,java -> aiStep()
-                        || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)) // Moving sideways only.
+                        || inputs[i].getForwardDir().equals(ForwardDirection.NONE) && !inputs[i].getStrafeDir().equals(StrafeDirection.NONE)// Moving sideways only.
+                        || player.getFoodLevel() <= 5) // must be checked here as well (besides on toggle sprinting) because players will immediately lose the ability to sprint if food level drops below 5
                         && pData.isSprinting()) { 
                     // Stop omnisprinting.
                     tags.add("omnisprint");
@@ -979,7 +987,6 @@ public class SurvivalFly extends Check {
         // Finish. Check if the move had been predictable at all    //
         //////////////////////////////////////////////////////////////
         int inputsIdx = i;
-        final MovingConfig cc1 = pData.getGenericInstance(MovingConfig.class);
         /* All moves are assumed to be predictable, unless we explicitly state in here otherwise. */
         boolean isPredictable = true;
         int x_idx = -1;
@@ -1046,29 +1053,27 @@ public class SurvivalFly extends Check {
                     data.nextInertia = Magic.DOLPHIN_GRACE_INERTIA;
                 }
                 // Run through all operations
-                processNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround);
+                processNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
             }
             else if (from.isInLava()) {
                 data.nextInertia = Magic.LAVA_HORIZONTAL_INERTIA;
-                processNextSpeed(player, Magic.LIQUID_ACCELERATION, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround);
+                processNextSpeed(player, Magic.LIQUID_ACCELERATION, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
             }
             else {
                 data.nextInertia = onGround ? data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA
                                             : Magic.HORIZONTAL_INERTIA;
                 // 1.12 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
-                float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.nextFrictionHorizontal * data.nextFrictionHorizontal * data.nextFrictionHorizontal))
+                float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.nextFrictionHorizontal * data.nextFrictionHorizontal * data.nextFrictionHorizontal))
                                               : Magic.AIR_ACCELERATION;
                 if (pData.isSprinting()) {
                     // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                     acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
                 }
-                processNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround);
+                processNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
             }
         }
         else {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
-            // (Technically, one could attempt to interpolate missed positions given the from and to locations... Just like for the 0.03 threshold, but what's the point? We are not paid to deal with this bullshit).
-            // Besides, there's no need in predicting speed when movement has been slowed down to the point of being considered micro by Bukkit.
             thisMove.xAllowedDistance = thisMove.xDistance;
             thisMove.zAllowedDistance = thisMove.zDistance;
         }
@@ -1143,8 +1148,8 @@ public class SurvivalFly extends Check {
                         // The effect works by inverting the distance.
                         // Beds have a weaker bounce effect (BedBlock.java).
                         thisMove.yAllowedDistance = lastMove.to.onSlimeBlock ? -lastMove.yAllowedDistance : -lastMove.yAllowedDistance * 0.6600000262260437;
+                        tags.add("bounceup");
                     }
-                    tags.add("bounceup");
                 }
             }
             if (from.isSlidingDown() && !thisMove.hasLevitation) {
@@ -1157,7 +1162,7 @@ public class SurvivalFly extends Check {
                     thisMove.yAllowedDistance = 0.0;
                 }
             }
-            if (Math.abs(thisMove.yAllowedDistance) < (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
+            if (Math.abs(thisMove.yAllowedDistance) < (pData.getClientVersion().isAtLeast(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
                 // Negligible speed reset.
                 thisMove.yAllowedDistance = 0.0;
             }
@@ -1192,7 +1197,7 @@ public class SurvivalFly extends Check {
             // (In which case, isStep will return false and fall-back to friction here)
             // It is imperative that you pass yAllowedDistance as argument here (not the real yDistance), because if the player isn't on ground, the current motion will be used to determine it (collideY && motionY < 0.0). Passing an uncontrolled yDistance will be easily exploitable.
             Vector collisionVector = from.collide(new Vector(thisMove.xAllowedDistance, thisMove.yAllowedDistance, thisMove.zAllowedDistance), fromOnGround || thisMove.touchedGroundWorkaround, cc, from.getAABBCopy());
-            thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && from.seekHeadObstruction() && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
+            thisMove.headObstructed = thisMove.yAllowedDistance != collisionVector.getY() && thisMove.yDistance >= 0.0 && from.seekCollisionAbove() && !fromOnGround;  // New definition of head obstruction: yDistance is checked because Minecraft considers players to be on ground when motion is explicitly negative
             // Switch to descending phase after colliding above.
             if (lastMove.headObstructed && !thisMove.headObstructed && yDirectionSwitch && thisMove.yDistance <= 0.0 && fullyInAir) {
                 // Fix for clients not sending the "speed-reset move" to the server: player collides vertically with a ceiling, then proceeds to descend.
@@ -1231,6 +1236,7 @@ public class SurvivalFly extends Check {
 
 
         // (All the checks below are to be considered a corollary to vDistRel. Virtually, the cheat attempt will always get caught by vDistRel first)
+        // TODO: Consider to drop this legacy check as well. Though knowing changes of y direction might be useful for different stuff in the future.
         ///////////////////////////////////////////
         // Check on change of Y direction        //
         ///////////////////////////////////////////
@@ -1242,7 +1248,7 @@ public class SurvivalFly extends Check {
                     tags.add("y_switch_inc");
                 }
                 else {
-                    // Moving upwards after falling without having touched the ground.
+                    // Moving upwards after falling without having touched the ground first
                     if (data.jumpDelay < 9 && !((lastMove.touchedGround || lastMove.from.onGroundOrResetCond) && lastMove.yDistance == 0D)
                         && data.getOrUseVerticalVelocity(yDistance) == null && !thisMove.hasLevitation) {
                         Improbable.check(player, (float) Math.min(1.0, Math.abs(yDistance)), System.currentTimeMillis(), "moving.survivalfly.airjump", pData);
@@ -1298,7 +1304,7 @@ public class SurvivalFly extends Check {
          * After interpolating the ground status, notice how the player immediately proceeds to descend with speed as if they actually landed on the ground with the previous move (-0.0784)
          */
         if (!thisMove.couldStepUp && thisMove.yDistance < 0.0 && yDistanceAboveLimit > 0.0 && (lastMove.toLostGround || lastMove.to.onGround) && !thisMove.from.onGround) {
-            // After completing a "touch-down", the next move should always come from ground
+            // After completing a "touch-down" (toOnGround), the next move should always come *from* ground
             // Thus, such cases can be generalised by checking for negative motion and last move landing on ground but this move not *starting back* from a ground position.
             double[] res = vDistRel(System.currentTimeMillis(), player, from, fromOnGround, resetFrom, to, toOnGround, resetTo, thisMove.yDistance, isNormalOrPacketSplitMove, lastMove, data, cc, pData, true);
             yAllowedDistance = res[0];
@@ -1353,17 +1359,7 @@ public class SurvivalFly extends Check {
             hDistanceAboveLimit = res[1];
         }
         /*
-         * 3: Specific issue with slime speed: the client tries to fall down with gravity -0.0784, and then bounce back up to 0 >=. Ground status is set to false then.
-         *  However, we don't see this on the server-side; we always see the player as being on ground with 0 dist.
-         *  Yet another case of an undetectable ascending phase, likewise isVerticallyConstricted(...)
-         */
-        if (from.isOnSlimeBlock() && hDistanceAboveLimit > 0.0) {
-            double[] res = hDistRel(from, to, pData, player, data, thisMove, lastMove, fromOnGround, toOnGround, debug, isNormalOrPacketSplitMove, false, true);
-            hAllowedDistance = res[0];
-            hDistanceAboveLimit = res[1];
-        }
-        /*
-         * 4: Above limit again? Check for past onGround states caused by block changes (i.e.: ground was pulled off from the player's feet)
+         * 3: Above limit again? Check for past onGround states caused by block changes (i.e.: ground was pulled off from the player's feet)
          */
         if (useBlockChangeTracker && hDistanceAboveLimit > 0.0) {
             // Be sure to test this only if the player is seemingly off ground
@@ -1375,7 +1371,7 @@ public class SurvivalFly extends Check {
             }
         }
         /* 
-         * 5: Distance is still above limit; last resort: check if the distance above limit can be covered with velocity
+         * 4: Distance is still above limit; last resort: check if the distance above limit can be covered with velocity
          */
         // TODO: Implement Asofold's fix to prevent too easy abuse:
         // See: https://github.com/NoCheatPlus/Issues/issues/374#issuecomment-296172316
@@ -1407,7 +1403,7 @@ public class SurvivalFly extends Check {
                                  final MovingData data, final Player player, final MovingConfig cc, final IPlayerData pData, final boolean fromOnGround) {
         final double yDistAbs = Math.abs(yDistance);
         /* If a server with version lower than 1.13 has ViaVer installed, allow swimming */
-        final boolean swimmingInLegacyServer = player.isSprinting() && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13);
+        final boolean swimmingInLegacyServer = player.isSprinting() && pData.getClientVersion().isAtLeast(ClientVersion.V_1_13);
         final double baseSpeed = thisMove.from.onGround ? Magic.swimBaseSpeedV(Bridge1_13.isSwimming(player) || swimmingInLegacyServer) + 0.1 : Magic.swimBaseSpeedV(Bridge1_13.isSwimming(player) || swimmingInLegacyServer);
         /* Slow fall gravity is applied only if the player is not sneaking (in that case, the player will descend in water with regular gravity) */
         final boolean Slowfall = !pData.isInCrouchingPose() && thisMove.hasSlowfall;
@@ -1420,7 +1416,7 @@ public class SurvivalFly extends Check {
             && BlockProperties.isLiquid(to.getTypeId())
             && BlockProperties.isLiquid(from.getTypeId())
             && !fromOnGround && !toOnGround
-            && !from.seekHeadObstruction() && !to.seekHeadObstruction()
+            && !from.seekCollisionAbove() && !to.seekCollisionAbove()
             && !Bridge1_13.isSwimming(player)) {
             Improbable.feed(player, (float) thisMove.hDistance, System.currentTimeMillis());
             tags.add("liquidwalk");
@@ -1575,7 +1571,7 @@ public class SurvivalFly extends Check {
         // Workaround for ladders that have a much bigger collision box, but much smaller hitbox (We do not distinguish the two). 
         if (yDistAbs > yAllowedDistance) {
             if (from.isOnGround(BlockFlags.F_CLIMBABLE) && to.isOnGround(BlockFlags.F_CLIMBABLE)) {
-                // Stepping up a block (i.e.: stepping up stairs with vines/ladders on the side), allow this movement.
+                // Stepping up a block (i.e.: stepping upstairs with vines/ladders on the side), allow this movement.
                 yDistanceAboveLimit = Math.max(yDistanceAboveLimit, yDistAbs - cc.sfStepHeight);
                 tags.add("climbstep");
             }

@@ -21,7 +21,6 @@ import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
-import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
@@ -29,7 +28,6 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
@@ -76,9 +74,9 @@ public class PlayerLocation extends RichEntityLocation {
         double yBelow = player.getFallDistance() - cc.sfStepHeight;
         double[] AABB = new double[]{minX, minY+yBelow, minZ, maxX, maxY+yBelow, maxZ};
         return  isOnGround() 
-                || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16_2) 
+                || pData.getClientVersion().isAtLeast(ClientVersion.V_1_16_2) 
                 && (
-                    player.getFallDistance() < cc.sfStepHeight && CollisionUtil.isEmpty(blockCache, player, AABB)
+                    player.getFallDistance() < cc.sfStepHeight && !CollisionUtil.isEmpty(blockCache, player, AABB)
                 )
             ;
     }
@@ -128,10 +126,10 @@ public class PlayerLocation extends RichEntityLocation {
         double xDistance = vector.getX();
         double zDistance = vector.getZ();
         /** Parameter for searching for collisions below */
-        double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1 + CollisionUtil.COLLISION_EPSILON;
+        double yBelow = pData.getClientVersion().isAtLeast(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1 + CollisionUtil.COLLISION_EPSILON;
 
         // Move AABB alongside the X axis.
-        double[] offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, maxY+yBelow, maxZ};
+        double[] offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, minY+yBelow, maxZ}; // Skip using maxY, as we do not care of the top of the box in this case.
         while (xDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_X)) {
             if (xDistance < 0.05 && xDistance >= -0.05) {
                 xDistance = 0.0;
@@ -140,9 +138,11 @@ public class PlayerLocation extends RichEntityLocation {
                 xDistance -= 0.05;
             } 
             else xDistance += 0.05;
+            // You must update the AABB with the updated X/Z motion after each loop, because in vanilla, this function actually uses a copy of the existing velocity, not the original speed.
+            offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, minY+yBelow, maxZ};
         }
         // Move AABB alongside the Z axis.
-        double[] offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, maxY+yBelow, maxZ+zDistance};
+        double[] offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, minY+yBelow, maxZ+zDistance};
         while (zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_Z)) {
             if (zDistance < 0.05 && zDistance >= -0.05) {
                 zDistance = 0.0;
@@ -151,9 +151,10 @@ public class PlayerLocation extends RichEntityLocation {
                 zDistance -= 0.05;
             } 
             else zDistance += 0.05;
+            offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, minY+yBelow, maxZ+zDistance};
         }
         // Move AABB alongside both (diagonally)
-        double[] offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, maxY+yBelow, maxZ+zDistance};
+        double[] offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, minY+yBelow, maxZ+zDistance};
         while (xDistance != 0.0 && zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_XZ)) {
             if (xDistance < 0.05 && xDistance >= -0.05) {
                 xDistance = 0.0;
@@ -170,6 +171,7 @@ public class PlayerLocation extends RichEntityLocation {
                 zDistance -= 0.05;
             } 
             else zDistance += 0.05;
+            offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, minY+yBelow, maxZ+zDistance};
         }
         vector = new Vector(xDistance, 0.0, zDistance);
         return vector;

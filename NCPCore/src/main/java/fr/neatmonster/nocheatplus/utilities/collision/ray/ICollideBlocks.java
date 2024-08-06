@@ -12,7 +12,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
+
+import fr.neatmonster.nocheatplus.utilities.collision.Axis;
 
 /**
  * A collision checker much like RayTracing or AxisTracing.

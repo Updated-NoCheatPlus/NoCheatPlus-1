@@ -36,8 +36,8 @@ import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.Axis;
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil.RichAxisData;
-import fr.neatmonster.nocheatplus.utilities.collision.InteractAxisTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.Axis.RichAxisData;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.InteractAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
@@ -244,19 +244,19 @@ public class Visible extends Check {
         // TODO: If medium strict, check if the given BlockFace seems acceptable.
 
         // Time windows for coordinates passing through the target block.
-        final double tMinX = getMinTime(eyeX, eyeBlockX, dirX, bdX);
-        final double tMinY = getMinTime(eyeY, eyeBlockY, dirY, bdY);
-        final double tMinZ = getMinTime(eyeZ, eyeBlockZ, dirZ, bdZ);
-        final double tMaxX = getMaxTime(eyeX, eyeBlockX, dirX, tMinX);
-        final double tMaxY = getMaxTime(eyeY, eyeBlockY, dirY, tMinY);
-        final double tMaxZ = getMaxTime(eyeZ, eyeBlockZ, dirZ, tMinZ);
+        final double tMinX = CollisionUtil.getMinTime(eyeX, eyeBlockX, dirX, bdX);
+        final double tMinY = CollisionUtil.getMinTime(eyeY, eyeBlockY, dirY, bdY);
+        final double tMinZ = CollisionUtil.getMinTime(eyeZ, eyeBlockZ, dirZ, bdZ);
+        final double tMaxX = CollisionUtil.getMaxTime(eyeX, eyeBlockX, dirX, tMinX);
+        final double tMaxY = CollisionUtil.getMaxTime(eyeY, eyeBlockY, dirY, tMinY);
+        final double tMaxZ = CollisionUtil.getMaxTime(eyeZ, eyeBlockZ, dirZ, tMinZ);
 
         // Point of time of collision.
         final double tCollide = Math.max(0.0, Math.max(tMinX, Math.max(tMinY, tMinZ)));
         // Collision location (corrected to be on the clicked block).
-        double collideX = toBlock(eyeX + dirX * tCollide, blockX);
-        double collideY = toBlock(eyeY + dirY * tCollide, blockY);
-        double collideZ = toBlock(eyeZ + dirZ * tCollide, blockZ);
+        double collideX = CollisionUtil.toBlock(eyeX + dirX * tCollide, blockX);
+        double collideY = CollisionUtil.toBlock(eyeY + dirY * tCollide, blockY);
+        double collideZ = CollisionUtil.toBlock(eyeZ + dirZ * tCollide, blockZ);
 
         if (TrigUtil.distanceSquared(0.5 + blockX, 0.5 + blockY, 0.5 + blockZ, collideX, collideY, collideZ) > 0.75) {
             tags.add("early_block_miss");
@@ -271,9 +271,9 @@ public class Visible extends Check {
             //            Bukkit.getServer().broadcastMessage("visible: " + tMinX + "," + tMaxX + " | " + tMinY + "," + tMaxY + " | " + tMinZ + "," + tMaxZ);
             // return true; // TODO: Strict or not (direction check ...).
             // Attempt to correct somehow.
-            collideX = postCorrect(blockX, bdX, collideX);
-            collideY = postCorrect(blockY, bdY, collideY);
-            collideZ = postCorrect(blockZ, bdZ, collideZ);
+            collideX = CollisionUtil.postCorrect(blockX, bdX, collideX);
+            collideY = CollisionUtil.postCorrect(blockY, bdY, collideY);
+            collideZ = CollisionUtil.postCorrect(blockZ, bdZ, collideZ);
         }
 
         // Correct the last-on-block to be on the edge (could be two).
@@ -322,80 +322,5 @@ public class Visible extends Check {
             // debug(player, "test case:\n" + rayTracing.getTestCase(1.05, false));
         }
         return collides;
-    }
-
-    /**
-     * Correct onto the block (from off-block), against the direction.
-     * 
-     * @param blockC
-     * @param bdC
-     * @param collideC
-     * @return
-     */
-    private double postCorrect(int blockC, int bdC, double collideC) {
-        int ref = bdC < 0 ? blockC + 1 : blockC;
-        if (Location.locToBlock(collideC) == ref) {
-            return collideC;
-        }
-        return ref;
-    }
-
-    /**
-     * Time until on the block (time = steps of dir).
-     * @param eye
-     * @param eyeBlock
-     * @param dir
-     * @param blockDiff
-     * @return
-     */
-    private double getMinTime(final double eye, final int eyeBlock, final double dir, final int blockDiff) {
-        if (blockDiff == 0) {
-            // Already on the block.
-            return 0.0;
-        }
-        // Calculate the time needed to be on the (close edge of the block coordinate).
-        final double eyeOffset = Math.abs(eye - eyeBlock); // (abs not needed)
-        return ((dir < 0.0 ? eyeOffset : 1.0 - eyeOffset) + (double) (Math.abs(blockDiff) - 1)) / Math.abs(dir);
-    }
-
-    /**
-     * Time when not on the block anymore (after having hit it, time = steps of dir).
-     * @param eye
-     * @param eyeBlock
-     * @param dir
-     * @param blockDiff
-     * @param tMin Result of getMinTime for this coordinate.
-     * @return
-     */
-    private double getMaxTime(final double eye, final int eyeBlock, final double dir, final double tMin) {
-        if (dir == 0.0) {
-            // Always on (blockDiff == 0 as well).
-            return Double.MAX_VALUE;
-        }
-        if (tMin == 0.0) {
-            //  Already on the block, return "rest on block".
-            final double eyeOffset = Math.abs(eye - eyeBlock); // (abs not needed)
-            return (dir < 0.0 ? eyeOffset : 1.0 - eyeOffset) / Math.abs(dir);
-        }
-        // Just the time within range.
-        return tMin + 1.0 /  Math.abs(dir);
-    }
-
-    /**
-     * Correct the coordinate to be on the block (only if outside, for
-     * correcting inside-block to edge tMin has to be checked.
-     * 
-     * @param coord
-     * @param block
-     * @return
-     */
-    private double toBlock(final double coord, final int block) {
-        final int blockDiff = block - Location.locToBlock(coord);
-        if (blockDiff == 0) {
-            return coord;
-        }
-        else {
-            return Math.round(coord);
-        }
     }
 }

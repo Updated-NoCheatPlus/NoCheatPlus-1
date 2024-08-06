@@ -12,9 +12,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
 
 import fr.neatmonster.nocheatplus.components.location.IGetBox3D;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 
 public class CollideRayVsAABB implements ICollideRayVsAABB {
 
@@ -32,8 +33,8 @@ public class CollideRayVsAABB implements ICollideRayVsAABB {
     private boolean collides;
 
     @Override
-    public ICollideRayVsAABB setRay(double startX, double startY, double startZ, 
-            double dirX, double dirY, double dirZ) {
+    public ICollideRayVsAABB setRay(double startX, double startY, double startZ,
+                                    double dirX, double dirY, double dirZ) {
         // Set from parameters.
         this.startX = startX;
         this.startY = startY;
@@ -51,8 +52,8 @@ public class CollideRayVsAABB implements ICollideRayVsAABB {
     }
 
     @Override
-    public ICollideRayVsAABB setAABB(double targetX, double targetY, double targetZ, 
-            double boxMarginHorizontal, double boxMarginVertical) {
+    public ICollideRayVsAABB setAABB(double targetX, double targetY, double targetZ,
+                                     double boxMarginHorizontal, double boxMarginVertical) {
         return this.setAABB(targetX - boxMarginHorizontal, targetY, targetZ - boxMarginHorizontal,
                 targetX + boxMarginHorizontal, targetY + boxMarginVertical, targetZ + boxMarginHorizontal);
     }
@@ -64,8 +65,8 @@ public class CollideRayVsAABB implements ICollideRayVsAABB {
     }
 
     @Override
-    public ICollideRayVsAABB setAABB(double minX, double minY, double minZ, 
-            double maxX, double maxY, double maxZ) {
+    public ICollideRayVsAABB setAABB(double minX, double minY, double minZ,
+                                     double maxX, double maxY, double maxZ) {
         this.minX = minX;
         this.minY = minY;
         this.minZ = minZ;

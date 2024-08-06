@@ -162,23 +162,7 @@ public class MovingUtil {
         // TODO: EntityToggleGlideEvent
         return Bridge1_9.isGlidingWithElytra(player) ? 0.4 : player.getEyeHeight();
     }
-
-
-    /**
-     * Initialize pLoc with edge data specific to gliding with elytra.
-     * 
-     * @param player
-     * @param pLoc
-     * @param loc
-     * @param yOnGround
-     * @param mcAccess
-     */
-    public static void setElytraProperties(final Player player, final PlayerLocation pLoc, final Location loc,
-                                           final double yOnGround, final MCAccess mcAccess) {
-        pLoc.set(loc, player, mcAccess.getWidth(player), 0.4, 0.6, 0.6, yOnGround);
-    }
-
-
+    
     /**
      * Handle an illegal move by a player, attempt to restore a valid location.
      * <br>

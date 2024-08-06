@@ -140,7 +140,7 @@ public class InspectCommand extends BaseCommand {
         }
         
         if (pData.isInCrouchingPose()) {
-            builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is sneaking (NCP).");
+            builder.append("\n "+ c1 + "" + c2 + "•" + c1 + " Is sneaking.");
         }
 
         if (player.isBlocking()) {

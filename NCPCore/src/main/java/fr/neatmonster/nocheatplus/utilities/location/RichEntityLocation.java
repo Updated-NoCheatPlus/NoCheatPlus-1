@@ -29,12 +29,13 @@ import org.bukkit.util.Vector;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
+import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
-import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
-import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
+import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
@@ -57,17 +58,12 @@ public class RichEntityLocation extends RichBoundsLocation {
      * sleeping 0.2/0.2, sneaking 0.6/1.65, normal 0.6/1.8 - head height is 0.4
      * with elytra, 0.2 with sleeping, height - 0.08 otherwise.
      */
-
-    /** The mc access. */
     // Final members //
+    /** The mc access. */
     private final IHandle<MCAccess> mcAccess;
-
-    private final boolean serverHigherOrEqual1_8 = ServerVersion.compareMinecraftVersion("1.8") >=0;
-
 
 
     // Simple members //
-
     /** Full bounding box width. */
     /*
      * TODO: This is the entity width, happens to usually be the bounding box
@@ -174,6 +170,25 @@ public class RichEntityLocation extends RichBoundsLocation {
         return mcAccess;
     }
     
+    /**
+     * @return False, for 1.11 and lower clients jumping on beds.
+     */
+    public boolean isOnBouncyBlock() {
+       if (onBouncyBlock != null) {
+           return onBouncyBlock;
+       }
+        if (GenericVersion.isLowerThan(entity, "1.12")) {
+            if (onBouncyBlock) {
+                if (onSlimeBlock != null && !onSlimeBlock) {
+                    // Beds were made bouncy on 1.12
+                    onBouncyBlock = false;
+                    return onBouncyBlock;
+                }
+            }
+        }
+        // Not a legacy client.
+        return super.isOnBouncyBlock();
+    }
     
     /**
      * Legacy collision method.
@@ -184,14 +199,13 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (onSlimeBlock != null) {
             return onSlimeBlock;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_8)) {
+        if (GenericVersion.isLowerThan(entity, "1.8")) {
             // Does not exist.
             onSlimeBlock = false;
             return onSlimeBlock;
         }
-        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+        if (GenericVersion.isAtMost(entity, "1.19.4")) {
+            // Before 1.20, block properties were applied only if the player is at the center of the block.
             final Material typeId = getTypeIdBelow();
             final long theseFlags = BlockFlags.getBlockFlags(typeId);
             onSlimeBlock = (theseFlags & BlockFlags.F_SLIME) != 0;
@@ -211,10 +225,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (onIce != null) {
             return onIce;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-            // MC applies ice properties only with at least half the box on the block
+        if (GenericVersion.isAtMost(entity, "1.19.4")) {
+            // Before 1.20, block properties were applied only if the player is at the center of the block.
             final Material typeId = getTypeIdBelow();
             final long thisFlags = BlockFlags.getBlockFlags(typeId);
             onIce = isOnGround() && (thisFlags & BlockFlags.F_ICE) != 0;
@@ -233,14 +245,12 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (onBlueIce != null) {
             return onBlueIce;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-            // MC applies ice properties only with at least half the box on the block
+        if (GenericVersion.isAtMost(entity, "1.19.4")) {
+            // Before 1.20, block properties were applied only if the player is at the center of the block.
             final Material typeId = getTypeIdBelow();
             final long thisFlags = BlockFlags.getBlockFlags(typeId);
             onBlueIce = isOnGround() && (thisFlags & BlockFlags.F_BLUE_ICE) != 0;
-            if (onBlueIce && pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+            if (onBlueIce && GenericVersion.isLowerThan(entity, "1.13")) {
                 // Does not exist, but assume multiprotocol plugins to map it to regular ice.
                 onBlueIce = false;
                 onIce = true;
@@ -258,9 +268,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (inWaterLogged != null) {
             return inWaterLogged;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+        if (GenericVersion.isLowerThan(entity, "1.13")) {
             // Waterlogged blocks don't exist for older clients.
             inWaterLogged = false;
             return inWaterLogged;
@@ -277,11 +285,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (inLava != null) {
             return inLava;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
         // 1.13 and below clients use this no-sense method to check if the player is in lava
         // 1.8 client, Entity.java -> handleLavaMovement() -> isMaterialInBB in World.java
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+        if (GenericVersion.isLowerThan(entity, "1.14")) {
             // Force-override the inLava result from RichBoundsLocation.
             inLava = false;
             double[] aaBB = getAABBCopy();
@@ -305,13 +311,11 @@ public class RichEntityLocation extends RichBoundsLocation {
             // Did not collide.
             return inLava;
         }
-        // Mojang tweaked lava collision in 1.14 to use the checkInsideBlocks method, like webs / berry bushes / powder snow etc...)
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_16) 
-            && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+        // Mojang tweaked lava collision in 1.14 to use the checkInsideBlocks method, likewise webs / berry bushes / powder snow etc...)
+        if (GenericVersion.isAtLeast(entity, "1.14") && GenericVersion.isLowerThan(entity, "1.16")) {
             // Force-override the inLava result from RichBoundsLocation
             inLava = false;
-            double[] aaBB = getAABBCopy();
-            inLava = BlockProperties.collides(blockCache, aaBB[0]+0.001, aaBB[1]+0.001, aaBB[2]+0.001, aaBB[3]-0.001, aaBB[4]-0.001, aaBB[5]-0.001, BlockFlags.F_LIQUID);
+            inLava = isInsideBlock(BlockFlags.F_LAVA);
             return inLava;
         }
         // Not a legacy client, nothing to do.
@@ -327,9 +331,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (inWater != null) {
             return inWater;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+        if (GenericVersion.isLowerThan(entity, "1.13")) {
             // 1.13 and below use this extra contraction for water collision.
             inWater = false;
             double extraContraction = 0.4;
@@ -369,18 +371,16 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (onHoneyBlock != null) {
             return onHoneyBlock;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
         // Is the player actually in the block?
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
+        if (GenericVersion.isLowerThan(entity, "1.15")) {
             // Legacy clients don't have such block.
             // This will allow "jumping" on it but won't solve legacy players "floating" midair due to the honey block's lower height (ViaVersion maps it to slime, thus full collision box (1.0))
             // We'd need per-player blocks for such.
             onHoneyBlock = false;
             return onHoneyBlock;
         }
-        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
-            // Only if in the block and at the center.
+        if (GenericVersion.isAtMost(entity, "1.19.4")) {
+            // Only if in the block and at the center. Collision logic was changed in 1.20
             onHoneyBlock = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_STICKY) != 0;
             return onHoneyBlock;
         }
@@ -397,9 +397,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (inSoulSand != null) {
             return inSoulSand;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_19_4)) {
+        if (GenericVersion.isAtMost(entity, "1.19.4")) {
             // Only if in the block and at the center.
             inSoulSand = (BlockFlags.getBlockFlags(getTypeId()) & BlockFlags.F_SOULSAND) != 0;
             return inSoulSand;
@@ -415,9 +413,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (inBerryBush != null) {
             return inBerryBush;
         }
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_14)) {
+        if (GenericVersion.isLowerThan(entity, "1.14")) {
             // (Mapped to grass with viaver)
             inBerryBush = false;
             return inBerryBush;
@@ -436,8 +432,10 @@ public class RichEntityLocation extends RichBoundsLocation {
         final Player p = (Player) entity;
         final IPlayerData pData = DataManager.getPlayerData(p);
         final MovingData data = pData.getGenericInstance(MovingData.class);
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_15)) {
+        final PlayerMoveData playerMove = data.playerMoves.getCurrentMove();
+        final VehicleMoveData vehicleMove = data.vehicleMoves.getCurrentMove();
+        final double yDistance = entity instanceof Player ? playerMove.yDistance : vehicleMove.yDistance;
+        if (GenericVersion.isLowerThan(entity, "1.15")) {
             // This mechanic was introduced in 1.15 alongside honey blocks
             return false;
         }
@@ -450,7 +448,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         //    // Too far from the block.
         //    return false;
         //} 
-        if (thisMove.yDistance >= -Magic.DEFAULT_GRAVITY) {
+        if (yDistance >= -Magic.DEFAULT_GRAVITY) {
             // Minimum speed.
             return false;
         }
@@ -499,7 +497,6 @@ public class RichEntityLocation extends RichBoundsLocation {
             onGround = standsOnEntity = true;
             return onGround;
         }
-        // TODO: Perhaps move all lostground stuff in here?
         return super.isOnGround();
     }
 
@@ -528,44 +525,38 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return A Vector containing the collision components (collisionXYZ)
      */
     public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
-        if (input.getX() == 0 && input.getY() == 0 && input.getZ() == 0) {
+        if (input.isZero()) {
             return new Vector();
         }
-        double[] tAABB = ncpAABB.clone();
-        if (tAABB == null) {
-            // Infer the AABB from NMS width and height parameters.
-            final double halfWidth = mcAccess.getHandle().getWidth(entity) / 2f; // Half width to add to the entity's horizontal coordinates (to get the overall horizontal length)
-            final double height = mcAccess.getHandle().getHeight(entity);
-            final Location loc = entity.getLocation();
-            tAABB = new double[] {loc.getX() - halfWidth, loc.getY(), loc.getZ() - halfWidth, loc.getX() + halfWidth, loc.getY() + height, loc.getZ() + halfWidth};
-        }
+        double[] tAABB = ncpAABB == null ? AxisAlignedBBUtils.createAABB(entity) : ncpAABB.clone();
         List<double[]> collisionBoxes = new ArrayList<>();
-        CollisionUtil.getCollisionBoxes(blockCache, entity, CollisionUtil.expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
-        Vector vec3 = input.lengthSquared() == 0.0 ? input : CollisionUtil.collideBoundingBox(input, tAABB, collisionBoxes);
-        boolean collideX = input.getX() != vec3.getX();
-        boolean collideY = input.getY() != vec3.getY();
-        boolean collideZ = input.getZ() != vec3.getZ();
-        boolean touchGround = onGround || collideY && vec3.getY() < 0.0;
+        CollisionUtil.getCollisionBoxes(blockCache, entity, AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
+        Vector collisionVector = input.lengthSquared() == 0.0 ? input : CollisionUtil.collideBoundingBox(input, tAABB, collisionBoxes);
+        boolean collideX = input.getX() != collisionVector.getX();
+        boolean collideY = input.getY() != collisionVector.getY();
+        boolean collideZ = input.getZ() != collisionVector.getZ();
+        boolean touchGround = onGround || collideY && collisionVector.getY() < 0.0;
         // TODO: Not only cc.sfStepHeight (0.6), change on vehicle(boats:0.0, other vehicle 1.0)
         // Entity is on ground, collided with a wall and can actually step upwards: try to make it step up.
         if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
-            Vector vec31 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
+            Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
             // Introduced in 1.8
-            boolean hasStepFix = entity instanceof Player ? !DataManager.getPlayerData((Player)(entity)).getClientVersion().isOlderThan(ClientVersion.V_1_8) : serverHigherOrEqual1_8;
-            if (hasStepFix) {
-                Vector vec32 = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), CollisionUtil.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
-                if (vec32.getY() < cc.sfStepHeight) {
-                    Vector vec33 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), CollisionUtil.move(tAABB, vec32.getX(), vec32.getY(), vec32.getZ()), collisionBoxes).add(vec32);
-                    if (TrigUtil.distanceSquared(vec33) > TrigUtil.distanceSquared(vec31)) {
-                        vec31 = vec33;
+            if (GenericVersion.isAtLeast(entity,"1.8")) {
+                Vector stepFix = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
+                // Check this very useful video for a visual representation of this code: https://www.youtube.com/watch?v=Awa9mZQwVi8
+                if (stepFix.getY() < cc.sfStepHeight) {
+                    Vector combinedStep = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);
+                    if (TrigUtil.distanceSquared(combinedStep) > TrigUtil.distanceSquared(stepUpVector)) {
+                        stepUpVector = combinedStep;
                     }
                 }
             }
-            if (TrigUtil.distanceSquared(vec31) > TrigUtil.distanceSquared(vec3)) {
-                return vec31.add(CollisionUtil.collideBoundingBox(new Vector(0.0, -vec31.getY() + input.getY(), 0.0), CollisionUtil.move(tAABB, vec31.getX(), vec31.getY(), vec31.getZ()), collisionBoxes));
+            // Did the step-up yield a higher distance? If so, apply step motion
+            if (TrigUtil.distanceSquared(stepUpVector) > TrigUtil.distanceSquared(collisionVector)) {
+                return stepUpVector.add(CollisionUtil.collideBoundingBox(new Vector(0.0, -stepUpVector.getY() + input.getY(), 0.0), AxisAlignedBBUtils.move(tAABB, stepUpVector.getX(), stepUpVector.getY(), stepUpVector.getZ()), collisionBoxes));
             }
         }
-        return vec3;
+        return collisionVector;
     }
     
     /**
@@ -579,14 +570,13 @@ public class RichEntityLocation extends RichBoundsLocation {
      */
     public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
         final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (isInLava() && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16)) {
+        if (isInLava() && GenericVersion.isLowerThan(entity, "1.16")) {
             // Lava pushes entities starting from the nether update (1.16+)
             return new Vector();
         }
         // No Location#locToBlock() here (!)
         // Contract bounding box.
-        double extraContraction = pData.getClientVersion().isOlderThan(ClientVersion.V_1_13) ? 0.4 : 0.0;
+        double extraContraction = GenericVersion.isLowerThan(entity, "1.13") ? 0.4 : 0.0;
         final int iMinX = MathUtil.floor(minX + 0.001);
         final int iMaxX = MathUtil.ceil(maxX - 0.001);
         final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction);
@@ -602,7 +592,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             for (int y = iMinY; y < iMaxY; y++) {
                 for (int z = iMinZ; z < iMaxZ; z++) {
                     // LEGACY 1.13-
-                    if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+                    if (GenericVersion.isLowerThan(entity, "1.13")) {
                         double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         if (liquidHeight != 0.0) {
                             double d0 = (float) (y + 1) - liquidHeight;
@@ -633,7 +623,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         // LEGACY
-        if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_13)) {
+        if (GenericVersion.isLowerThan(entity, "1.13")) {
             if (isInWater() && pushingVector.lengthSquared() > 0.0) {
                 pushingVector.normalize();
                 pushingVector.multiply(0.014);
@@ -742,9 +732,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return true, if successful
      */
     public boolean canClimbUp(double jumpHeight) {
-        final Player p = (Player) entity;
-        final IPlayerData pData = DataManager.getPlayerData(p);
-        if (pData != null && pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)) {
+        if (GenericVersion.isAtLeast(entity, "1.14")) {
             // Since 1.14, all climbable blocks are climbable upwards, always.
             return true;
         }
@@ -781,9 +769,8 @@ public class RichEntityLocation extends RichBoundsLocation {
      *            the margin above eye height
      * @return True, if is head obstructed
      */
-    @Deprecated
-    public boolean seekHeadObstruction(double marginAboveEyeHeight) {
-        return seekHeadObstruction(marginAboveEyeHeight, true);
+    public boolean seekCollisionAbove(double marginAboveEyeHeight) {
+        return seekCollisionAbove(marginAboveEyeHeight, true);
     }
 
     /**
@@ -798,8 +785,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @throws IllegalArgumentException
      *             If marginAboveEyeHeight is smaller than 0.
      */
-    @Deprecated
-    public boolean seekHeadObstruction(double marginAboveEyeHeight, boolean stepCorrection) {
+    public boolean seekCollisionAbove(double marginAboveEyeHeight, boolean stepCorrection) {
         if (marginAboveEyeHeight < 0.0) {
             throw new IllegalArgumentException("marginAboveEyeHeight must be greater than 0.");
         }
@@ -825,9 +811,8 @@ public class RichEntityLocation extends RichBoundsLocation {
      *
      * @return True, if is head obstructed
      */
-    @Deprecated
-    public boolean seekHeadObstruction() {
-        return seekHeadObstruction(0.0, true);
+    public boolean seekCollisionAbove() {
+        return seekCollisionAbove(0.0, true);
     }
 
     /**

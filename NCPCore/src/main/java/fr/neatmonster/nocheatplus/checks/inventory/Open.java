@@ -142,7 +142,7 @@ public class Open extends Check implements IDisableListener {
             || mData.getOrUseVerticalVelocity(thisMove.yDistance) != null
             || mData.useHorizontalVelocity(thisMove.hDistance - mData.getHorizontalFreedom()) >= thisMove.hDistance - mData.getHorizontalFreedom()
             // Ignore entity pushing.
-            || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_9) && CollisionUtil.isCollidingWithEntities(player, 0.5, 0.1, 0.5, true)) {
+            || pData.getClientVersion().isAtLeast(ClientVersion.V_1_9) && CollisionUtil.isCollidingWithEntities(player, 0.5, 0.1, 0.5, true)) {
             return false;
         }
             

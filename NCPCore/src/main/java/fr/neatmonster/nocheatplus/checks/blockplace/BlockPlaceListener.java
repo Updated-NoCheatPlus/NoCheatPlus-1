@@ -128,6 +128,7 @@ public class BlockPlaceListener extends CheckListener {
         if (hasPlayerSignOpenEvent) {
             queuedComponents.add(new Listener() {
                 @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
+                @SuppressWarnings("UnstableApiUsage")
                 public void onOpeningSign1_20(final PlayerSignOpenEvent event) {
                     handleSignOpenEvent(event.getPlayer(), event.getCause());
                 }
@@ -168,6 +169,7 @@ public class BlockPlaceListener extends CheckListener {
     }
     
     /** Mechanic introduced with 1.20. The event itself was introduced around 1.20.1 */
+    @SuppressWarnings("UnstableApiUsage")
     private void handleSignOpenEvent(final Player player, Cause cause) {
         if (cause != Cause.INTERACT) {
             return;

@@ -20,9 +20,9 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 
-import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordHashMap;
 import fr.neatmonster.nocheatplus.utilities.ds.map.CoordMap;
 
@@ -182,7 +182,7 @@ public abstract class BlockCache {
                                 || isDataFetched() && other.isDataFetched() && data == other.getData())
                         && (!isBoundsFetched() && !other.isBoundsFetched()
                                 || isBoundsFetched() && other.isBoundsFetched() 
-                                && BlockProperties.isSameShape(bounds, other.getBounds())
+                                && AxisAlignedBBUtils.isSameShape(bounds, other.getBounds())
                                 );
             }
             return false;

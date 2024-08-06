@@ -12,9 +12,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
 
 import org.bukkit.Location;
+
+import fr.neatmonster.nocheatplus.utilities.collision.Axis;
 
 /**
  * Ray tracing for block coordinates with entry point offsets.

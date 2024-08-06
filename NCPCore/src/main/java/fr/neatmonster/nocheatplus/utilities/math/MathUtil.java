@@ -115,23 +115,6 @@ public class MathUtil {
     }
     
     /**
-     * Maximum of the absolute value of two numbers. NMS style.
-     * 
-     * @param d0
-     * @param d1
-     * @return Maximum absolute value between the two inputs.
-     */
-    public static double absMax(double d0, double d1) {
-        if (d0 < 0.0D) {
-            d0 = -d0;
-        }
-        if (d1 < 0.0D) {
-            d1 = -d1;
-        }
-        return Math.max(d0, d1);
-    }
-    
-    /**
      * Maximum value of three numbers
      * 
      * @param a
@@ -157,7 +140,6 @@ public class MathUtil {
        else throw new IllegalArgumentException("Input cannot be 0.");
     }
      
-     
      /**
       * Test if the difference between two values is small enough to be considered equal
       * 
@@ -169,41 +151,6 @@ public class MathUtil {
      public static boolean almostEqual(double a, double b, double c){
       return Math.abs(a-b) < c;
      }
-   
-    /**
-     * Convenience method
-     * 
-     * @param x 
-     * @param y
-     * @param z
-     * @return Normalized vector
-     */
-    public static double[] normalize(double x, double y, double z) {
-       double distanceSq = square(x) + square(y) + square(z);
-       double magnitude = Math.sqrt(distanceSq);
-       return new double[] {x / magnitude, y / magnitude, z / magnitude};
-    }
-    
-    
-    /**
-     * "Round" a double.
-     * Not for the most precise results.
-     * Use for smaller values only.
-     * 
-     * @param value
-     * @param decimalPlaces 
-     * @return The rounded double
-     * @throws IllegalArgumentException if decimal places are negative
-     */
-    public static double round(double value, int decimalPlaces) {
-        if (decimalPlaces < 0) {
-          	throw new IllegalArgumentException("Decimal places cannot be negative.");
-        }
-        long factor = (long) Math.pow(10, decimalPlaces);
-        value = value * factor;
-        long tmp = Math.round(value);
-        return (double) tmp / factor;
-    }
     
     /**
      * Flooring method from NMS
@@ -235,36 +182,6 @@ public class MathUtil {
      */
     public static float sqrt(float f) {
         return (float) Math.sqrt((double) f);
-    }
-
-    /**
-     * Calculate the standard deviation of this data.
-     * https://en.wikipedia.org/wiki/Standard_deviation
-     * 
-     * @param data
-     * @return the std dev
-     */
-    public static double stdDev(double[] data) {
-        double variance = 0.0;
-        for (double num : data) {
-            variance += Math.pow(num - mean(data), 2);
-        }
-        return Math.sqrt(variance / data.length);
-    }
-    
-    /**
-     * Calculate the mean of this array
-     * 
-     * @param values
-     * @return the mean
-     */
-    public static double mean(double[] values) {
-        double sum = 0.0;
-        for (double value : values) {
-            sum += value;
-        }
-        double mean = sum / values.length;
-        return mean;
     }
 
     /**
@@ -311,11 +228,66 @@ public class MathUtil {
         return (double) milliseconds / 1000D;
     }
 
-    public static boolean equal(float var0, float var1) {
-      return Math.abs(var1 - var0) < 1.0E-5F;
-   }
-
-   public static boolean equal(double var0, double var2) {
-      return Math.abs(var2 - var0) < 9.999999747378752E-6D;
-   }
+    /**
+     * Calculates the total length of space covered("filled") by two line segments on a number line,
+     * accounting for any overlap between them.
+     * <p>This method computes the length of two segments and then subtracts the length
+     * of their overlapping region to avoid counting it twice. The result is the total
+     * length of the space that is covered by at least one of the segments.</p>
+     *
+     * @param sA The start of the first segment.
+     * @param eA The end of the first segment.
+     * @param sB The start of the second segment.
+     * @param eB The end of the second segment.
+     * @return The total length of the space covered by both segments, considering overlap.
+     *
+     * @example
+     * For segments [1, 5] and [3, 7]:
+     * <pre>
+     *   Length of the first segment = 5 - 1 = 4
+     *   Length of the second segment = 7 - 3 = 4
+     *   Overlap length = min(5, 7) - max(1, 3) = 5 - 3 = 2
+     *   Total covered length = 4 + 4 - 2 = 6
+     * </pre>
+     */
+    public static double getFilledSpace(double sA, double eA, double sB, double eB) {
+        return (eA - sA) + (eB - sB) - Math.max(0, Math.min(eA, eB) - Math.max(sA, sB));
+    }
+    
+    /**
+     * Checks if one range is completely contained within another range, or if the two ranges completely overlap.
+     * <p>This method determines whether Range L (`[lBMin, lBMax]`) is fully within Range N (`[nBMin, nBMax]`),
+     * or whether Range N is fully within Range L.</p>
+     *
+     * @param lBMin The starting point of the first range (Range L).
+     * @param nBMin The starting point of the second range (Range N).
+     * @param lBMax The ending point of the first range (Range L).
+     * @param nBMax The ending point of the second range (Range N).
+     * @return {@code true} if Range L is within Range N, or Range N is within Range L; {@code false} otherwise.
+     *
+     * @example
+     * For ranges [2, 5] and [1, 6]:
+     * <pre>
+     *   2 &gt;= 1 and 5 &lt;= 6 → true
+     * </pre>
+     * For ranges [1, 6] and [2, 5]:
+     * <pre>
+     *   2 &gt;= 1 and 5 &lt;= 6 → true
+     * </pre>
+     * For ranges [1, 5] and [4, 7]:
+     * <pre>
+     *   4 &gt;= 1 and 5 &lt;= 7 → false
+     *   1 &gt;= 4 and 7 &lt;= 5 → false
+     * </pre>
+     */
+    public static boolean rangeContains(double lBMin, double nBMin, double lBMax, double nBMax) {
+        // Check if Range L is fully within Range N
+        boolean isLWithinN = nBMin <= lBMin && lBMax <= nBMax;
+        
+        // Check if Range N is fully within Range L
+        boolean isNWithinL = lBMin <= nBMin && nBMax <= lBMax;
+        
+        // Return true if either range is fully contained within the other
+        return isLWithinN || isNWithinL;
+    }
 }

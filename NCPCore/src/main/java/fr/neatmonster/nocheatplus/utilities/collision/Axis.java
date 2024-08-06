@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
+
 /**
  * Represent an orientation concerning Axes (not necessarily a single one).
  * 
@@ -48,5 +50,13 @@ public enum Axis {
             Arrays.asList(new Axis[]{X_AXIS, Y_AXIS, Z_AXIS}));
     public static final List<Axis> AXIS_ORDER_ZYX = Collections.unmodifiableList(
             Arrays.asList(new Axis[]{Z_AXIS, Y_AXIS, X_AXIS}));
-
+    
+    public static class RichAxisData {
+        public Axis priority;
+        public BlockChangeTracker.Direction exclude;
+        public RichAxisData(Axis priority, BlockChangeTracker.Direction exclude) {
+            this.priority = priority;
+            this.exclude = exclude;
+        }
+    }
 }

@@ -32,8 +32,8 @@ import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.components.config.ICheckConfig;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
-import fr.neatmonster.nocheatplus.utilities.collision.CollideRayVsAABB;
-import fr.neatmonster.nocheatplus.utilities.collision.ICollideRayVsAABB;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.CollideRayVsAABB;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.ICollideRayVsAABB;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 

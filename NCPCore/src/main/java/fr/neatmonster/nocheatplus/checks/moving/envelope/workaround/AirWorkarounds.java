@@ -37,7 +37,7 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
  * <li> Before adding any workaround, you should attempt to handle the movement in the way the client intends it (or at least to the closest possible estimate that NCP's infrastructure will allow): falling back to a workaround sould be the last resort.</li>
  * <li> Each workaround has to have proper documentation. Emphasis on "why" the workaround is needed in the first place.</li>
  * <li> Our aim is to nerf / limit what cheaters can do, not catching every single kind of cheat implementation. </li>
- * From this premise, a workaround should then have limited room for exploitation: we prefer players not having to deal with false positives, than catching low-level cheats in this instance.
+ * With this premise in mind then, a workaround should have limited room for exploitation: we prefer players not having to deal with false positives, than catching low-level cheats in this instance.
  *    (If possible, do give an example on what kind of exploits might be enabled by the workaround)</li>
  * <li> Avoid adding too many [and nested, more than 2] conditions (like it was prior to the vDistRel rework). </li>
  * <li> To keep a better track / overview of workarounds, do make use of the workaround registry (append the "use" after all conditions. See the doc for it) </li>
@@ -79,7 +79,7 @@ public class AirWorkarounds {
                /*
                 * 0: Boosting against a ceiling.
                 */
-               || data.fireworksBoostDuration > 0 && from.seekHeadObstruction()
+               || data.fireworksBoostDuration > 0 && from.seekCollisionAbove()
                && data.ws.use(WRPT.W_M_SF_HEAD_OBSTRUCTION)
         ;
     }
@@ -135,7 +135,7 @@ public class AirWorkarounds {
                 * 0: Let older clients on newer servers ascend with protocol-hack plugins emulating levitation.
                 * Not going to put up with server administrators who want compatibility AND ACCURACY/CHEAT PROTECTION for every client under the rainbow (including 10+ year old ones)
                 */
-                || pData.getClientVersion().isOlderThan(ClientVersion.V_1_9) && thisMove.yDistance > 0.0 && ServerVersion.compareMinecraftVersion("1.9") >= 0
+                || pData.getClientVersion().isLowerThan(ClientVersion.V_1_9) && thisMove.yDistance > 0.0 && ServerVersion.compareMinecraftVersion("1.9") >= 0
                 && data.ws.use(WRPT.W_M_SF_LEVITATION_1_8_CLIENT)
             ;
     }
@@ -194,9 +194,10 @@ public class AirWorkarounds {
                 && data.ws.use(WRPT.W_M_SF_COULD_BE_SETBACK_LOOP)
                 /*
                  * 0: Very specific case appeared on 1.20 and above: on stepping down a bed, the first friction move has speed of -0.047607
-                 * instead of the regular (and predicted) gravity slope of -0.0784
+                 * instead of the regular (and predicted) gravity slope of -0.0784.
+                 * (Unknown reason, as of now)
                  */
-                || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)
+                || pData.getClientVersion().isAtLeast(ClientVersion.V_1_20)
                 && lastMove.from.onBouncyBlock && !lastMove.from.onSlimeBlock && !fromOnGround && !toOnGround && thisMove.yDistance < 0.0
                 && lastMove.yDistance == 0.0 && MathUtil.inRange(-Magic.GRAVITY_ODD, thisMove.yDistance, -Magic.GRAVITY_VACC) && thisMove.hDistance > 0.1
                 && data.ws.use(WRPT.W_M_SF_BED_STEP_DOWN)

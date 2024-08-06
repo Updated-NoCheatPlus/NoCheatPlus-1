@@ -365,7 +365,7 @@ public class InventoryUtil {
      */
     public static void itemResyncTask(final Player player, final IPlayerData pData) {
         final CombinedData data = pData.getGenericInstance(CombinedData.class);
-        final boolean ServerIsAtLeast1_13 = ServerVersion.compareMinecraftVersion("1.13") >= 0;
+        final boolean ServerIsAtLeast1_13 = ServerVersion.isAtLeast("1.13");
         // Handle via NMS
         if (mcAccess.getHandle().resetActiveItem(player)) {
             // Released, reset all data and request an inventory update to the server, for good measure.

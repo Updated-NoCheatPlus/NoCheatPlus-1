@@ -12,11 +12,14 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
 
 import java.util.List;
 
 import org.bukkit.Location;
+
+import fr.neatmonster.nocheatplus.utilities.collision.Axis;
+import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
 
 /**
  * Similar to ray-tracing, attempt to model how the client processes move vs.

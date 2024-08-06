@@ -14,7 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.logging.debug;
 
-import fr.neatmonster.nocheatplus.utilities.collision.RayTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.RayTracing;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.FakeBlockCache;
 

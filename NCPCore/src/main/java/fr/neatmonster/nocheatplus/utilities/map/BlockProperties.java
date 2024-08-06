@@ -53,6 +53,9 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.*;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.ICollidePassable;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.PassableAxisTracing;
+import fr.neatmonster.nocheatplus.utilities.collision.ray.PassableRayTracing;
 import fr.neatmonster.nocheatplus.utilities.entity.PotionUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
@@ -496,7 +499,7 @@ public class BlockProperties {
         eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         eLoc.set(loc, player, yOnGround);
-        double friction = 1.0;
+        double friction;
         if (eLoc.isInWater()) {
             friction = Magic.FRICTION_MEDIUM_WATER;
         }
@@ -526,7 +529,7 @@ public class BlockProperties {
         eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
         eLoc.set(loc, player, yOnGround);
-        double friction = 1.0;
+        double friction;
         if (eLoc.isInWater()) {
             friction = Magic.WATER_VERTICAL_INERTIA;
         }
@@ -600,10 +603,10 @@ public class BlockProperties {
         // Determine which position should be used to grab the block.
         final IPlayerData pData = DataManager.getPlayerData((Player) entity);
         /** 1.15 changed the ground-seeking distance to 0.5 */
-        final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
+        final double yBelow = pData.getClientVersion().isAtLeast(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
         final Material blockBelow;
         // On 1.20, the block that is closest to the player position is considered, not the one on which the player is at the center.
-        if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+        if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_20)) {
             final Location loc = getOnPos(blockCache, eLoc, findSupportingBlockLoc(eLoc.getWorld(), blockCache, eLoc.getMinX(), eLoc.getMinY(), eLoc.getMinZ(), eLoc.getMaxX(), eLoc.getMaxY(), eLoc.getMaxZ(), correctedLoc), yBelow);
             blockBelow = blockCache.getOrCreateBlockCacheNode(loc.getX(), loc.getY(), loc.getZ(), false).getType();
         }
@@ -663,10 +666,10 @@ public class BlockProperties {
         
         if (!isWater(block) && !isBubbleColumn(block) && speedFactor == 1.0f) {
             // Failed to retrieve anything; do it again with the block below (getBlockPosBelowThatAffectsMyMovement() in vanilla).
-            final double yBelow = pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
+            final double yBelow = pData.getClientVersion().isAtLeast(ClientVersion.V_1_15) ? 0.5000001D : 1.0D;
             final Material blockBelow;
             // On 1.20, the block that is closest to the player position is considered, not the one on which the player is at the center.
-            if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20)) {
+            if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_20)) {
                 final Location loc = getOnPos(blockCache, eLoc, findSupportingBlockLoc(eLoc.getWorld(), blockCache, eLoc.getMinX(), eLoc.getMinY(), eLoc.getMinZ(), eLoc.getMaxX(), eLoc.getMaxY(), eLoc.getMaxZ(), correctedLoc), yBelow);
                 blockBelow = blockCache.getOrCreateBlockCacheNode(loc.getX(), loc.getY(), loc.getZ(), false).getType();
             }
@@ -2720,7 +2723,7 @@ public class BlockProperties {
     }
 
     /**
-     * Test if the block's location is exposed to skylight, relative to the player's movement.
+     * Test if a block location is exposed to skylight, relative to the player's movement.
      * 
      * @param player
      * @param location
@@ -2750,6 +2753,21 @@ public class BlockProperties {
         return getLiquidHeightAt(access, x1, y1, z1, liquidTypeFlag, true) > 0 && getLiquidHeightAt(access, x2, y2, z2, liquidTypeFlag, true) > 0;
     }
     
+    /**
+     * NMS definition of blocks that have a solid face.<br>
+     * Don't try to read too much into it. The definition of "solid" completely depends on Mojang's part. <br>
+     * This is also the reason why some blocks have seen their definition change many times across different versions (i.e.: leaves)
+     * 
+     * @param blockCache
+     * @param player
+     * @param x
+     * @param y
+     * @param z
+     * @param direction
+     * @param liquidTypeFlag
+     * @param location
+     * @return
+     */
     public static boolean isSolidFace(final BlockCache blockCache, Player player, int x, int y, int z, BlockFace direction, long liquidTypeFlag, final Location location) {
          int modX = x + direction.getModX();
          int modZ = z + direction.getModZ();
@@ -2765,27 +2783,27 @@ public class BlockProperties {
              return false;
          }
         
-         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12)) {
+         if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_12)) {
              if (mat == BridgeMaterial.PISTON || mat == BridgeMaterial.STICKY_PISTON) {
-                 return ((Directional)data).getFacing().getOppositeFace() == direction || isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+                 return ((Directional)data).getFacing().getOppositeFace() == direction || AxisAlignedBBUtils.isFullBounds(node.getBounds(blockCache, modX, y, modZ));
              }
              if (mat == BridgeMaterial.PISTON_HEAD) {
                  return ((Directional)data).getFacing() == direction;
              }
          }
          
-         if (pData.getClientVersion().isOlderThan(ClientVersion.V_1_12)) {
+         if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_12)) {
              if (MaterialUtil.BANNERS.contains(mat)) {
-                 return pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_13) && pData.getClientVersion().isOlderThan(ClientVersion.V_1_16);
+                 return pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) && pData.getClientVersion().isLowerThan(ClientVersion.V_1_16);
              }
              if (isSolid(mat)) {
                  return true;
              }
          }
          
-         if (pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_12) && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_13_2)) {
-             if (isStairs(mat) || isLeaves(mat) || MaterialUtil.SHULKER_BOXES.contains(mat) || MaterialUtil.INSTANT_PLANTS.contains(mat)
-                    || MaterialUtil.ALL_TRAP_DOORS.contains(mat)) {
+         if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_12) && pData.getClientVersion().isAtMost(ClientVersion.V_1_13_2)) {
+             if (isStairs(mat) || isLeaves(mat) || MaterialUtil.SHULKER_BOXES.contains(mat) || MaterialUtil.INSTANT_PLANTS.contains(mat) 
+                 || MaterialUtil.ALL_TRAP_DOORS.contains(mat)) {
                  return false;
              }
              if (mat == Material.BEACON || MaterialUtil.ALL_CAULDRONS.contains(mat) || mat == Material.GLOWSTONE || mat == BridgeMaterial.SEA_LANTERN || mat == BridgeMaterial.CONDUIT) {
@@ -2794,12 +2812,12 @@ public class BlockProperties {
              if (mat == BridgeMaterial.PISTON || mat == BridgeMaterial.STICKY_PISTON || mat == BridgeMaterial.PISTON_HEAD) {
                  return false;
              }
-             return mat == Material.SOUL_SAND || isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+             return mat == Material.SOUL_SAND || AxisAlignedBBUtils.isFullBounds(node.getBounds(blockCache, modX, y, modZ));
          }
          
          // All the rest...
          if (isLeaves(mat)) {
-             return pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14) && pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_15_2);
+             return pData.getClientVersion().isAtLeast(ClientVersion.V_1_14) && pData.getClientVersion().isAtMost(ClientVersion.V_1_15_2);
          }
          if (mat == Material.SNOW) {
              return ((Snow)data).getLayers() == 8;
@@ -2811,7 +2829,7 @@ public class BlockProperties {
              return true;
          }
          if (mat == Material.SOUL_SAND) {
-             return pData.getClientVersion().isOlderThanOrEquals(ClientVersion.V_1_12_2) || pData.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16);
+             return pData.getClientVersion().isAtMost(ClientVersion.V_1_12_2) || pData.getClientVersion().isAtLeast(ClientVersion.V_1_16);
          }
          if (mat == Material.LADDER) {
              return ((Directional) data).getFacing().getOppositeFace() == direction;
@@ -2823,7 +2841,7 @@ public class BlockProperties {
              // TODO: Incomplete / not correct
              return ((Directional)data).getFacing().getOppositeFace() == direction;
          }
-         return isFullBounds(node.getBounds(blockCache, modX, y, modZ));
+         return AxisAlignedBBUtils.isFullBounds(node.getBounds(blockCache, modX, y, modZ));
     }
 
     /**
@@ -4478,7 +4496,7 @@ public class BlockProperties {
         // (Block's min height is higher than the distance from foot to block) 
         if (getGroundMinHeight(access, x, y, z, node, flags) > maxY - y) { // TODO: height >= ?
             // Assume stuck in block; within block, this block collision is no candidate for ground.
-            if (isFullBounds(AABB)) {
+            if (AxisAlignedBBUtils.isFullBounds(AABB)) {
                 return AlmostBoolean.NO;
             }
             else {
@@ -4525,7 +4543,7 @@ public class BlockProperties {
         
         // In case the block above has the GROUND flag, check if it is the same id/material of the collided block (walls)
         if (!variable && id == aboveId) {
-            if (isFullBounds(AABB)) {
+            if (AxisAlignedBBUtils.isFullBounds(AABB)) {
                 // Cannot regard a stone wall as ground.
                 return AlmostBoolean.NO;
             }
@@ -4553,7 +4571,7 @@ public class BlockProperties {
             // Block above is passable. Regard the block collision as ground.
             return AlmostBoolean.YES;
         }
-        if (isFullBounds(AABB_ABOVE)) {
+        if (AxisAlignedBBUtils.isFullBounds(AABB_ABOVE)) {
             // This collision cannot be ground at this x - z position.
             return AlmostBoolean.NO;
         }
@@ -4563,7 +4581,7 @@ public class BlockProperties {
         if (variable) {
             // Simplistic hot fix attempt for same type + same shape.
             // TODO: Needs passable workaround check.
-            if (isSameShape(AABB, AABB_ABOVE)) {
+            if (AxisAlignedBBUtils.isSameShape(AABB, AABB_ABOVE)) {
                 // Can not stand on (rough heuristics).
                 return AlmostBoolean.MAYBE; // There could be ground underneath (block vs. fence).
             }
@@ -4574,51 +4592,7 @@ public class BlockProperties {
         // Cannot judge ground status for this collision.
         return AlmostBoolean.MAYBE;
     }
-
-    /**
-     * All dimensions 0 ... 1, no null checks.
-     *
-     * @param bounds
-     *            Block bounds: minX, minY, minZ, maxX, maxY, maxZ
-     * @return true, if is full bounds
-     */
-    public static final boolean isFullBounds(final double[] bounds) {
-        if (bounds == null) return false;
-        for (int i = 0; i < 3; i++) {
-            if (bounds[i] != 0.0 || bounds[i + 3] != 1.0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Check if the bounds are the same. With null checks.
-     *
-     * @param bounds1
-     *            the bounds1
-     * @param bounds2
-     *            the bounds2
-     * @return True, if the shapes have the exact same bounds, same if both are
-     *         null. In case of one parameter being null, false is returned,
-     *         even if the other is a full block.
-     */
-    public static final boolean isSameShape(final double[] bounds1, final double[] bounds2) {
-        // TODO: further exclude simple full shape blocks, or confine to itchy block types
-        // TODO: make flags for it.
-        if (bounds1 == null || bounds2 == null) {
-            return bounds1 == bounds2;
-        }
-        // Allow as ground for differing shapes.
-        for (int i = 0; i < 6; i++) {
-            if (bounds1[i] != bounds2[i]) {
-                // Simplistic.
-                return false;
-            }
-        }
-        return true;
-    }
-
+    
     /**
      * Collect all flags of blocks touched by the bounds, this does not check
      * versus the blocks bounding box.

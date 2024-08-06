@@ -856,7 +856,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
     
     /**
-     * Cross-version checking is done in RichEntityLocation.
      * @return true, if is in powder snow.
      */
     public boolean isInPowderSnow() {
@@ -954,9 +953,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check if the location is on a bouncy block only regarding the center. Currently
-     * demands to be on ground as well.
-     *
+     * Cross-version checking is done in RichEntityLocation.
+     * 
      * @return true, if is on a bouncy block
      */
     public boolean isOnBouncyBlock() {

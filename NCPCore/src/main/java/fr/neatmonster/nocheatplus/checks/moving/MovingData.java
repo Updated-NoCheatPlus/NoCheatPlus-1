@@ -111,9 +111,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Used as a workaround for boats leaving ice while still having velocity from ice */
     public int boatIceVelocityTicks = 0;
     public long timeCamelDash = 0;
-    /** Temporary snow fix flag */
-    // TODO: remove.
-    public boolean snowFix = false;
     /** Last used block change id (BlockChangeTracker). */
     public final BlockChangeReference blockChangeRef = new BlockChangeReference();
     
@@ -170,7 +167,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     private final SimpleAxisVelocity verVel = new SimpleAxisVelocity();
     /** Horizontal velocity modeled as an axis (always positive) */
     private final FrictionAxisVelocity horVel = new FrictionAxisVelocity();
-    /** Whether or not the calculated explosion velocity should be applied. */
+    /** Whether the calculated explosion velocity should be applied. */
     public boolean shouldApplyExplosionVelocity = false;
     /** Velocity explosion counter (X). */
     public double explosionVelAxisX = 0.0;

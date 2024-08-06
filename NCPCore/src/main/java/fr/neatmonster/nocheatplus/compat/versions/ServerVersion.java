@@ -184,6 +184,26 @@ public class ServerVersion {
     public static int compareMinecraftVersion(String toVersion) {
         return GenericVersion.compareVersions(getMinecraftVersion(), toVersion);
     }
+    
+    /** Convenience method (no equality check). Delegate to compareMinecraftVersion(String toVersion) */
+    public static boolean isLowerThan(String version) {
+        return compareMinecraftVersion(version) == -1;
+    }
+    
+    /** Convenience method (no equality check). Delegate to compareMinecraftVersion(String toVersion) */
+    public static boolean isHigherThan(String version) {
+        return compareMinecraftVersion(version) == 1;
+    }
+    
+    /** Convenience method. Delegate to compareMinecraftVersion(String toVersion) */
+    public static boolean isAtLeast(String version) {
+        return compareMinecraftVersion(version) >= 0;
+    }
+    
+    /** Convenience method. Delegate to compareMinecraftVersion(String toVersion) */
+    public static boolean isAtMost(String version){
+        return compareMinecraftVersion(version) <= 0;
+    }
 
     /**
      * Test if the Minecraft version is between the two given ones.

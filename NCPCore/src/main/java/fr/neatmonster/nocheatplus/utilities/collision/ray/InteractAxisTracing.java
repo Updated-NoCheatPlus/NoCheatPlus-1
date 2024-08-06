@@ -12,8 +12,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.utilities.collision;
+package fr.neatmonster.nocheatplus.utilities.collision.ray;
 
+import fr.neatmonster.nocheatplus.utilities.collision.Axis;
+import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
@@ -64,10 +66,10 @@ public class InteractAxisTracing extends AxisTracing {
     }
 
     @Override
-    protected boolean step(final int blockX, final int blockY, final int blockZ, 
-            final double minX, final double minY, final double minZ, 
-            final double maxX, final double maxY, final double maxZ, 
-            final Axis axis, final int increment) {
+    protected boolean step(final int blockX, final int blockY, final int blockZ,
+                           final double minX, final double minY, final double minZ,
+                           final double maxX, final double maxY, final double maxZ,
+                           final Axis axis, final int increment) {
         if (BlockProperties.isPassableBox(blockCache, blockX, blockY, blockZ, minX, minY, minZ, maxX, maxY, maxZ)) {
             return true;
         }
