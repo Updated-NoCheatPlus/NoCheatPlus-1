@@ -146,7 +146,7 @@ public class BlocksMC1_17 implements BlockPropertiesSetup {
         for (Material mat : MaterialUtil.ALL_TUFF) {
             BlockProperties.setBlockProps(mat, new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 1.5f, true));
         }
-        BlockFlags.setBlockFlags("POWDER_SNOW", BlockFlags.F_POWDERSNOW | BlockFlags.F_GROUND);
+        BlockFlags.setBlockFlags("POWDER_SNOW", BlockFlags.F_POWDER_SNOW | BlockFlags.F_GROUND);
         BlockProperties.setBlockProps("POWDER_SNOW", new BlockProperties.BlockProps(BlockProperties.noTool, 0.25f));
         BlockInit.setPropsAs("POWDER_SNOW_CAULDRON", Material.CAULDRON);
         BlockInit.setPropsAs("WATER_CAULDRON", Material.CAULDRON);

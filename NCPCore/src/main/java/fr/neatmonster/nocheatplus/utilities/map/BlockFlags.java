@@ -284,13 +284,13 @@ public class BlockFlags {
     public static final long F_VARIABLE_REDSTONE            = f_flag();
 
     /** Like bubble column. */
-    public static final long F_BUBBLECOLUMN                 = f_flag();
+    public static final long F_BUBBLE_COLUMN                = f_flag();
     
     /** Flag used to workaround bugged block bounds in older servers for thin fences. */
     public static final long F_FAKEBOUNDS                   = f_flag();
     
     /** Like powder snow: climbable and ground with leather shoes on. */
-    public static final long F_POWDERSNOW                   = f_flag();
+    public static final long F_POWDER_SNOW = f_flag();
 
     /** Explicitly set full bounds. */
     public static final long FULL_BOUNDS                    = F_XZ100 | F_HEIGHT100;

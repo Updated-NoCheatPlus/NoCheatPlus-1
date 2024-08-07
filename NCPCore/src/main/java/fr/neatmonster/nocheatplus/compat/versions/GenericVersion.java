@@ -316,9 +316,15 @@ public class GenericVersion {
     public static String getEntityVersion(Entity entity) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
-            return DataManager.getPlayerData(player).getClientVersion().getReleaseName();
+            final ClientVersion version = DataManager.getPlayerData(player).getClientVersion();
+            if (version == ClientVersion.UNKNOWN) {
+                // Assume clients to match the server's version. If unknown.
+                return ServerVersion.getMinecraftVersion();
+            }
+            // Otherwise, return the release name of this ClientVersion.
+            return version.getReleaseName();
         }
-        // Not a Player. In which the version is determined by the server the entity is on.
+        // Not a Player. In which case, the version is determined by the server the entity is on.
         return ServerVersion.getMinecraftVersion();
     }
     

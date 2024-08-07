@@ -73,7 +73,7 @@ public class BlocksMC1_13 implements BlockPropertiesSetup {
 
         // Bubble column.
         BlockInit.setAs("BUBBLE_COLUMN", Material.WATER);
-        BlockFlags.addFlags("BUBBLE_COLUMN", BlockFlags.F_BUBBLECOLUMN);
+        BlockFlags.addFlags("BUBBLE_COLUMN", BlockFlags.F_BUBBLE_COLUMN);
 
         // Further melon/pumpkin stems.
 

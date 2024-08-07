@@ -42,6 +42,7 @@ import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
 import fr.neatmonster.nocheatplus.config.RawConfigFile;
@@ -483,36 +484,6 @@ public class BlockProperties {
             return "BlockBreakKey(blockType=" + blockType + "toolType=" + toolType + "materialBase=" + materialBase + " efficiency=" + efficiency + ")";
         }
     }
-    /**
-     * Temporary friction library used within SurvivalFly.vDistLiquid() which still uses the old implementation.
-     * Will be removed once it gets refactored.
-     * 
-     * @param player
-     * @param location Inaccurate with split moves, should be avoided.
-     * @param yOnGround
-     * @param thisMove Should be used over location to compose the correct position (split moves) 
-     * @return the factor 
-     */
-    public static final double getNonVanillaVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
-        final BlockCache blockCache = wrapBlockCache.getBlockCache();
-        blockCache.setAccess(location.getWorld());
-        eLoc.setBlockCache(blockCache);
-        Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        eLoc.set(loc, player, yOnGround);
-        double friction;
-        if (eLoc.isInWater()) {
-            friction = Magic.FRICTION_MEDIUM_WATER;
-        }
-        else if (eLoc.isInLava()) {
-            friction = Magic.FRICTION_MEDIUM_LAVA;
-        }
-        else {
-            friction = Magic.FRICTION_MEDIUM_AIR;
-        }
-        blockCache.cleanup();
-        eLoc.cleanup();
-        return friction;
-    }
 
     /**
      * NMS friction factors library for vertical motion
@@ -523,18 +494,22 @@ public class BlockProperties {
      * @param thisMove Should be used over location to compose the correct position (split moves) 
      * @return the factor 
      */
-    public static final double getVerticalFrictionFactor(final Player player, final Location location, final double yOnGround, PlayerMoveData thisMove) {
+    public static final double getVerticalFrictionFactor(final LivingEntity entity, final Location location, final double yOnGround, PlayerMoveData thisMove) {
         final BlockCache blockCache = wrapBlockCache.getBlockCache();
         blockCache.setAccess(location.getWorld());
         eLoc.setBlockCache(blockCache);
         Location loc = new Location(location.getWorld(), thisMove.from.getX(), thisMove.from.getY(), thisMove.from.getZ());
-        eLoc.set(loc, player, yOnGround);
+        eLoc.set(loc, entity, yOnGround);
         double friction;
         if (eLoc.isInWater()) {
             friction = Magic.WATER_VERTICAL_INERTIA;
         }
         else if (eLoc.isInLava()) {
-            friction = Magic.LAVA_VERTICAL_INERTIA;
+            double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, eLoc.getBlockX(), eLoc.getBlockY(), eLoc.getBlockZ(), BlockFlags.F_LAVA, true);
+            if (GenericVersion.isAtLeast((LivingEntity) entity, "1.16") && liquidHeight <= (eLoc.getEyeHeight() < 0.4D ? 0.0D : 0.4D)) { // getFluidJumpThreshold in Entity.java... Set in BlockProperties?
+                friction = Magic.WATER_VERTICAL_INERTIA;
+            }
+            else friction = Magic.LAVA_VERTICAL_INERTIA;
         }
         else {
             friction = Magic.FRICTION_MEDIUM_AIR;
@@ -588,7 +563,7 @@ public class BlockProperties {
      * @return the factor
      */
     public static final float getBlockFrictionFactor(final LivingEntity entity, final Location rawLoc, final double yOnGround, PlayerMoveData thisMove) {
-        if (entity instanceof Player && ((Player) entity).isFlying()|| Bridge1_9.isGliding(entity)) {
+        if (entity instanceof Player && ((Player) entity).isFlying() || Bridge1_9.isGliding(entity)) {
             // Flying player are ignored by the game.
             return 1.0f;
         }
@@ -927,7 +902,7 @@ public class BlockProperties {
      * @return true, if is bubble column
      */
     public static final boolean isBubbleColumn(final Material mat) {
-        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BUBBLECOLUMN) != 0;
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_BUBBLE_COLUMN) != 0;
     }
 
     /**
@@ -1085,7 +1060,7 @@ public class BlockProperties {
      * @return true, if is powder now
      */
     public static final boolean isPowderSnow(final Material mat) {
-        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_POWDERSNOW) != 0;
+        return (BlockFlags.getBlockFlags(mat) & BlockFlags.F_POWDER_SNOW) != 0;
     }
 
     /**
@@ -3786,6 +3761,36 @@ public class BlockProperties {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
                     if ((BlockFlags.getBlockFlags(access.getType(x, y, z)) & flags) != 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * From NMS (IWorldRender.java)<br>
+     * Checks if any part of the specified axis-aligned bounding box (AABB) contains a block
+     * that matches the given liquid flag.
+     *
+     * @param access The BlockCache to access block types.
+     * @param AABB The axis-aligned bounding box represented as a double array with 6 elements:
+     *             [minX, minY, minZ, maxX, maxY, maxZ].
+     * @param liquidFlag The flag indicating the type of liquid to check for.
+     * @return True if any part of the AABB contains a block with the specified liquid flag, otherwise false.
+     */
+    public static boolean containsAnyLiquid(final BlockCache access, double[] AABB, long liquidFlag) {
+        int iMinX = MathUtil.floor(AABB[0]);
+        int iMaxX = MathUtil.ceil(AABB[3]);
+        int iMinY = MathUtil.floor(AABB[1]);
+        int iMaxY = MathUtil.ceil(AABB[4]);
+        int iMinZ = MathUtil.floor(AABB[2]);
+        int iMaxZ = MathUtil.ceil(AABB[5]);
+        for (int x = iMinX; x < iMaxX; ++x) {
+            for (int y = iMinY; y < iMaxY; ++y) {
+                for (int z = iMinZ; z < iMaxZ; ++z) {
+                    if ((BlockFlags.getBlockFlags(access.getType(x, y, z)) & liquidFlag) != 0) {
                         return true;
                     }
                 }

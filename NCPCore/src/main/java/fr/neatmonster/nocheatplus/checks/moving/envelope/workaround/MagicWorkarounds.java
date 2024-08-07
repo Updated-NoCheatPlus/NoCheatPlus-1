@@ -34,15 +34,15 @@ import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 /**
  * Aim of this class is to provide a quick'n'dirty way of handling movements that cannot be predicted through ordinary means (not necessarily elegance), thus resorting to hard-coded magic.<br>
  * A few things to keep in mind:<br>
- * <li> Before adding any workaround, you should attempt to handle the movement in the way the client intends it (or at least to the closest possible estimate that NCP's infrastructure will allow): falling back to a workaround sould be the last resort.</li>
- * <li> Each workaround has to have proper documentation. Emphasis on "why" the workaround is needed in the first place.</li>
+ * <li> Before adding any workaround, you should attempt to handle the movement as intended by the client (or at as closely as the NCP's infrastructure will allow): falling back to a workaround should be the last resort.</li>
+ * <li> Each workaround must have proper documentation. Emphasis on "why" the workaround is needed in the first place.</li>
  * <li> Our aim is to nerf / limit what cheaters can do, not catching every single kind of cheat implementation. </li>
- * With this premise in mind then, a workaround should have limited room for exploitation: we prefer players not having to deal with false positives, than catching low-level cheats in this instance.
+ * With this premise in mind then, a workaround should have limited room for exploitation: we prefer players not having to deal with false positives than catching low-level cheats in this instance.
  *    (If possible, do give an example on what kind of exploits might be enabled by the workaround)</li>
  * <li> Avoid adding too many [and nested, more than 2] conditions (like it was prior to the vDistRel rework). </li>
  * <li> To keep a better track / overview of workarounds, do make use of the workaround registry (append the "use" after all conditions. See the doc for it) </li>
  */ 
-public class AirWorkarounds {
+public class MagicWorkarounds {
 
     /**
      * Several non-predictable moves with gliding
@@ -166,6 +166,9 @@ public class AirWorkarounds {
         }
         if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
             return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove, toOnGround);
+        }
+        if (from.isInLiquid()) {
+            return false;
         }
         
         return

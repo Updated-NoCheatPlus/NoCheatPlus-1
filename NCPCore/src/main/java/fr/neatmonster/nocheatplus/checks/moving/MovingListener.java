@@ -1169,7 +1169,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.set(pFrom, pTo);
         thisMove.multiMoveCount = multiMoveCount;
         thisMove.setBackYDistance = pTo.getY() - data.getSetBackY();
-        thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player));
+        thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && !moveInfo.from.isInLiquid();
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
         thisMove.isGliding = Bridge1_9.isGliding(player);

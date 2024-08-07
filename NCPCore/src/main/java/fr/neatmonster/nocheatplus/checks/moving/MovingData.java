@@ -140,8 +140,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double nextFrictionVertical = 0.0;
     /** Ordinary vertical friction factor (lava, water, air) */
     public double lastFrictionVertical = 0.0;
-    public double lastNonVanillaFrictionVertical = 0.0;
-    public double nextNonVanillaFrictionVertical = 0.0;
 
     // *----------Move / Vehicle move tracking----------*
     /** Keep track of currently processed (if) and past moves for player moving. Stored moves can be altered by modifying the int. */
@@ -419,7 +417,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         nextBlockSpeedMultiplier = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround, thisMove);
         nextFrictionVertical = BlockProperties.getVerticalFrictionFactor(player, loc, cc.yOnGround, thisMove);
         nextStuckInBlockVertical = BlockProperties.getStuckInBlockVerticalFactor(player, loc, cc.yOnGround, thisMove);
-        nextNonVanillaFrictionVertical = BlockProperties.getNonVanillaVerticalFrictionFactor(player, loc, cc.yOnGround, thisMove);
     }
 
 
@@ -443,9 +440,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         }
         else if (loc.isOnHoneyBlock()) {
             liftOffEnvelope = LiftOffEnvelope.LIMIT_HONEY_BLOCK;
-        }
-        else if (loc.isInLiquid()) {
-            liftOffEnvelope = LiftOffEnvelope.LIMIT_LIQUID;
         }
         else if (loc.isOnGround()) {
             liftOffEnvelope = LiftOffEnvelope.NORMAL;
@@ -495,7 +489,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         lastFrictionHorizontal = 0.6f;
         lastBlockSpeedMultiplier = 1.0f;
         lastInertia = 0.0f;
-        lastNonVanillaFrictionVertical = 0.0;
         // TODO: other buffers ?
         // No reset of vehicleConsistency.
     }
@@ -1357,18 +1350,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
             }
         }
         return false;
-    }
-
-
-    /**
-     * Force set the move to be affected by previous speed. Currently
-     * implemented as setting velocity jump phase.
-     * TODO: To be phased out by the new prediction modeling
-     */
-     @Deprecated
-    public void setFrictionJumpPhase() {
-        // TODO: Better and more reliable modeling.
-        sfDirty = true;
     }
 
 

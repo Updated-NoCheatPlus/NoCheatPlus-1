@@ -56,7 +56,7 @@ public class BlocksMC1_20 implements BlockPropertiesSetup {
         }
         if (ServerVersion.compareMinecraftVersion("1.20.5") >= 0) {
             BlockFlags.setBlockFlags("HEAVY_CORE", BlockFlags.SOLID_GROUND);
-            BlockProperties.setBlockProps("HEAVY_CORE", new BlockProperties.BlockProps(BlockProperties.noTool, 50f));
+            BlockProperties.setBlockProps("HEAVY_CORE", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 10f));
             BlockProperties.setBlockProps("VAULT", new BlockProperties.BlockProps(BlockProperties.woodPickaxe, 10f));
             BlockFlags.setBlockFlags("VAULT", BlockFlags.FULLY_SOLID_BOUNDS);
         }

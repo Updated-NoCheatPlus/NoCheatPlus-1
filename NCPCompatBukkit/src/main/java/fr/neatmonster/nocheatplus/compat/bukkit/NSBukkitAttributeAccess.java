@@ -81,5 +81,11 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.NSID_SPRINT_BOOST);
         return mod == null ? 1.0 : getMultiplier(mod);
     }
-
+    
+    @Override
+    public float getMovementSpeed(final Player player) {
+        // / by 2 to get the base value 0.1f
+        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
+    }
+    
 }

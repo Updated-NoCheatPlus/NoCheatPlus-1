@@ -36,7 +36,7 @@ public class LocationData implements IGetLocationWithLook {
     /** Must be checked before using any of the flags. */
     public boolean extraPropertiesValid = false;
     /** Basic environmental properties. */
-    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand, onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream, draggedByBubbleStream;
+    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand, onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream;
     /** Aggregate properties (reset means potentially resetting fall damage or other data). */
     public boolean resetCond, onGroundOrResetCond;
 
@@ -112,7 +112,6 @@ public class LocationData implements IGetLocationWithLook {
         onBouncyBlock = loc.isOnBouncyBlock();
         onGroundOrResetCond = onGround || resetCond;
         inBubbleStream = loc.isInBubbleStream();
-        draggedByBubbleStream = loc.isDraggedByBubbleStream();
         aboveStairs = loc.isAboveStairs();
         // Set valid flag last.
         extraPropertiesValid = true;
@@ -121,7 +120,7 @@ public class LocationData implements IGetLocationWithLook {
     /**
      * Set extra properties same as the given LocationData instance.
      * 
-     * @param loc
+     * @param other
      */
     public void setExtraProperties(final LocationData other) {
         if (other.extraPropertiesValid) {
@@ -143,7 +142,6 @@ public class LocationData implements IGetLocationWithLook {
             resetCond = other.resetCond;
             onBouncyBlock = other.onBouncyBlock;
             inBubbleStream = other.inBubbleStream;
-            draggedByBubbleStream = other.draggedByBubbleStream;
             onGroundOrResetCond = other.onGroundOrResetCond;
         }
         // Set valid flag last.
@@ -169,7 +167,6 @@ public class LocationData implements IGetLocationWithLook {
         resetCond = false;
         onBouncyBlock = false;
         inBubbleStream = false;
-        draggedByBubbleStream = false;
         onGroundOrResetCond = false;
     }
 

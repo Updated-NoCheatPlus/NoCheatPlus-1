@@ -21,6 +21,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.BubbleColumn;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -30,6 +32,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
@@ -228,8 +231,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (GenericVersion.isAtMost(entity, "1.19.4")) {
             // Before 1.20, block properties were applied only if the player is at the center of the block.
             final Material typeId = getTypeIdBelow();
-            final long thisFlags = BlockFlags.getBlockFlags(typeId);
-            onIce = isOnGround() && (thisFlags & BlockFlags.F_ICE) != 0;
+            final long theseFlags = BlockFlags.getBlockFlags(typeId);
+            onIce = isOnGround() && (theseFlags & BlockFlags.F_ICE) != 0;
             return onIce;
         }
         // Not a legacy client.
@@ -262,7 +265,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /** 
-     * @return Always false for 1.12 and below clients.
+     * @return Always false for 1.12 and below.
      */
     public boolean isInWaterLogged() {
         if (inWaterLogged != null) {
@@ -274,6 +277,20 @@ public class RichEntityLocation extends RichBoundsLocation {
             return inWaterLogged;
         }
         return super.isInWaterLogged();
+    }
+    
+    /**
+     * @return Always false for 1.12 and below.
+     */
+    public boolean isInBubbleStream() {
+        if (inBubblestream != null) {
+            return inBubblestream;
+        }
+        if (GenericVersion.isLowerThan(entity, "1.13")) {
+            inBubblestream = false;
+            return inBubblestream;
+        }
+        return super.isInBubbleStream();
     }
 
     /**
@@ -508,6 +525,99 @@ public class RichEntityLocation extends RichBoundsLocation {
     public boolean isOnGroundDueToStandingOnAnEntity() {
         return isOnGround() && standsOnEntity; // Just ensure it is initialized.
     }
+    
+    /**
+     * From Entity.java <br>
+     * Checks if the bounding box of the entity, when moved by the specified offsets, is free from obstructions (liquid or solid blocks).
+     *
+     * @param xOffset The translation offset in the X direction.
+     * @param yOffset The translation offset in the Y direction.
+     * @param zOffset The translation offset in the Z direction.
+     * @param flag The bitmask flag used to determine the type of liquid to check for.
+     * @return True, if the moved bounding box is free from obstructions, otherwise false.
+     */
+    public boolean isFreeFromObstructions(double xOffset, double yOffset, double zOffset, long flag) {
+        return isFreeFromObstructions(AxisAlignedBBUtils.move(getAABBCopy(), xOffset, yOffset, zOffset), flag); 
+    }
+    
+    /**
+     * From Entity.java <br>
+     * Checks if the specified axis-aligned bounding box (AABB) is free from obstructions (liquid or solid blocks).
+     *
+     * @param AABB The axis-aligned bounding box represented as a double array with 6 elements:
+     *             [minX, minY, minZ, maxX, maxY, maxZ].
+     * @param flag The bitmask flag used to determine the type of liquid to check for.
+     * @return True, if the AABB is free from obstructions and contains no specified type of liquid, otherwise false.
+     */
+    public boolean isFreeFromObstructions(double[] AABB, long flag) {
+        return CollisionUtil.isEmpty(blockCache, entity, AABB) && BlockProperties.containsAnyLiquid(blockCache, AABB, flag);
+    }
+    
+    /**
+     * From Entity.java -> onAboveBubbleCol/onInsideBubbleColumn() and BlockBubbleColumn.java -> entityInside().<br>
+     * Adjusts the vertical motion of an entity within a bubble column.
+     * <p>This method checks whether the entity is within a bubble stream. If so, it determines
+     * if there is air above the column and whether the column is drag or not.</p>
+     * <hr>
+     * The server applies bubble column motion on calling the tryCheckInsideBlocks() method in Entity.java
+     *
+     * @param vector The current motion Vector of the entity.
+     * @return The modified motion Vector with adjusted vertical motion due to bubble column effects.
+     */
+    public Vector tryApplyBubbleColumnMotion(Vector vector) {
+        if (!isInBubbleStream()) {
+            // Client-version checking is already contained in isInBubbleStream.
+            return vector;
+        }
+        // This (redundant) collision check is needed because the block above is checked during the looping done in tryCheckInsideBlock() -> checkInsideBlocks() in Entity.java
+        // TODO: Clean-up pending...
+        boolean airAbove = false;
+        boolean isDrag = false;
+        final int iMinX = Location.locToBlock(minX + 0.001);
+        final int iMaxX = Location.locToBlock(maxX + 0.001);
+        final int iMinY = Location.locToBlock(minY + 0.001); // Fuck fences.
+        final int iMaxY = Math.min(Location.locToBlock(maxY - 0.001), blockCache.getMaxBlockY());
+        final int iMinZ = Location.locToBlock(minZ - 0.001);
+        final int iMaxZ = Location.locToBlock(maxZ - 0.001);
+        for (int x = iMinX; x <= iMaxX; x++) {
+            for (int z = iMinZ; z <= iMaxZ; z++) {
+                for (int y = iMaxY; y >= iMinY; y--) {
+                    // Set if above is clear
+                    IBlockCacheNode node = blockCache.getBlockCacheNode(x, y + 1, z);
+                    airAbove = BlockProperties.isAir(node.getType());
+                    // Set whether this column can drag players.
+                    BlockData data = world.getBlockAt(x, y, z).getBlockData(); // Mh. Heavy on performance.
+                    if (data instanceof BubbleColumn) {
+                        if (((BubbleColumn)data).isDrag()) {
+                            isDrag = true;
+                        }
+                    }
+                }
+            }
+        }
+        double yMotion;
+        if (airAbove) {
+            // Above the column
+            if (isDrag) {
+                yMotion = Math.max(-0.9D, vector.getY() - 0.03D);
+            } 
+            else {
+                yMotion = Math.min(1.8D, vector.getY() + 0.1D);
+            }
+            vector = new Vector(vector.getX(), yMotion, vector.getZ());
+        }
+        else {
+            // Fully inside
+            if (isDrag) {
+                yMotion = Math.max(-0.3D, vector.getY() - 0.03D);
+            } 
+            else {
+                yMotion = Math.min(0.7D, vector.getY() + 0.06D);
+            }
+            vector = new Vector(vector.getX(), yMotion, vector.getZ());
+        }
+        return vector;
+    }
 
     /**
      * Retrieve the collision Vector of the entity
@@ -720,6 +830,32 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         return normalizedVectorWithoutNaN(flowingVector);
+    }
+    
+    /**
+     * From EntityLiving.java.<br>
+     * <p>Adjusts the vertical movement of an entity based on gravity and its falling state, 
+     * unless the entity is swimming.</p>
+     *
+     * @param gravity The gravitational acceleration value.
+     * @param isFalling A flag indicating if the entity is currently falling.
+     * @param vec The current movement vector of the entity.
+     * @return A new Vector with adjusted Y-axis movement if conditions are met, 
+     *         otherwise the original vector.
+     */
+    public Vector getFluidFallingAdjustedMovement(double gravity, boolean isFalling, Vector vec) {
+        if (BridgeMisc.hasGravity((LivingEntity) entity) && !((LivingEntity) entity).isSwimming()) { // Strictly, this is isSprinting, not swimming. But we also check for other entities in this class, and only players are capable of sprinting. Is this function used by the game for vehicles too?
+            double liquidFallMovement;
+            if (isFalling && Math.abs(vec.getY() - 0.005D) >= 0.003D && Math.abs(vec.getY() - gravity / 16.0D) < 0.003D) {
+                liquidFallMovement = -0.003D;
+            }
+            else {
+                liquidFallMovement = vec.getY() - gravity / 16.0D;
+            }
+            
+            return new Vector(vec.getX(), liquidFallMovement, vec.getZ());
+        }
+        return vec;
     }
 
     /**

@@ -860,13 +860,13 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInPowderSnow() {
         if (inPowderSnow == null) {
-            if (blockFlags == null || (blockFlags & BlockFlags.F_POWDERSNOW) != 0L) {
+            if (blockFlags == null || (blockFlags & BlockFlags.F_POWDER_SNOW) != 0L) {
                 // TODO/ISSUE: Players are considered in powder snow, only if feet collide with the block. (jumping)
                 // TODO: This check needs to be re-done.
                 // If you stand on the very edge of the block:
                 // Vertically, you jump with standard motion (as if you were outside the block)
                 // Horizontally, you DO get slowed down (as if you were inside the block)
-                inPowderSnow = isInsideBlock(BlockFlags.F_POWDERSNOW)
+                inPowderSnow = isInsideBlock(BlockFlags.F_POWDER_SNOW)
                                // To be considered "in" powder snow, the player needs to be supported by more powder snow (remember that pwdsnw has the ground flag) below (or other solid-ground blocks)
                                // This fixes an edge case with player jumping with powder snow above (in which case, they are not considered "inside", the game applies the ordinary gravity motion)
                                && BlockProperties.isGround(getTypeId(getBlockX(), Location.locToBlock(getY() - 0.01), getBlockZ()));
@@ -992,22 +992,13 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isInBubbleStream() {
         if (inBubblestream == null) {
-            if (blockFlags != null && (blockFlags & BlockFlags.F_BUBBLECOLUMN) == 0) {
+            if (blockFlags != null && (blockFlags & BlockFlags.F_BUBBLE_COLUMN) == 0) {
                 inBubblestream = false;
             }
-            else inBubblestream = isInsideBlock(BlockFlags.F_BUBBLECOLUMN) && !isDraggedByBubbleStream();
+            else inBubblestream = isInsideBlock(BlockFlags.F_BUBBLE_COLUMN);
         }
         return inBubblestream;
      
-    }
-
-    /**
-     * Delegate: check if the location is in a bubblestream with drag value
-     *
-     * @return true, if is dragged by a bubble stream.
-     */
-    public boolean isDraggedByBubbleStream() {
-        return BlockProperties.isBubbleColumnDrag(world, blockCache, minX + 0.001, minY + 0.001, minZ + 0.001, maxX - 0.001, maxY - 0.001, maxZ - 0.001);
     }
 
     /**

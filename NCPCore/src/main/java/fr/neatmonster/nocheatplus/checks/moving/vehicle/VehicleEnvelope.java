@@ -292,7 +292,7 @@ public class VehicleEnvelope extends Check {
             debugDetails.add("inair: " + data.sfJumpPhase);
         }
 
-        if ((moveInfo.from.getBlockFlags() & BlockFlags.F_BUBBLECOLUMN) != 0
+        if ((moveInfo.from.getBlockFlags() & BlockFlags.F_BUBBLE_COLUMN) != 0
             // Should use BlockTraceTracker instead blind leniency
             //|| (isBouncingBlock(moveInfo.from) && thisMove.yDistance >= 0.0 && thisMove.yDistance <= 1.0)
             ) {

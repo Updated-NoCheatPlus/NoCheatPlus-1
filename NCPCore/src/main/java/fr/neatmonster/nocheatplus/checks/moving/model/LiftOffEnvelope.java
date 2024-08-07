@@ -23,8 +23,6 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 public enum LiftOffEnvelope {
     /** Normal in-air lift off, without any restrictions/specialties. Source: BASE_JUMP_POWER field in EntityLiving.java. All other envelopes are just: this constant * getBlockJumpFactor() */
     NORMAL(0.42, 1.29, 6, true),
-    /** (Non-vanilla) Simple calm water surface, strong limit */
-    LIMIT_LIQUID(0.1, 0.27, 3, false),
     // NOTE: Stuck-speed all have a jump height that is (almost) equal to lift-off speed.
     /** Web jump envelope (stuck-speed) */
     LIMIT_WEBS(0.021, 0.021, 0, true),

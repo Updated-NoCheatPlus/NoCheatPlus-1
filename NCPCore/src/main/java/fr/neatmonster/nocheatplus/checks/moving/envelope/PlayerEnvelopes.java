@@ -199,6 +199,9 @@ public class PlayerEnvelopes {
         if (thisMove.isGliding) {
             return false;
         }
+        if (from.isInLiquid()) {
+            return false;
+        }
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
         // This is for jumping with head obstructed.
         Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
