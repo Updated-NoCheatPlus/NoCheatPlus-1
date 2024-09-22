@@ -3,11 +3,14 @@ package fr.neatmonster.nocheatplus.checks.moving.envelope;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
@@ -20,6 +23,8 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
  * Various auxiliary methods for moving behaviour modeled after the client or otherwise observed on the server-side.
  */
 public class PlayerEnvelopes {
+    
+    private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
 
     /**
      * Jump off the top off a block with the ordinary jumping envelope, however
@@ -139,16 +144,13 @@ public class PlayerEnvelopes {
      */
     public static boolean isVerticallyConstricted(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData) {
         if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_14)) {
-            return false;
-        }
-        if (pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove().touchedGroundWorkaround) {
-            // Just ensure to not be too exploitable: ensure that lost ground is ruled out.
+            // The AABB is contracted only for 1.14+ players.
             return false;
         }
         if (!pData.isInCrouchingPose()) {
             return false;
         }
-        return from.seekCollisionAbove(0.0899, false) && from.isOnGround() && to.isOnGround();
+        return from.seekCollisionAbove(0.0899, false) && from.isOnGround() && to.isOnGround() && pData.getGenericInstance(MovingData.class).playerMoves.getCurrentMove().yDistance == 0.0; // Do explicitly demand to have no vertical motion, don't rely on just the ground status.
     }
 
     /**
@@ -157,29 +159,24 @@ public class PlayerEnvelopes {
      *
      * @param forceSetOffGround Currently used to ensure that bunnyhopping isn't applied when we're brute-forcing speed with onGround = false, while the player is constricted in a low-ceiling area,
      *                          due to the fact the client does not send any vertical movement change while in this state.
-     * @return True, if isJump() returned true while the player is sprinting and not in a liquid.
+     * @return True, if isJump() returned true while the player is sprinting.
      */
     public static boolean isBunnyhop(final PlayerLocation from, final PlayerLocation to, final IPlayerData pData, boolean fromOnGround, boolean toOnGround, final Player player, boolean forceSetOffGround) {
-        if (from.isInLiquid()) {
-            return false;
-        }
-        final PlayerMoveData lastMove = pData.getGenericInstance(MovingData.class).playerMoves.getFirstPastMove();
         return 
                pData.isSprinting()
                && (
                     // 1:  99.9% of cases...
                     isJump(from, to, player, fromOnGround, toOnGround)
                     // 1: The odd one out. We can't know the ground status of the player, so this will have to do.
-                    || isVerticallyConstricted(from, to, pData) && !lastMove.bunnyHop // This is to ensure that this workaround/fix doesn't end up being a wildcard
-                    && !forceSetOffGround
+                    || isVerticallyConstricted(from, to, pData) && !forceSetOffGround // At least ensure to not apply this when we're brute-forcing speed with off-ground
                );
     }
 
     /**
-     * Test if this movement may fit into NCP's jumping envelope definition.<br>
-     * (Minecraft does not offer a direct way to know if players could have jumped)
-     * This is mostly intended for vertical motion, not for horizontal. Use PlayerEnvelopes#isBunnyhop() for that. <br>
-     * Accounts for all/most edge cases.
+     * Test, if this movement fits into NoCheatPlus' jumping envelope.<br>
+     * Needed because Minecraft does not offer any direct way of knowing if the player has jumped. Also, because we use our own on-ground judgement.
+     * This considers all primary edge cases, such as lost-ground, delayed jumps and head obstructions.<br>
+     * On invoking this method, the headObstruction flag is also set.
      *
      * @return True, if the player is leaving ground with Minecraft's assigned jump speed.
      */
@@ -190,48 +187,48 @@ public class PlayerEnvelopes {
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
         // Of course, since we have our own onGround handling, we need to take care of all caveats that it entails... (Lost ground, delayed jump etc...)
-        if (thisMove.hasLevitation) {
+        // 0: Early return conditions.
+        if (thisMove.hasLevitation || thisMove.isRiptiding || thisMove.isGliding) {
+            // Cannot jump for sure under these conditions
+            // TODO: Consider to deterministically define jumping in shallow water as well. (modern clients can do so ~ like, on height 1/2/3 of water)
             return false;
         }
-        if (thisMove.isRiptiding) {
+        // 1: Jump phase condition.
+        if (data.sfJumpPhase > 1) {
+            // This event cannot be a jump: the player has been in air for far too long.
             return false;
         }
-        if (thisMove.isGliding) {
-            return false;
-        }
-        if (from.isInLiquid()) {
-            return false;
-        }
-        double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier);
-        // This is for jumping with head obstructed.
+        // 2: Motion conditions.
+        // Validate motion and update the headObstruction flag, if the player does actually collide with something above.
+        double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) * attributeAccess.getHandle().getJumpGainMultiplier(player);
         Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
-        // For setting the flag, we don't care about the correct speed.
-        thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround;
-        // Then, override the ordinary jumping gain, if it was indeed obstructed by a collision.
+        thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround; // For setting the flag, we don't care about the correct speed.
         jumpGain = collisionVector.getY();
+        if (!MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)) { // NOTE: This must be the current move, never the last one.
+            // This is not a jumping motion. Abort early.
+            return false;
+        }
+        // 3: Ground conditions.
+        // Finally, if this was a jumping motion and the player has very little air time, validate the ground status.
+        // Demand to be in a "leaving ground" state.
         return
-                // 0: Jump phase condition... Demand a very low air time.
-                data.sfJumpPhase <= 1
-                // 0: Ground conditions... Demand players to be in a "leaving ground" state.
-                && ( 
-                    // 1: The ordinary lift-off/case.
-                    fromOnGround && !toOnGround
-                    // 1: With jump being delayed a tick after (Player jumps client-side (from ground -> to air), but sends a packet with 0 y-dist. On the next tick, a packet containing the jump speed (0.42) is sent, but the player is already fully in air (air -> air))
-                    // Usually happens when jumping on the corners of blocks
-                    // Technically, this should be considered a lost ground case, however the ground status is detected in this case, just with a delay.
-                    || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekCollisionAbove() // Calling seekHeadObstruction() instead of collide() for performance, as we don't need accuracy in this case. We only need to rule out that the player is jumping in too tight areas.
-                    && (
-                            // 2: The usual case.
+                
+                // 1: Ordinary lift-off.
+                fromOnGround && !toOnGround
+                // 1: 1-tick-delayed-jump cases: ordinary and with lost ground
+                // By "1-tick-delayed-jump" we mean a specific case where the player jumps, but sends a packet with 0 y-dist while still leaving ground (from ground -> to air)
+                // On the next tick, a packet containing the jump motion (0.42) is sent, but the player is already fully in air (air -> air))
+                // Mostly observed when jumping up a 1-block-high slope and then jumping immediately after on the edges of the block. 
+                // Technically, this should be considered a lost ground case, however the ground status is detected in this case, just with a delay.
+                // TODO: Check for abuses. Check for more strict conditions.
+                || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekCollisionAbove() // This behaviour has not hitherto been observed with head obstruction, thus we can confine this edge case by ruling head obstruction cases out. We call seekCollisionAbove() as we don't need accuracy in this case.
+                && (
+                            // 2: The usual case, with ground status actually being detected later.
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
                             lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
-                            // 2: Sometimes, the ground collision is missed altogether.
-                            // TODO: check for abuses.
-                            || (thisMove.touchedGroundWorkaround && !lastMove.touchedGroundWorkaround || thisMove.touchedGroundWorkaround && lastMove.touchedGroundWorkaround && !thisMove.to.onGround)
-                    ) 
+                            // 2: However, sometimes the ground detection is missed, making it this "delayed jump" a true lost-ground case.
+                            || (thisMove.touchedGroundWorkaround && (!lastMove.touchedGroundWorkaround || !thisMove.to.onGround)) // TODO: Check which position (fromLostGround or toLostGround). This definition was added prior to adding the distinguishing flags.
                 )
-                // 0: Jump motion conditions... This is pretty much the only way we can know if the player has jumped.
-                // This must be the current move, never the last one.
-                && MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)
             ;
     }
 
@@ -240,22 +237,21 @@ public class PlayerEnvelopes {
      *
      * @return True if this movement is from and to ground with positive yDistance, as determined by the CachedConfig.sfStepHeight parameter.
      */
-    public static boolean isStepUpByNCPDefinition(final IPlayerData pData, boolean fromOnGround, boolean toOnGround) {
+    public static boolean isStepUpByNCPDefinition(final IPlayerData pData, boolean fromOnGround, boolean toOnGround, Player player) {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
-        if (thisMove.hasLevitation) {
-            return false;
-        }
-        if (thisMove.isRiptiding) {
+        // Step-up is handled by the collide() function in Minecraft, which is called on every move, so one could technically step up even while ripdiing or gliding.
+       /* if (thisMove.isRiptiding) {
             return false;
         }
         if (thisMove.isGliding) {
             return false;
         }
+        */
         return  
                 // 0: NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
-                fromOnGround && toOnGround && MathUtil.almostEqual(thisMove.yDistance, cc.sfStepHeight, Magic.PREDICTION_EPSILON)
+                fromOnGround && toOnGround && MathUtil.almostEqual(thisMove.yDistance, attributeAccess.getHandle().getMaxStepUp(player), Magic.PREDICTION_EPSILON)
                 // 0: Wildcard couldstep
                 || thisMove.couldStepUp
                 // If the step-up movement doesn't fall into any of the criteria above, let the collide() function handle it instead.

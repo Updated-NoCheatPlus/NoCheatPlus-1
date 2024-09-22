@@ -146,23 +146,7 @@ public class ReflectAttributeAccess implements IAttributeAccess {
             throw new RuntimeException("Not available.");
         }
     }
-
-    @Override
-    public double getSpeedAttributeMultiplier(Player player) {
-        return getSpeedAttributeMultiplier(player, true);
-    }
     
-    @Override
-    public float getMovementSpeed(final Player player) {
-        // / by 2 to get the base value 0.1f
-        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
-    }
-
-    @Override
-    public double getSprintAttributeMultiplier(Player player) {
-        return nmsAttributeInstance_getSprintAttributeModifierMultiplier(getMovementSpeedAttributeInstance(player));
-    }
-
     /**
      * Get the speed attribute (MOVEMENT_SPEED) for a player.
      * @param handle EntityPlayer
@@ -171,9 +155,9 @@ public class ReflectAttributeAccess implements IAttributeAccess {
     private Object getMovementSpeedAttributeInstance(Player player) {
         return ReflectionUtil.invokeMethod(this.reflectPlayer.nmsGetAttributeInstance, getHandle(player), this.reflectGenericAttributes.nmsMOVEMENT_SPEED);
     }
-
+    
     /**
-     * 
+     *
      * @param player
      * @param removeSprint If to calculate away the sprint boost modifier.
      * @return
@@ -194,7 +178,7 @@ public class ReflectAttributeAccess implements IAttributeAccess {
             }
         }
     }
-
+    
     /**
      * (Not an existing method.)
      * @param attributeInstance
@@ -208,10 +192,95 @@ public class ReflectAttributeAccess implements IAttributeAccess {
             return AttribUtil.getMultiplier((Integer) ReflectionUtil.invokeMethodNoArgs(this.reflectAttributeModifier.nmsGetOperation, mod), (Double) ReflectionUtil.invokeMethodNoArgs(this.reflectAttributeModifier.nmsGetValue, mod));
         }
     }
-
+    
     private Object getHandle(Player player) {
         Object handle = ReflectionUtil.invokeMethodNoArgs(this.reflectPlayer.obcGetHandle, player);
         return handle;
     }
-
+    
+    @Override
+    public double getSpeedMultiplier(Player player) {
+        return getSpeedAttributeMultiplier(player, true);
+    }
+    
+    @Override
+    public float getMovementSpeed(final Player player) {
+        // / by 2 to get the base value 0.1f
+        return (player.getWalkSpeed() / 2f) * (float) getSpeedMultiplier(player);
+    }
+    
+    @Override
+    public double getSprintMultiplier(Player player) {
+        return nmsAttributeInstance_getSprintAttributeModifierMultiplier(getMovementSpeedAttributeInstance(player));
+    }
+    
+    @Override
+    public double getGravity(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getSafeFallDistance(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getFallDamageMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getBreakingSpeedMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getJumpGainMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerSneakingFactor(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerMaxBlockReach(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerMaxAttackReach(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getMaxStepUp(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public float getMovementEfficiency(Player player) {
+        return Float.MAX_VALUE;
+    }
+    
+    @Override
+    public float getWaterMovementEfficiency(Player player) {
+        return Float.MAX_VALUE;
+    }
+    
+    @Override
+    public double getSubmergedMiningSpeedMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getMiningEfficiency(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getEntityScale(Player player) {
+        return Double.MAX_VALUE;
+    }
 }

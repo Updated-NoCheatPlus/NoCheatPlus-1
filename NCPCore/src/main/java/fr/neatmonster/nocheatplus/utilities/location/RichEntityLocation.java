@@ -19,10 +19,7 @@ import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.BubbleColumn;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -211,7 +208,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             // Before 1.20, block properties were applied only if the player is at the center of the block.
             final Material typeId = getTypeIdBelow();
             final long theseFlags = BlockFlags.getBlockFlags(typeId);
-            onSlimeBlock = (theseFlags & BlockFlags.F_SLIME) != 0;
+            onSlimeBlock = isOnGround() && (theseFlags & BlockFlags.F_SLIME) != 0;
             return onSlimeBlock;
         }
         // Not a legacy client.
@@ -229,7 +226,7 @@ public class RichEntityLocation extends RichBoundsLocation {
             return onIce;
         }
         if (GenericVersion.isAtMost(entity, "1.19.4")) {
-            // Before 1.20, block properties were applied only if the player is at the center of the block.
+            // Before 1.20, block properties were applied only if the player stood at the center of the block.
             final Material typeId = getTypeIdBelow();
             final long theseFlags = BlockFlags.getBlockFlags(typeId);
             onIce = isOnGround() && (theseFlags & BlockFlags.F_ICE) != 0;
@@ -249,10 +246,10 @@ public class RichEntityLocation extends RichBoundsLocation {
             return onBlueIce;
         }
         if (GenericVersion.isAtMost(entity, "1.19.4")) {
-            // Before 1.20, block properties were applied only if the player is at the center of the block.
+            // Before 1.20, block properties were applied only if the player stood at the center of the block.
             final Material typeId = getTypeIdBelow();
-            final long thisFlags = BlockFlags.getBlockFlags(typeId);
-            onBlueIce = isOnGround() && (thisFlags & BlockFlags.F_BLUE_ICE) != 0;
+            final long theseFlags = BlockFlags.getBlockFlags(typeId);
+            onBlueIce = isOnGround() && (theseFlags & BlockFlags.F_BLUE_ICE) != 0;
             if (onBlueIce && GenericVersion.isLowerThan(entity, "1.13")) {
                 // Does not exist, but assume multiprotocol plugins to map it to regular ice.
                 onBlueIce = false;
@@ -283,12 +280,13 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return Always false for 1.12 and below.
      */
     public boolean isInBubbleStream() {
-        if (inBubblestream != null) {
-            return inBubblestream;
+        if (inBubbleStream != null) {
+            return inBubbleStream;
         }
         if (GenericVersion.isLowerThan(entity, "1.13")) {
-            inBubblestream = false;
-            return inBubblestream;
+            // Does not exist.
+            inBubbleStream = false;
+            return inBubbleStream;
         }
         return super.isInBubbleStream();
     }
@@ -441,7 +439,7 @@ public class RichEntityLocation extends RichBoundsLocation {
 
     /**
      * From HoneyBlock.java 
-     * Test if the player is sliding sideway with a honey block (NMS, checks for speed as well)
+     * Test if the player is sliding sideways with a honey block (NMS, checks for speed as well)
      * 
      * @return if the player is sliding on a honey block.
      */
@@ -550,73 +548,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return True, if the AABB is free from obstructions and contains no specified type of liquid, otherwise false.
      */
     public boolean isFreeFromObstructions(double[] AABB, long flag) {
-        return CollisionUtil.isEmpty(blockCache, entity, AABB) && BlockProperties.containsAnyLiquid(blockCache, AABB, flag);
-    }
-    
-    /**
-     * From Entity.java -> onAboveBubbleCol/onInsideBubbleColumn() and BlockBubbleColumn.java -> entityInside().<br>
-     * Adjusts the vertical motion of an entity within a bubble column.
-     * <p>This method checks whether the entity is within a bubble stream. If so, it determines
-     * if there is air above the column and whether the column is drag or not.</p>
-     * <hr>
-     * The server applies bubble column motion on calling the tryCheckInsideBlocks() method in Entity.java
-     *
-     * @param vector The current motion Vector of the entity.
-     * @return The modified motion Vector with adjusted vertical motion due to bubble column effects.
-     */
-    public Vector tryApplyBubbleColumnMotion(Vector vector) {
-        if (!isInBubbleStream()) {
-            // Client-version checking is already contained in isInBubbleStream.
-            return vector;
-        }
-        // This (redundant) collision check is needed because the block above is checked during the looping done in tryCheckInsideBlock() -> checkInsideBlocks() in Entity.java
-        // TODO: Clean-up pending...
-        boolean airAbove = false;
-        boolean isDrag = false;
-        final int iMinX = Location.locToBlock(minX + 0.001);
-        final int iMaxX = Location.locToBlock(maxX + 0.001);
-        final int iMinY = Location.locToBlock(minY + 0.001); // Fuck fences.
-        final int iMaxY = Math.min(Location.locToBlock(maxY - 0.001), blockCache.getMaxBlockY());
-        final int iMinZ = Location.locToBlock(minZ - 0.001);
-        final int iMaxZ = Location.locToBlock(maxZ - 0.001);
-        for (int x = iMinX; x <= iMaxX; x++) {
-            for (int z = iMinZ; z <= iMaxZ; z++) {
-                for (int y = iMaxY; y >= iMinY; y--) {
-                    // Set if above is clear
-                    IBlockCacheNode node = blockCache.getBlockCacheNode(x, y + 1, z);
-                    airAbove = BlockProperties.isAir(node.getType());
-                    // Set whether this column can drag players.
-                    BlockData data = world.getBlockAt(x, y, z).getBlockData(); // Mh. Heavy on performance.
-                    if (data instanceof BubbleColumn) {
-                        if (((BubbleColumn)data).isDrag()) {
-                            isDrag = true;
-                        }
-                    }
-                }
-            }
-        }
-        double yMotion;
-        if (airAbove) {
-            // Above the column
-            if (isDrag) {
-                yMotion = Math.max(-0.9D, vector.getY() - 0.03D);
-            } 
-            else {
-                yMotion = Math.min(1.8D, vector.getY() + 0.1D);
-            }
-            vector = new Vector(vector.getX(), yMotion, vector.getZ());
-        }
-        else {
-            // Fully inside
-            if (isDrag) {
-                yMotion = Math.max(-0.3D, vector.getY() - 0.03D);
-            } 
-            else {
-                yMotion = Math.min(0.7D, vector.getY() + 0.06D);
-            }
-            vector = new Vector(vector.getX(), yMotion, vector.getZ());
-        }
-        return vector;
+        return CollisionUtil.isEmpty(blockCache, entity, AABB) && !BlockProperties.containsAnyLiquid(blockCache, AABB, flag);
     }
 
     /**
@@ -629,16 +561,16 @@ public class RichEntityLocation extends RichBoundsLocation {
      *                 (Thus, if you wish to know if the player collided with something: inputXYZ != collidedXYZ)
      * @param onGround The "on ground" status of the entity. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground cases and mismatches must be taken into account.
      *                 Used to determine whether the entity will be able to step up with the given input.
-     * @param ncpAABB  The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
+     * @param AABB  The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
      *                 Only makes sense if you call this method during PlayerMoveEvents, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
      *                 If null, a new AABB using NMS' parameters (width/height) will be created.
      * @return A Vector containing the collision components (collisionXYZ)
      */
-    public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] ncpAABB) {
+    public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] AABB) {
         if (input.isZero()) {
             return new Vector();
         }
-        double[] tAABB = ncpAABB == null ? AxisAlignedBBUtils.createAABB(entity) : ncpAABB.clone();
+        double[] tAABB = AABB == null ? AxisAlignedBBUtils.createAABB(entity) : AABB.clone();
         List<double[]> collisionBoxes = new ArrayList<>();
         CollisionUtil.getCollisionBoxes(blockCache, entity, AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
         Vector collisionVector = input.lengthSquared() == 0.0 ? input : CollisionUtil.collideBoundingBox(input, tAABB, collisionBoxes);
@@ -653,11 +585,12 @@ public class RichEntityLocation extends RichBoundsLocation {
             // Introduced in 1.8
             if (GenericVersion.isAtLeast(entity,"1.8")) {
                 Vector stepFix = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
-                // Check this very useful video for a visual representation of this code: https://www.youtube.com/watch?v=Awa9mZQwVi8
+                // Check this very useful video for a visual representation of this function is doing: https://www.youtube.com/watch?v=Awa9mZQwVi8
                 if (stepFix.getY() < cc.sfStepHeight) {
-                    Vector combinedStep = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);
-                    if (TrigUtil.distanceSquared(combinedStep) > TrigUtil.distanceSquared(stepUpVector)) {
-                        stepUpVector = combinedStep;
+                    Vector stepUpAttempt2 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);
+                    if (TrigUtil.distanceSquared(stepUpAttempt2) > TrigUtil.distanceSquared(stepUpVector)) {
+                        // Did the step-up iteration yield a higher distance? If so, apply this step motion
+                        stepUpVector = stepUpAttempt2;
                     }
                 }
             }
@@ -679,7 +612,6 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return A vector representing the pushing force (read as: speed) of the liquid.
      */
     public Vector getLiquidPushingVector(final double xDistance, final double zDistance, final long liquidTypeFlag) {
-        final Player p = (Player) entity;
         if (isInLava() && GenericVersion.isLowerThan(entity, "1.16")) {
             // Lava pushes entities starting from the nether update (1.16+)
             return new Vector();
@@ -706,7 +638,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                         double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         if (liquidHeight != 0.0) {
                             double d0 = (float) (y + 1) - liquidHeight;
-                            if (!p.isFlying() && iMaxY >= d0) {
+                            if (iMaxY >= d0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
                                 // Collided
                                 Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                                 pushingVector.add(flowVector);
@@ -717,7 +649,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                     else {
                         double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         double liquidHeightToWorld = y + liquidHeight;
-                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !p.isFlying()) {
+                        if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
                             // Collided.
                             d2 = Math.max(liquidHeightToWorld - minY + 0.001, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                             // Determine pushing speed by using the current flow of the liquid.
@@ -745,12 +677,12 @@ public class RichEntityLocation extends RichBoundsLocation {
             // LAVA: 0.0023333333333333335 if in any other world that isn't nether, 0.007 otherwise.
             // WATER: 0.014
             // NOTE: Water first then Lava (fixes issue with the player's box being both in water and in lava)
-            double flowSpeedMultiplier = isInWater() ? 0.014 : (world.getEnvironment() == World.Environment.NETHER ? 0.007 : 0.0023333333333333335);
+            double flowSpeedMultiplier = isInWater() ? 0.014 : (world.isUltraWarm() ? 0.007 : 0.0023333333333333335);
             if (pushingVector.lengthSquared() > 0.0) {
                 if (k1 > 0) {
                    pushingVector = pushingVector.multiply(1.0 / k1);
                 }
-                if (p.isInsideVehicle()) {
+                if (!(entity instanceof Player)) {
                     // Normalize the vector anyway if inside liquid on a vehicle... (ease some work with the (future) vehicle rework)
                     pushingVector = pushingVector.normalize();
                 }
@@ -763,12 +695,6 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         return pushingVector;
-    }
-    
-    // (Taken from Grim :p)
-    private Vector normalizedVectorWithoutNaN(Vector vector) {
-        double var0 = vector.length();
-        return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
     }
     
     /**
@@ -822,18 +748,18 @@ public class RichEntityLocation extends RichBoundsLocation {
         IBlockCacheNode originalNode = blockCache.getOrCreateBlockCacheNode(x, y, z, false);
         if (BlockProperties.isLiquid(originalNode.getType()) && originalNode.getData(blockCache, x, y, z) >= 8) { // 8-15 - falling liquid
             for (BlockFace hDirection : new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
-                if (BlockProperties.isSolidFace(blockCache, (Player) entity, x, y, z, hDirection, liquidTypeFlag, entity.getLocation()) 
-                    || BlockProperties.isSolidFace(blockCache, (Player) entity, x, y + 1, z, hDirection, liquidTypeFlag, entity.getLocation())) {
-                    flowingVector = normalizedVectorWithoutNaN(flowingVector).add(new Vector(0.0D, -6.0D, 0.0D));
+                if (BlockProperties.isSolidFace(blockCache, (Player) entity, x, y, z, hDirection, liquidTypeFlag, getLocation()) 
+                    || BlockProperties.isSolidFace(blockCache, (Player) entity, x, y + 1, z, hDirection, liquidTypeFlag, getLocation())) {
+                    flowingVector = MathUtil.normalizedVectorWithoutNaN(flowingVector).add(new Vector(0.0D, -6.0D, 0.0D));
                     break;
                 }
             }
         }
-        return normalizedVectorWithoutNaN(flowingVector);
+        return MathUtil.normalizedVectorWithoutNaN(flowingVector);
     }
     
     /**
-     * From EntityLiving.java.<br>
+     * From EntityLiving.java.
      * <p>Adjusts the vertical movement of an entity based on gravity and its falling state, 
      * unless the entity is swimming.</p>
      *
@@ -844,7 +770,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      *         otherwise the original vector.
      */
     public Vector getFluidFallingAdjustedMovement(double gravity, boolean isFalling, Vector vec) {
-        if (BridgeMisc.hasGravity((LivingEntity) entity) && !((LivingEntity) entity).isSwimming()) { // Strictly, this is isSprinting, not swimming. But we also check for other entities in this class, and only players are capable of sprinting. Is this function used by the game for vehicles too?
+        if (BridgeMisc.hasGravity((LivingEntity) entity) && !(entity instanceof Player && !((Player)entity).isSprinting())) { // Strictly, this is isSprinting, not swimming. But we also check for other entities in this class, and only players are capable of sprinting. Is this function used by the game for vehicles too?
             double liquidFallMovement;
             if (isFalling && Math.abs(vec.getY() - 0.005D) >= 0.003D && Math.abs(vec.getY() - gravity / 16.0D) < 0.003D) {
                 liquidFallMovement = -0.003D;
@@ -852,7 +778,6 @@ public class RichEntityLocation extends RichBoundsLocation {
             else {
                 liquidFallMovement = vec.getY() - gravity / 16.0D;
             }
-            
             return new Vector(vec.getX(), liquidFallMovement, vec.getZ());
         }
         return vec;
@@ -875,14 +800,14 @@ public class RichEntityLocation extends RichBoundsLocation {
         // Force legacy clients to behave with legacy mechanics.
         if (BlockProperties.needsToBeAttachedToABlock(getTypeId())) {
             // Check if vine is attached to something solid
-            if (BlockProperties.canClimbUp(blockCache, blockX, blockY, blockZ)) {
+            if (BlockProperties.canBeClimbedUp(blockCache, blockX, blockY, blockZ)) {
                 return true;
             }
             // Check the block at head height.
             final int headY = Location.locToBlock(maxY);
             if (headY > blockY) {
                 for (int cy = blockY + 1; cy <= headY; cy ++) {
-                    if (BlockProperties.canClimbUp(blockCache, blockX, cy, blockZ)) {
+                    if (BlockProperties.canBeClimbedUp(blockCache, blockX, cy, blockZ)) {
                         return true;
                     }
                 }

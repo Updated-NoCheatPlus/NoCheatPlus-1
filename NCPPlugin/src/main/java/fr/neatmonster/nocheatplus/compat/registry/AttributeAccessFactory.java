@@ -25,7 +25,7 @@ public class AttributeAccessFactory {
 
     /**
      * Set up alongside with MCAccess. The MCAccess instance is passed here,
-     * before it has been set internally and before it has been advertised to
+     * before it has been set internally, and before it has been advertised to
      * MCAccessHolder instances, so the latter can get other specific access
      * providers during handling setMCAccess.
      * 
@@ -36,10 +36,10 @@ public class AttributeAccessFactory {
         final IAttributeAccess fallBackReflect = new DummyAttributeAccess();
         IAttributeAccess fallBackDedicated = null;
         try {
-            fallBackDedicated = ServerVersion.compareMinecraftVersion("1.21") < 0 ? new BukkitAttributeAccess() : new NSBukkitAttributeAccess();
+            fallBackDedicated = ServerVersion.isAtLeast("1.21") ? new NSBukkitAttributeAccess() : new BukkitAttributeAccess();
         }
         catch (Throwable t) {}
-        RegistryHelper.setupGenericInstance(new String[] {
+        RegistryHelper.setupGenericInstance(new String[]{
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_10_R1.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_9_R2.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.spigotcb1_9_R1.AttributeAccess",
@@ -53,9 +53,7 @@ public class AttributeAccessFactory {
                 "fr.neatmonster.nocheatplus.compat.cb2882.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.cb2808.AttributeAccess",
                 "fr.neatmonster.nocheatplus.compat.cb2794.AttributeAccess"
-        }, fallBackDedicated, new String[] {
-                "fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectAttributeAccess" // Legacy
-        }, fallBackReflect, IAttributeAccess.class, config, false);
+        }, fallBackDedicated, new String[]{"fr.neatmonster.nocheatplus.compat.cbreflect.reflect.ReflectAttributeAccess" /* Legacy */}, fallBackReflect, IAttributeAccess.class, config, false);
     }
 
 }

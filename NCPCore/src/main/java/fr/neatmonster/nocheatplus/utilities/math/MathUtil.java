@@ -14,174 +14,149 @@
  */
 package fr.neatmonster.nocheatplus.utilities.math;
 
+import org.bukkit.util.Vector;
+
 /**
  * Auxiliary static methods for dealing with mathematical operations.
  */
 public class MathUtil {
-   
+    
     /**
-     * Clamp double between a maximum and minimum value.
-     * 
+     * Clamps a double value between a specified minimum and maximum value.
+     *
      * @param inputValue The value to clamp.
-     * @param minParameter Exclusive
-     * @param maxParameter Exclusive
-     * @return the clamped value
+     * @param minParameter The minimum allowable value (exclusive).
+     * @param maxParameter The maximum allowable value (exclusive).
+     * @return The clamped value.
      */
     public static double clamp(double inputValue, double minParameter, double maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+        return inputValue < minParameter ? minParameter : (Math.min(inputValue, maxParameter));
     }
     
     /**
-     * Clamp float between a maximum and minimum value.
-     * 
+     * Clamps a float value between a specified minimum and maximum value.
+     *
      * @param inputValue The value to clamp.
-     * @param minParameter Exclusive
-     * @param maxParameter Exclusive
-     * @return the clamped value
+     * @param minParameter The minimum allowable value (exclusive).
+     * @param maxParameter The maximum allowable value (exclusive).
+     * @return The clamped value.
      */
     public static float clamp(float inputValue, float minParameter, float maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
+        return inputValue < minParameter ? minParameter : (Math.min(inputValue, maxParameter));
     }
     
     /**
-     * Clamp int between a maximum and minimum value.
-     * 
-     * @param inputValue The value to clamp.
-     * @param minParameter Exclusive
-     * @param maxParameter Exclusive
-     * @return the clamped value
-     */
-    public static int clamp(int inputValue, int minParameter, int maxParameter) {
-       return inputValue < minParameter ? minParameter : (inputValue > maxParameter ? maxParameter : inputValue);
-    }
-    
-    /**
-     * Test if the input value is between a minimum and maximum threshold
-     * 
-     * @param minThreshold Exclusive
-     * @param inputValue The value to test
-     * @param maxThreshold Exclusive
-     * @return True if the value is between the thresholds, false otherwise
+     * Checks if a value lies strictly between a specified minimum and maximum threshold.
+     *
+     * @param minThreshold The minimum threshold (exclusive).
+     * @param inputValue The value to check.
+     * @param maxThreshold The maximum threshold (exclusive).
+     * @return {@code true} if the value is between the thresholds, {@code false} otherwise.
      */
     public static boolean between(double minThreshold, double inputValue, double maxThreshold) {
-       return inputValue > minThreshold && inputValue < maxThreshold;
+        return inputValue > minThreshold && inputValue < maxThreshold;
     }
-      
+    
     /**
-     * Test if the input value is between a minimum and maximum threshold
-     * 
-     * @param minThreshold Inclusive
-     * @param inputValue The value to test
-     * @param maxThreshold Inclusive
-     * @return True if the value is between or equal the thresholds, false otherwise
+     * Checks if a value lies within or on the bounds of a specified range.
+     *
+     * @param minThreshold The minimum threshold (inclusive).
+     * @param inputValue The value to check.
+     * @param maxThreshold The maximum threshold (inclusive).
+     * @return {@code true} if the value is within or equal to the thresholds, {@code false} otherwise.
      */
     public static boolean inRange(double minThreshold, double inputValue, double maxThreshold) {
-       return inputValue >= minThreshold && inputValue <= maxThreshold;
+        return inputValue >= minThreshold && inputValue <= maxThreshold;
     }
-        
+    
     /**
-     * Test if the absolute difference between two values is small enough to be considered equal.
-     * 
-     * @param a The minuend
-     * @param b The subtrahend
-     * @param c Absolute(!) value to compare the difference with
-     * @return True if the absolute difference is smaller or equals C.
-     *         Returns false for negative C inputs.
+     * Determines if the absolute difference between two values is within a specified tolerance.
+     *
+     * @param a The first value.
+     * @param b The second value.
+     * @param c The tolerance (absolute value).
+     * @return {@code true} if the absolute difference is less than or equal to the tolerance, {@code false} if the tolerance is negative.
      */
     public static boolean equal(double a, double b, double c) {
-       if (c < 0.0) return false;
-       return Math.abs(a-b) <= c;
+        if (c < 0.0) return false;
+        return Math.abs(a - b) <= c;
     }
-       
+    
     /**
-     * Convenience method to calculate horizontal distance
-     * 
-     * @param xDistance
-     * @param zDistance
-     * @return the 2d distance
+     * Computes the horizontal distance between two points.
+     *
+     * @param xDistance The distance along the x-axis.
+     * @param zDistance The distance along the z-axis.
+     * @return The 2D distance.
      */
     public static double dist(double xDistance, double zDistance) {
-       return Math.sqrt(square(xDistance) + square(zDistance));
+        return Math.sqrt(square(xDistance) + square(zDistance));
     }
     
     /**
-     * Convenience method
-     * 
-     * @param value the value to square.
-     * @return squared value.
+     * Computes the square of a value.
+     *
+     * @param value The value to square.
+     * @return The squared value.
      */
     public static double square(double value) {
-       return value * value;
+        return value * value;
     }
     
     /**
-     * Maximum value of three numbers
-     * 
-     * @param a
-     * @param b
-     * @param c
-     * @return The highest number
+     * Returns the maximum of three double values.
+     *
+     * @param a The first value.
+     * @param b The second value.
+     * @param c The third value.
+     * @return The highest value.
      */
     public static double max3(double a, double b, double c) {
-       return Math.max(a, Math.max(b, c));
+        return Math.max(a, Math.max(b, c));
     }
     
     /**
-     * Absolute non-zero value of the input number.
-     * 
-     * @param b
-     * @return The first non-zero value.
-     * @throws IllegalArgumentException if input is 0
+     * Checks if the difference between two values is within a specified tolerance.
+     *
+     * @param a The first value.
+     * @param b The second value.
+     * @param c The tolerance (exclusive).
+     * @return {@code true} if the difference is less than the tolerance, {@code false} otherwise.
      */
-    public static double absNonZero(double input) {
-       if (input > 0.0 || input < 0.0) {
-          return Math.abs(input);
-       } 
-       else throw new IllegalArgumentException("Input cannot be 0.");
+    public static boolean almostEqual(double a, double b, double c) {
+        return Math.abs(a - b) < c;
     }
-     
-     /**
-      * Test if the difference between two values is small enough to be considered equal
-      * 
-      * @param a
-      * @param b
-      * @param c The difference (not inclusive)
-      * @return true, if close enough.
-      */
-     public static boolean almostEqual(double a, double b, double c){
-      return Math.abs(a-b) < c;
-     }
     
     /**
-     * Flooring method from NMS
-     * 
-     * @param var0
-     * @return floored double 
+     * Returns the largest integer less than or equal to the specified double value.
+     *
+     * @param value The value to floor.
+     * @return The largest integer less than or equal to the value.
      */
     public static int floor(double value) {
-       int toInt = (int)value;
-       return value < (double)toInt ? toInt - 1 : toInt;
-    }
-
-    /**
-     * Ceiling method from NMS
-     * 
-     * @param var0
-     * @return floored double
-     */
-    public static int ceil(double value) {
-        int toInt = (int)value;
-        return value > (double)toInt ? toInt + 1 : toInt;
+        int toInt = (int) value;
+        return value < toInt ? toInt - 1 : toInt;
     }
     
     /**
-     * Square root method from NMS
-     * 
-     * @param var0
-     * @return floored double
+     * Returns the smallest integer greater than or equal to the specified double value.
+     *
+     * @param value The value to ceil.
+     * @return The smallest integer greater than or equal to the value.
+     */
+    public static int ceil(double value) {
+        int toInt = (int) value;
+        return value > toInt ? toInt + 1 : toInt;
+    }
+    
+    /**
+     * Computes the square root of a float value.
+     *
+     * @param f The value to compute the square root of.
+     * @return The square root of the value.
      */
     public static float sqrt(float f) {
-        return (float) Math.sqrt((double) f);
+        return (float) Math.sqrt(f);
     }
 
     /**
@@ -190,7 +165,7 @@ public class MathUtil {
      * @param arr
      * @return the index.
      */
-    public static int closestIndex(double[] arr, double target) {
+    public static int findClosestIndex(double[] arr, double target) {
         if (arr == null || arr.length == 0) {
             throw new IllegalArgumentException("Array cannot be empty or null.");
         }
@@ -250,13 +225,12 @@ public class MathUtil {
      *   Total covered length = 4 + 4 - 2 = 6
      * </pre>
      */
-    public static double getFilledSpace(double sA, double eA, double sB, double eB) {
+    public static double getCoveredSpace(double sA, double eA, double sB, double eB) {
         return (eA - sA) + (eB - sB) - Math.max(0, Math.min(eA, eB) - Math.max(sA, sB));
     }
     
     /**
-     * Checks if one range is completely contained within another range, or if the two ranges completely overlap.
-     * <p>This method determines whether Range L (`[lBMin, lBMax]`) is fully within Range N (`[nBMin, nBMax]`),
+     * <p>Determines whether Range L (`[lBMin, lBMax]`) is fully within Range N (`[nBMin, nBMax]`),
      * or whether Range N is fully within Range L.</p>
      *
      * @param lBMin The starting point of the first range (Range L).
@@ -289,5 +263,50 @@ public class MathUtil {
         
         // Return true if either range is fully contained within the other
         return isLWithinN || isNWithinL;
+    }
+    
+    /**
+     * Linearly interpolates between two floats based on a given factor.
+     *
+     * <p>A factor of 0.0 returns {@code startValue}, while a factor of 1.0 returns {@code endValue}. Factors between 0.0 and 1.0
+     * return values proportionally between the start and end values.</p>
+     *
+     * @param factor The interpolation factor, typically between 0.0 and 1.0.
+     * @param startValue The starting value.
+     * @param endValue The ending value.
+     * @return The interpolated value.
+     */
+    public static float lerp(float factor, float startValue, float endValue) {
+        return startValue + factor * (endValue - startValue);
+    }
+    
+    /**
+     * Linearly interpolates between two doubles based on a given factor.
+     *
+     * <p>A factor of 0.0 returns {@code startValue}, while a factor of 1.0 returns {@code endValue}. Factors between 0.0 and 1.0
+     * return values proportionally between the start and end values.</p>
+     *
+     * @param factor The interpolation factor, typically between 0.0 and 1.0.
+     * @param startValue The starting value.
+     * @param endValue The ending value.
+     * @return The interpolated value.
+     */
+    public static double lerp(double factor, double startValue, double endValue) {
+        return startValue + factor * (endValue - startValue);
+    }
+    
+    
+    /**
+     * Returns a normalized version of the given vector, ensuring that no NaN values 
+     * are produced. If the length of the vector is less than 1.0E-4, 
+     * an empty vector (0, 0, 0) is returned instead of attempting normalization.
+     *
+     * @param vector the input vector to be normalized
+     * @return a normalized version of the input vector, or a zero vector if the 
+     *         length of the input vector is below 1.0E-4.
+     */
+    public static Vector normalizedVectorWithoutNaN(Vector vector) {
+        double var0 = vector.length();
+        return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
     }
 }

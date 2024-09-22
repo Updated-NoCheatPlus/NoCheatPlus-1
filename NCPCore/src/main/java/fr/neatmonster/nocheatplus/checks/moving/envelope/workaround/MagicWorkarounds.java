@@ -108,7 +108,7 @@ public class MagicWorkarounds {
                 * 0: Players can still press the space bar in powder snow to boost ascending speed.
                 */
                 || from.isInPowderSnow() && MathUtil.between(thisMove.yAllowedDistance, thisMove.yDistance, thisMove.yAllowedDistance + data.liftOffEnvelope.getJumpGain(data.jumpAmplifier))
-                && thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 && BridgeMisc.hasLeatherBootsOn(player)
+                && thisMove.yDistance > 0.0 && lastMove.yDistance > 0.0 && BridgeMisc.canStandOnPowderSnow(player)
                 && data.ws.use(WRPT.W_M_SF_PWDSNW_ASCEND)
                /*
                 * 0: The first move is -most of the time- mispredicted due to... Whatever. Micro moves?
@@ -135,7 +135,7 @@ public class MagicWorkarounds {
                 * 0: Let older clients on newer servers ascend with protocol-hack plugins emulating levitation.
                 * Not going to put up with server administrators who want compatibility AND ACCURACY/CHEAT PROTECTION for every client under the rainbow (including 10+ year old ones)
                 */
-                || pData.getClientVersion().isLowerThan(ClientVersion.V_1_9) && thisMove.yDistance > 0.0 && ServerVersion.compareMinecraftVersion("1.9") >= 0
+                || pData.getClientVersion().isLowerThan(ClientVersion.V_1_9) && thisMove.yDistance > 0.0 && ServerVersion.isAtLeast("1.9")
                 && data.ws.use(WRPT.W_M_SF_LEVITATION_1_8_CLIENT)
             ;
     }
@@ -164,7 +164,7 @@ public class MagicWorkarounds {
         if (Bridge1_9.isGliding(player)) {
             return oddGliding(data, player, from, fromOnGround, to, toOnGround, isNormalOrPacketSplitMove);
         }
-        if (!Double.isInfinite(Bridge1_9.getLevitationAmplifier(player))) {
+        if (lastMove.hasLevitation) {
             return oddLevitation(data, player, from, fromOnGround, isNormalOrPacketSplitMove, toOnGround);
         }
         if (from.isInLiquid()) {
@@ -172,20 +172,14 @@ public class MagicWorkarounds {
         }
         
         return
-               /*
-                * 0: Allow players preparing to step down a block / simply descending.
-                * For the game, this move is fully on ground, thus gravity is not yet applied (hence 0 speed and 0 jump height), but for NCP (which distinguishes moving from/to ground) this is seen as "leaving the ground", so it will try to enforce friction right away.
-                * Strictly speaking, this should be confined by && !toOnGround. For the sake of leniency, we'll demand to be on ground with just the from location.
-                */
-                thisMove.yDistance == 0.0 && thisMove.setBackYDistance == 0.0 && fromOnGround
-                && data.ws.use(WRPT.W_M_SF_PREPARE_TO_DESCEND)
+              
                /*
                 * 0: Allow moves with extremely little air times [for NCP].
                 * Player leaves the ground for such a short period of time that the game never enforces gravity.
                 * Happens when sprinting over small, 1-block wide gaps (the game does allow players to do so)
                 * See: https://gyazo.com/c772058239ab28a8d976fe5a31959a82
                 */
-                || !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround && data.sfJumpPhase <= 1
+                !fromOnGround && toOnGround && lastMove.from.onGround && !lastMove.to.onGround && data.sfJumpPhase <= 1
                 && lastMove.toIsValid && thisMove.hDistance > 0.18 && lastMove.yDistance == 0.0 && thisMove.yDistance == 0.0
                 && data.ws.use(WRPT.W_M_SF_NO_GRAVITY_GAP)
                /*

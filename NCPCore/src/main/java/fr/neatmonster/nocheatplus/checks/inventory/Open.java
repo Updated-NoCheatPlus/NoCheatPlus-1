@@ -146,10 +146,10 @@ public class Open extends Check implements IDisableListener {
             return false;
         }
             
-        // Actual detection
-        if (thisMove.hasImpulse || Bridge1_9.isGlidingWithElytra(player) && (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())) {
+        // Actual detection: do assume player to be actively moving even if we don't actually know the direction (MAYBE, needs testing)
+        if (thisMove.hasImpulse.decideOptimistically() || Bridge1_9.isGlidingWithElytra(player) && (thisMove.from.getYaw() != thisMove.to.getYaw() || thisMove.from.getPitch() != thisMove.to.getPitch())) {
             // Use SurvivalFly prediction handling to see if the player is actively moving.
-            // WASD keys presses are irrelevant when gliding but the telltale sign that let's you know that the player is moving in their inventory is if roations don't match
+            // WASD keys presses are irrelevant when gliding but the telltale sign that let's you know that the player is moving in their inventory is if rotations don't match
             if (cc.openImprobableWeight > 0.0) {
                 Improbable.feed(player, cc.openImprobableWeight, System.currentTimeMillis());
             }

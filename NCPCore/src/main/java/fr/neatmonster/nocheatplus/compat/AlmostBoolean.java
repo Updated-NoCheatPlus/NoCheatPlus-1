@@ -23,20 +23,31 @@ public enum AlmostBoolean{
     YES,
     NO,
     MAYBE;
-
+    
     /**
-     * "Match" a boolean.
-     * @param value
-     * @return
+     * Matches a boolean value to its corresponding {@code AlmostBoolean} state.
+     *
+     * @param value The boolean value to match.
+     * @return {@code YES} if {@code value} is true, {@code NO} if {@code value} is false.
      */
     public static final AlmostBoolean match(final boolean value) {
         return value ? YES : NO;
     }
-
+    
     /**
-     * Match yes/true/y, no/false/n, maybe/default, otherwise returns null.
-     * @param input Can be null.
-     * @return
+     * Matches a string input to its corresponding {@code AlmostBoolean} state.
+     *
+     * <p>The method recognizes the following string inputs:
+     * <ul>
+     * <li>"true", "yes", "y" (case-insensitive) map to {@code YES}</li>
+     * <li>"false", "no", "n" (case-insensitive) map to {@code NO}</li>
+     * <li>"default", "maybe" (case-insensitive) map to {@code MAYBE}</li>
+     * </ul>
+     *
+     * <p>If the input is null or does not match any recognized value, the method returns null.
+     *
+     * @param input The string input to match, which can be null.
+     * @return The corresponding {@code AlmostBoolean} value, or null if the input is unrecognized.
      */
     public static final AlmostBoolean match(String input) {
         if (input == null) {
@@ -58,7 +69,8 @@ public enum AlmostBoolean{
 
     /**
      * Pessimistic interpretation: true if YES.
-     * @return
+     * 
+     * @return true if the state is {@code YES}, false otherwise.
      */
     public boolean decide(){
         return this == YES;
@@ -66,7 +78,8 @@ public enum AlmostBoolean{
 
     /**
      * Optimistic interpretation: true if not NO.
-     * @return
+     * 
+     * @return true if the state is {@code YES} or {@code MAYBE}, false if the state is {@code NO}.
      */
     public boolean decideOptimistically() {
         return this != NO;

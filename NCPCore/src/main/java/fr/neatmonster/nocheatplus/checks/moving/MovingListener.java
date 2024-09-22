@@ -619,7 +619,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                     player.setFallDistance((float) fallDistance);
                     data.noFallFallDistance = (float) fallDistance;
                 }
-                else if (fallDistance >= Magic.FALL_DAMAGE_DIST) {
+                else if (fallDistance >= attributeAccess.getHandle().getSafeFallDistance(player)) {
                     data.noFallSkipAirCheck = true;
                 }
             }
@@ -839,7 +839,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             return;
         }
         // TODO: Is this right place? Just throw in entity/player in blockcache is better or this one? Too tired for now, maybe later
-        data.hasLeatherBoots = BridgeMisc.hasLeatherBootsOn(player);
+        data.hasLeatherBoots = BridgeMisc.canStandOnPowderSnow(player);
         data.lastY = from.getY();
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2120,7 +2120,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             
             // Cheat: let Minecraft gather and deal fall damage.
             final float dataDist = Math.max(yDiff, data.noFallFallDistance);
-            final double dataDamage = NoFall.getDamage(dataDist);
+            final double dataDamage = NoFall.getDamage(dataDist, player);
             if (damage > dataDamage + 0.5 || dataDamage <= 0.0) {
 
                 // Hot fix: allow fall damage in lava.
@@ -2174,8 +2174,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         aux.returnPlayerMoveInfo(moveInfo);
         // Fall-back check (skip with jump amplifier).
-        final double maxD = data.jumpAmplifier > 0.0 ? NoFall.getDamage((float) NoFall.getApplicableFallHeight(player, loc.getY(), data))
-                                                     : NoFall.getDamage(Math.max(yDiff, Math.max(data.noFallFallDistance, fallDistance))) + (allowReset ? 0.0 : Magic.FALL_DAMAGE_DIST);
+        final double maxD = data.jumpAmplifier > 0.0 ? NoFall.getDamage((float) NoFall.getApplicableFallHeight(player, loc.getY(), data), player)
+                                                     : NoFall.getDamage(Math.max(yDiff, Math.max(data.noFallFallDistance, fallDistance)), player) + (allowReset ? 0.0 : attributeAccess.getHandle().getSafeFallDistance(player));
         if (maxD > damage) {
             // TODO: respect dealDamage ?
             double featherFallingCorrection = NoFall.applyFeatherFalling(player, NoFall.applyBlockDamageModifier(player, data, maxD), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());

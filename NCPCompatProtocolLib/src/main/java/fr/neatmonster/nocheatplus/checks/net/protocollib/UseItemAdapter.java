@@ -47,7 +47,13 @@ import com.comphenix.protocol.wrappers.EnumWrappers.PlayerDigType;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
-import fr.neatmonster.nocheatplus.compat.*;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
+import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.registry.order.RegistrationOrder.RegisterMethodWithOrder;
@@ -60,13 +66,15 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 /**
- * Adapter for listening to packets and Bukkit events relevant for item-use.<br>
- * On 1.17 and above, the adapter will only register events tied to a specific item-use exploit, since Bukkit does
- * provide us with a getItemInUse() method.<br>
- * On 1.12 and above, all listeners will be registered since Bukkit doesn't provide a way of knowing <em>which</em> item is in use (we only get to know if the
- * player is using an item via player#isHandRaised())<br>
- * The PlayerRespawnEvent is always listened for in order fix a specific item de-synchronisation issue.
- * 
+ * Adapter for listening to packets and Bukkit events relevant to item use.<br>
+ *
+ * On versions 1.17 and above, the adapter will only register events related to a specific item-use exploit, 
+ * as Bukkit provides the getItemInUse() method.<br>
+ *
+ * On versions 1.12 and above, all listeners will be registered because Bukkit does not offer a way to 
+ * determine <em>which</em> item is in use; we can only detect if a player is using an item through player#isHandRaised().<br>
+ *
+ * The PlayerRespawnEvent is always listened to in order to fix a specific item desynchronization issue.
  */
 public class UseItemAdapter extends BaseAdapter {
     
@@ -289,18 +297,17 @@ public class UseItemAdapter extends BaseAdapter {
                 return;
             }
             // Shields and swords (legacy)... Bukkit takes care here, but set anyway.
-            if (Bridge1_9.hasElytra()) {
+            if (ServerVersion.isAtLeast("1.9") && pData.getClientVersion().isAtLeast(ClientVersion.V_1_9)) {
             	if (m == Material.SHIELD) {
             	    pData.setItemInUse(m);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
                     return;
             	}
             }
-            else if (MaterialUtil.isSword(m)) {
+            else if (MaterialUtil.isSword(m) && (ServerVersion.isLowerThan("1.9") || pData.getClientVersion().isAtMost(ClientVersion.V_1_8))) {
             	// Legacy server. Blocking is done with swords.
             	pData.setItemInUse(m);
             	// (Off hand doesn't exist)
-            	// TODO: Account for cross-version compatibility?
             	return;
             }
             
@@ -312,7 +319,7 @@ public class UseItemAdapter extends BaseAdapter {
                 }
             }
             // Tridents (1.13)... 
-            if (m == BridgeMaterial.TRIDENT 
+            if (m == BridgeMaterial.TRIDENT && item.getDurability() < m.getMaxDurability() - 1 && pData.getClientVersion().isAtLeast(ClientVersion.V_1_13)
             	&& (
                     // 1:If the trident has riptide enchant, it can only be used in rain or water 
             		BridgeEnchant.getRiptideLevel(p) > 0.0
@@ -352,13 +359,15 @@ public class UseItemAdapter extends BaseAdapter {
     private static void onChangeSlot(final PlayerItemHeldEvent e) {
         final Player p = e.getPlayer();
         final IPlayerData pData = DataManager.getPlayerData(p);
-        //if (data.changeslot) {
-        //    p.getInventory().setHeldItemSlot(data.olditemslot);
-        //    data.changeslot = false;
-        //}
-        // Switching a slot, so the item use status is reset. 
+        // Switching a slot, so the item use status is reset.
+        final MovingData mData = pData.getGenericInstance(MovingData.class);
+        final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         if (e.getPreviousSlot() != e.getNewSlot()) {
-            // To avoid potential bypasses, let Minecraft forcibly release the item.
+            if ((pData.getItemInUse() != null || p.isBlocking()) && mData.playerMoves.getCurrentMove() != null) {
+                p.getInventory().setHeldItemSlot(e.getPreviousSlot());
+                cData.invalidItemUse = true;
+            }
+            // To avoid any more potential bypasses, let Minecraft forcibly release the item.
             pData.requestItemUseResync();
         }
     }
@@ -377,7 +386,7 @@ public class UseItemAdapter extends BaseAdapter {
                 return;
             }
         }
-        // Player sends a block-placement item when right clicking, so they might be actually using an item. Set the flag.
+        // Player sends a block-placement item when right-clicking, so they might be actually using an item. Set the flag.
         if (!event.isCancelled()) data.mightUseItem = true;
     }
 

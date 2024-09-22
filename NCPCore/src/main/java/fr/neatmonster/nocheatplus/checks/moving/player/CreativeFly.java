@@ -22,7 +22,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.actions.ParameterName;
@@ -31,16 +30,10 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.ViolationData;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
-import fr.neatmonster.nocheatplus.checks.moving.envelope.PlayerEnvelopes;
 import fr.neatmonster.nocheatplus.checks.moving.envelope.workaround.LostGround;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.ModelFlying;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
-import fr.neatmonster.nocheatplus.compat.Bridge1_13;
-import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker;
 import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
@@ -48,8 +41,6 @@ import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHand
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
-import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
-import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
@@ -101,17 +92,11 @@ public class CreativeFly extends Check {
         final double hDistance = thisMove.hDistance;
         final boolean flying = gameMode == BridgeMisc.GAME_MODE_SPECTATOR || player.isFlying();
         final boolean sprinting = player.isSprinting();
-        final long now = System.currentTimeMillis();
-        boolean lostGround = false;
 
         // Lost ground, if set so.
         if (model.getGround()) {
             MovingUtil.prepareFullCheck(from, to, thisMove, Math.max(cc.yOnGround, cc.noFallyOnGround));
-            if (!thisMove.from.onGroundOrResetCond) {
-                if (LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags)) {
-                    lostGround = true;
-                }
-            }
+            LostGround.lostGround(player, from, to, hDistance, yDistance, sprinting, lastMove, data, cc, useBlockChangeTracker ? blockChangeTracker : null, tags);
         }
 
 
@@ -356,6 +341,7 @@ public class CreativeFly extends Check {
 
         if (model.getApplyModifiers()) {
             data.jumpDelay--;
+            //TODO: Remove this useless shit.
             if (!flying && resultH > 0 && resultH < 0.3) {
                 // 0: yDistance envelope
                 if (yDistance >= 0.0 &&
@@ -516,7 +502,6 @@ public class CreativeFly extends Check {
                                final MovingData data, final MovingConfig cc) {
         double limitV = 0.0;
         double resultV = 0.0;
-        // TODO: Deny on enforcing mingain.
         return new double[] {limitV, resultV};
     }
 

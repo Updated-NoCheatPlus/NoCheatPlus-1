@@ -40,6 +40,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.Axis.RichAxisData;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.InteractAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 
@@ -162,7 +163,7 @@ public class Visible extends Check {
 
                 do {
                     canContinue = false;
-                    for (BlockCoord neighbor : CollisionUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ, axisData)) {
+                    for (BlockCoord neighbor : MapUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ, axisData)) {
                         if (CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, eyeHeight, null, null, mightEdgeInteraction, axisData)
                             && CollisionUtil.correctDir(neighbor.getY(), blockY, Location.locToBlock(eyeY)) 
                             && !visited.contains(neighbor)) {

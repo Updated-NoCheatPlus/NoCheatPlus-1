@@ -19,20 +19,33 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.attribute.AttributeModifier.Operation;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AttribUtil;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 public class NSBukkitAttributeAccess implements IAttributeAccess {
-
+    
     public NSBukkitAttributeAccess() {
         if (ReflectionUtil.getClass("org.bukkit.attribute.AttributeInstance") == null) {
             throw new RuntimeException("Service not available.");
         }
     }
-
+    
     private int operationToInt(final Operation operation) {
         switch (operation) {
             case ADD_NUMBER:
@@ -45,11 +58,11 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
                 throw new RuntimeException("Unknown operation: " + operation);
         }
     }
-
+    
     /**
      * The first modifier with the given id that can be found, or null if none
      * is found.
-     * 
+     *
      * @param attrInst
      * @param id
      * @return
@@ -62,21 +75,21 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
         }
         return null;
     }
-
+    
     private double getMultiplier(final AttributeModifier mod) {
         return AttribUtil.getMultiplier(operationToInt(mod.getOperation()), mod.getAmount());
     }
-
+    
     @Override
-    public double getSpeedAttributeMultiplier(final Player player) {
+    public double getSpeedMultiplier(final Player player) {
         final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         final double val = attrInst.getValue() / attrInst.getBaseValue();
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.NSID_SPRINT_BOOST);
         return mod == null ? val : (val / getMultiplier(mod));
     }
-
+    
     @Override
-    public double getSprintAttributeMultiplier(final Player player) {
+    public double getSprintMultiplier(final Player player) {
         final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.NSID_SPRINT_BOOST);
         return mod == null ? 1.0 : getMultiplier(mod);
@@ -85,7 +98,154 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     @Override
     public float getMovementSpeed(final Player player) {
         // / by 2 to get the base value 0.1f
-        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
+        return (player.getWalkSpeed() / 2f) * (float) getSpeedMultiplier(player);
     }
     
+    @Override
+    public double getGravity(final Player player) {
+        double gravity;
+        if (!BridgeMisc.hasGravity(player)) {
+            return 0.0;
+        }
+        final PlayerMoveData thisMove = DataManager.getPlayerData(player).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_GRAVITY);
+        // Fail-safe.
+        if (attrInst == null) {
+            gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
+        }
+        else gravity = MathUtil.clamp(attrInst.getValue(), -1.0, 1.0);
+        if (thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player))) {
+            gravity = Math.min(gravity, Magic.SLOW_FALL_GRAVITY);
+        }
+        return gravity;
+    }
+    
+    @Override
+    public double getSafeFallDistance(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SAFE_FALL_DISTANCE);
+        // Fail-safe
+        if (attrInst == null) return Magic.FALL_DAMAGE_DIST;
+        return MathUtil.clamp(attrInst.getValue(), -1024.0, 1024.0);
+    }
+    
+    @Override
+    public double getFallDamageMultiplier(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_FALL_DAMAGE_MULTIPLIER);
+        // Fail-safe
+        if (attrInst == null) return 1.0;
+        return MathUtil.clamp(attrInst.getValue(), 1.0, 100.0);
+    }
+    
+    @Override
+    public double getBreakingSpeedMultiplier(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
+        // Fail-safe
+        if (attrInst == null) return 1.0;
+        return  MathUtil.clamp(attrInst.getValue(), 1.0, 1024.0);
+    }
+    
+    @Override
+    public double getJumpGainMultiplier(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_JUMP_STRENGTH);
+        // Fail-safe
+        if (attrInst == null) return 1.0;
+        // Convert it to a multiplier, because we use our own handling for jumping motion.
+        final double toMultiplier = attrInst.getValue() / attrInst.getBaseValue();
+        return MathUtil.clamp(toMultiplier, 0.0, 76.19047619047619); // MathUtil.clamp(attrInst.getValue(), 0.0, 32.0);
+    }
+    
+    @Override
+    public double getPlayerSneakingFactor(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_SNEAKING_SPEED);
+        // Fail-safe.
+        if (attrInst == null) return Magic.SNEAK_MULTIPLIER + BridgeEnchant.getSwiftSneakIncrement(player);
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 1.0);
+    }
+    
+    @Override
+    public double getPlayerMaxBlockReach(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_INTERACTION_RANGE);
+        // Fail-safe
+        if (attrInst == null) return 4.5;
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
+    }
+    
+    @Override
+    public double getPlayerMaxAttackReach(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
+        // Fail-safe
+        if (attrInst == null) return 3.0;
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
+    }
+    
+    @Override
+    public double getMaxStepUp(final Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_STEP_HEIGHT);
+        if (attrInst == null) {
+            // Fail-safe.
+            if (player.isInsideVehicle()) {
+                if (player.getVehicle() != null && player.getVehicle().getType().equals(EntityType.BOAT)) {
+                    return 0.0;
+                }
+                return 1.0;
+            }
+            final MovingConfig cc = DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class);
+            return cc.sfStepHeight;
+        }
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 10.0);
+    }
+    
+    @Override
+    public float getMovementEfficiency(Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_EFFICIENCY);
+        // Fail-safe.
+        if (attrInst == null) return 0.0f;
+        return (float) MathUtil.clamp(attrInst.getValue(), 0.0, 1.0);
+    }
+    
+    @Override
+    public float getWaterMovementEfficiency(Player player) {
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_8)) {
+            // Doesn't exist.
+            return 0f;
+        }
+        final float depthStrider = BridgeEnchant.getDepthStriderLevel(player);
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_21)) {
+            // Use the legacy method.
+            return depthStrider;
+        }
+        if (ServerVersion.isLowerThan("1.21")) {
+            // Simulate what ViaVersion does for newer (1.21 clients) on older (1.21-) servers.
+            return depthStrider / 3.0f;
+        }
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_WATER_MOVEMENT_EFFICIENCY);
+        if (attrInst == null) return 0.0f;
+        return (float) MathUtil.clamp(attrInst.getValue(), 0.0f, 1.0f);
+    }
+    
+    @Override
+    public double getSubmergedMiningSpeedMultiplier(Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_SUBMERGED_MINING_SPEED);
+        // Fail-safe.
+        if (attrInst == null) return 1.0;
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 20.0);
+    }
+    
+    @Override
+    public double getMiningEfficiency(Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_MINING_EFFICIENCY);
+        // Fail-safe.
+        if (attrInst == null) return 0.0;
+        return MathUtil.clamp(attrInst.getValue(), 0.0, 1024.0);
+    }
+    
+    @Override
+    public double getEntityScale(Player player) {
+        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SCALE);
+        // Fail-safe.
+        if (attrInst == null) return 1.0;
+        return MathUtil.clamp(attrInst.getValue(), 0.0625, 16.0);
+        
+    }
 }

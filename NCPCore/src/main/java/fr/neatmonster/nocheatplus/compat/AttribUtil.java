@@ -31,8 +31,18 @@ public class AttribUtil {
     public static final UUID ID_SOUL_SPEED = IdUtil.UUIDFromString("87f46a96-686f-4796-b035-22e16ee9e038");
     /** The Constant ID_POWDER_SNOW. */
     public static final UUID ID_POWDER_SNOW = IdUtil.UUIDFromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
-    public static final NamespacedKey NSID_SPRINT_BOOST = new NamespacedKey("minecraft", "sprinting");
-
+    public static final NamespacedKey NSID_SPRINT_BOOST;
+    
+    static {
+        NamespacedKey springBoost;
+        try {
+            springBoost = NamespacedKey.minecraft("sprinting");
+        } catch (NoClassDefFoundError ignored) {
+            springBoost = null;
+        }
+        NSID_SPRINT_BOOST = springBoost;
+    }
+    
     /**
      * Get a multiplier for an AttributeModifier.
      *

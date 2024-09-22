@@ -25,17 +25,87 @@ import org.bukkit.entity.Player;
 public class DummyAttributeAccess implements IAttributeAccess {
 
     @Override
-    public double getSpeedAttributeMultiplier(Player player) {
+    public double getSpeedMultiplier(Player player) {
         return Double.MAX_VALUE;
     }
 
     @Override
-    public double getSprintAttributeMultiplier(Player player) {
+    public double getSprintMultiplier(Player player) {
         return Double.MAX_VALUE;
     }
     
     @Override
-    public float getMovementSpeed(final Player player) {
+    public float getMovementSpeed(Player player) {
     	return Float.MAX_VALUE;
+    }
+    
+    @Override
+    public double getGravity(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getSafeFallDistance(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getFallDamageMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getBreakingSpeedMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getJumpGainMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerSneakingFactor(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerMaxBlockReach(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getPlayerMaxAttackReach(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getMaxStepUp(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public float getMovementEfficiency(Player player) {
+        return Float.MAX_VALUE;
+    }
+    
+    @Override
+    public float getWaterMovementEfficiency(Player player) {
+         return Float.MAX_VALUE;
+    }
+    
+    @Override
+    public double getSubmergedMiningSpeedMultiplier(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getMiningEfficiency(Player player) {
+        return Double.MAX_VALUE;
+    }
+    
+    @Override
+    public double getEntityScale(Player player) {
+        return Double.MAX_VALUE;
     }
 }

@@ -34,6 +34,7 @@ import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.InteractAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
+import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 import fr.neatmonster.nocheatplus.utilities.map.WrapBlockCache;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
@@ -91,22 +92,22 @@ public class Visible extends Check {
         // Determine the entity's bounding box dimensions
         final double[] AABB = AxisAlignedBBUtils.createAABBAtHorizontalResolution(damaged, dLoc);
 
-        // Determine the player's eye position
+        // Determine the attacker's eye position
         final double eyeX = loc.getX();
         final double eyeY = loc.getY() + MovingUtil.getEyeHeight(player);
         final double eyeZ = loc.getZ();
 
-        // Calculate the block coordinates for the bounding box
-        final int dBX = Location.locToBlock(dLoc.getX());
-        final int dBY = Location.locToBlock(dLoc.getY());
-        final int dBZ = Location.locToBlock(dLoc.getZ());
+        // Convert the Location of the damaged entity to block coordinates.
+        final int damagedToBlockX = Location.locToBlock(dLoc.getX());
+        final int damagedToBlockY = Location.locToBlock(dLoc.getY());
+        final int damagedToBlockZ = Location.locToBlock(dLoc.getZ());
 
         // Calculate the start and end coordinates for collision detection
         final BlockCoord sCollidingBox = new BlockCoord(AABB[0], AABB[1], AABB[2]);
         final BlockCoord eCollidingBox = new BlockCoord(AABB[3], AABB[4], AABB[5]);
 
         // Check if the player is inside the damaged entity's bounding box
-        if (CollisionUtil.isInsideAABBIncludeEdges(eyeX, eyeY, eyeZ, AABB[0], AABB[1], AABB[2], AABB[3], AABB[4], AABB[5])) {
+        if (AxisAlignedBBUtils.isInsideAABBIncludeEdges(eyeX, eyeY, eyeZ, AABB)) {
             // Player is inside the damaged entity, return
             return cancel;
         }
@@ -114,37 +115,59 @@ public class Visible extends Check {
         final BlockCache blockCache = this.wrapBlockCache.getBlockCache();
         blockCache.setAccess(loc.getWorld());
         rayTracing.setBlockCache(blockCache);
+        // Perform a first ray trace check between the location of the damaged player and attacker's eye position.
         rayTracing.set(dLoc.getX(), dLoc.getY(), dLoc.getZ(), eyeX, eyeY, eyeZ);
-        rayTracing.loop();
+        rayTracing.loop(); // Run it once.
+        // Did the ray collide with something in between at all?
         if (rayTracing.collides()) {
+            // An initial collision between attacker and target was detected. Check if the player might still have a legitimate line of sight to the entity
             cancel = true;
-            BlockCoord bc = new BlockCoord(dBX, dBY, dBZ);
-            Vector direction = new Vector(eyeX - dBX, eyeY - dBY, eyeZ - dBZ).normalize();
-            boolean canContinue;
+            // Block from which neighbours are determined.
+            BlockCoord sourceBlock = new BlockCoord(damagedToBlockX, damagedToBlockY, damagedToBlockZ);
+            // The direction is initially determined from attacker's eye to the block location of the target.
+            Vector direction = new Vector(eyeX - damagedToBlockX, eyeY - damagedToBlockY, eyeZ - damagedToBlockZ).normalize();
+            // Indicates that the process should continue because a possible alternative path for the ray to pass through has been found.
+            boolean alternativePathExists;
+            // To avoid redundant processing...
             Set<BlockCoord> visited = new HashSet<>();
             RichAxisData axisData = new RichAxisData(Axis.NONE, Direction.NONE);
             do {
-                canContinue = false;
-                for (BlockCoord neighbor : CollisionUtil.getNeighborsInDirection(bc, direction, eyeX, eyeY, eyeZ, axisData)) {
-                    if (CollisionUtil.canPassThrough(rayTracing, blockCache, bc, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, MovingUtil.getEyeHeight(player), sCollidingBox, eCollidingBox, false, axisData) 
-                        && CollisionUtil.correctDir(neighbor.getY(), dBY, Location.locToBlock(eyeY), sCollidingBox.getY(), eCollidingBox.getY()) 
+                alternativePathExists = false;
+                // Gather all neighbouring blocks that can be interacted with, starting from the origin block and the given direction.
+                for (BlockCoord neighbor : MapUtil.getNeighborsInDirection(sourceBlock, direction, eyeX, eyeY, eyeZ, axisData)) {
+                    // Can the ray pass through from source block to this neighbour in this direction?
+                    if (CollisionUtil.canPassThrough(rayTracing, blockCache, sourceBlock, neighbor.getX(), neighbor.getY(), neighbor.getZ(), direction, eyeX, eyeY, eyeZ, MovingUtil.getEyeHeight(player), sCollidingBox, eCollidingBox, false, axisData) 
+                        && CollisionUtil.correctDir(neighbor.getY(), damagedToBlockY, Location.locToBlock(eyeY), sCollidingBox.getY(), eCollidingBox.getY()) 
                         && !visited.contains(neighbor)) {
+                        // It can.
                         if (TrigUtil.isSameBlock(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ)) {
+                            // Attacker is interacting with the block their head is in, allow the hit.
                             cancel = false;
                             break;
                         }
+                        // This block has been processed, add it to the list so that we don't check it again.
                         visited.add(neighbor);
+                        // Then, update the ray-trace from the attacker's eye to this neighbour.
                         rayTracing.set(neighbor.getX(), neighbor.getY(), neighbor.getZ(), eyeX, eyeY, eyeZ);
-                        rayTracing.loop();
-                        canContinue = true;
+                        rayTracing.loop(); // Run the check once
+                        // Signal that, although there was a collision with the direct line of sight of the player, an alternative path leading to a visible target exist.
+                        alternativePathExists = true;
+                        // If false, it means that this path allows the player to see the attacked entity, so no further looping is needed.
+                        // If true, this updated path would lead to a collision, and the loop is allowed to continue to inspect further paths.
                         cancel = rayTracing.collides();
-                        bc = new BlockCoord(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+                        // Update the source block and the direction.
+                        sourceBlock = new BlockCoord(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+                        // The direction is then updated from the attacker's eye to this neighbour block
                         direction = new Vector(eyeX - neighbor.getX(), eyeY - neighbor.getY(), eyeZ - neighbor.getZ()).normalize();
                         break;
                     }
                 }
             } 
-            while (cancel && canContinue);
+            // (Initial ray did not collide, the entity was fully visible then)
+            /*
+             * As long as a collision is detected (cancel = true) and there's a valid line of sight/path (alternativePathExists = true), the loop is allowed to continue, until all paths/line of sights options are exhausted.
+             */
+            while (cancel && alternativePathExists);
         }
         if (rayTracing.getStepsDone() > rayTracing.getMaxSteps()) {
             cancel = true;

@@ -35,6 +35,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
@@ -43,6 +44,8 @@ import fr.neatmonster.nocheatplus.checks.moving.model.LocationData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.*;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.components.registry.feature.TickListener;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
@@ -52,6 +55,8 @@ import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
+
+
 
 /**
  * A check to see if people cheat by tricking the server to not deal them fall damage.
@@ -72,7 +77,10 @@ public class NoFall extends Check {
     /** For temporary use: LocUtil.clone before passing deeply, call setWorld(null) after use. */
     private final Location useLoc = new Location(null, 0, 0, 0);
     private final Location useLoc2 = new Location(null, 0, 0, 0);
-
+    
+    private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
+    
+    
     /**
      * Instantiates a new no fall check.
      */
@@ -83,12 +91,13 @@ public class NoFall extends Check {
 
     /**
      * Calculate the damage in hearts from the given fall distance.
-     * 
+     *
      * @param fallDistance
+     * @param player
      * @return
      */
-    public static double getDamage(final float fallDistance) {
-        return fallDistance - Magic.FALL_DAMAGE_DIST;
+    public static double getDamage(final float fallDistance, Player player) {
+        return fallDistance - attributeAccess.getHandle().getSafeFallDistance(player);
     }
 
 
@@ -109,9 +118,9 @@ public class NoFall extends Check {
         // Get the fall distance and modify it accordingly to the fallen on block (currently only related to pointed dripstone)
         float fallDist = getAndRunFallDistanceDependentTasks(player, y, previousSetBackY, data);
         // Calculate damage and apply all possible modifiers.
-        double maxDamage = getDamage(fallDist);
-        maxDamage = applyFeatherFalling(player, applyBlockDamageModifier(player, data, maxDamage), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide());
-        if (maxDamage >= Magic.FALL_DAMAGE_MINIMUM) {
+        double maxDamage = getDamage(fallDist, player);
+        maxDamage = applyFeatherFalling(player, applyBlockDamageModifier(player, data, maxDamage), mcAccess.getHandle().dealFallDamageFiresAnEvent().decide()) * attributeAccess.getHandle().getFallDamageMultiplier(player);
+        if (maxDamage >= Magic.MINIMUM_FALL_DAMAGE) {
             // Check skipping conditions.
             if (cc.noFallSkipAllowFlight && player.getAllowFlight()) {
                 data.clearNoFallData();
@@ -119,7 +128,6 @@ public class NoFall extends Check {
                 // Not resetting the fall distance here, let Minecraft or the issue tracker deal with that.
             }
             else {
-                // TODO: more effects like sounds, maybe use custom event with violation added.
                 if (pData.isDebugActive(type)) {
                     debug(player, "NoFall deal damage" + (reallyOnGround ? "" : "violation") + ": " + maxDamage);
                 }
@@ -146,12 +154,13 @@ public class NoFall extends Check {
         // TODO: Need move data pTo, this location isn't updated
         Block block = player.getLocation(useLoc2).subtract(0.0, 1.0, 0.0).getBlock();
         final IPlayerData pData = DataManager.getPlayerData(player);
+        
         // Falling on farmland has a chance of trampling it (wasn't always the case. On legacy versions, just walking on crops would have been enough to trample them :) )
         if (block.getType() == BridgeMaterial.FARMLAND && fallDist > 0.5 && ThreadLocalRandom.current().nextFloat() < fallDist - 0.5) {
             final BlockState newState = block.getState();
             newState.setType(Material.DIRT);
             if (canChangeBlock(player, block, newState, true, true, true)) {
-                // Move up a little bit in order not to get stuck in the block
+                // Move up a little bit in order to not get stuck in the block
                 player.setVelocity(new Vector(player.getVelocity().getX() * -1, 0.062501, player.getVelocity().getZ() * -1));
                 block.setType(Material.DIRT);
                 if (pData.isDebugActive(type)) {
@@ -161,7 +170,7 @@ public class NoFall extends Check {
             useLoc2.setWorld(null);
             return fallDist;
         }
-        // 1.13+ Falling on turtle eggs has a chance of breaking them.
+        // 1.13+: Falling on turtle eggs has a chance of breaking them.
         if (Bridge1_13.hasIsSwimming() && block.getType() == Material.TURTLE_EGG && ThreadLocalRandom.current().nextInt(3) == 0) {
             final TurtleEgg egg = (TurtleEgg) block.getBlockData();
             final BlockState newState = block.getState();
@@ -169,7 +178,7 @@ public class NoFall extends Check {
                 if (egg.getEggs() - 1 > 0) {
                     egg.setEggs(egg.getEggs() - 1);
                 } 
-                else block.setType(Material.AIR); // What about Cave air? (i.e.: with eggs being inside of a cave)
+                else block.setType(Material.AIR); // What about Cave air? (i.e.: with eggs being inside a cave)
                 if (pData.isDebugActive(type)) {
                     debug(player, "Apply block-state change workaround for TURTLE_EGG.");
                 }
@@ -178,6 +187,7 @@ public class NoFall extends Check {
             return fallDist;
         }
         // 1.17+ Falling on stalagmites will multiply the fall DISTANCE (not DAMAGE) by x2, making the player vulnerable to fall damage even by just jumping on such a block
+        // TODO: Needs the supporting block mechanic in 1.20.
         final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
         if (BridgeMisc.hasIsFrozen() && validMove != null && validMove.toIsValid && fallDist > 0.0) {
             final Block fallenOnBlock = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ()));
@@ -199,10 +209,10 @@ public class NoFall extends Check {
         // (save performance, less code but packet dependent and precise ground state requirement)
         // or still maintain it
         // (lot of tracking stuffs for impulse, change blocks on land, damage recalculation -> degraded efficiency but packet independent
-        if (fallDist - Magic.FALL_DAMAGE_DIST > 0.0 && data.noFallCurrentLocOnWindChargeHit != null) {
-            final double lastImpluseY = data.noFallCurrentLocOnWindChargeHit.getY();
+        if (fallDist - attributeAccess.getHandle().getSafeFallDistance(player) > 0.0 && data.noFallCurrentLocOnWindChargeHit != null) {
+            final double lastImpulseY = data.noFallCurrentLocOnWindChargeHit.getY();
             data.clearWindChargeImpulse();
-            fallDist = (float) (lastImpluseY < y ? 0.0 : lastImpluseY - y);
+            fallDist = (float) (lastImpulseY < y ? 0.0 : lastImpulseY - y);
         }
         useLoc2.setWorld(null);
         return fallDist;
@@ -297,7 +307,6 @@ public class NoFall extends Check {
 
     /**
      * Modify the given fall-damage according to what block the player fell on.<br>
-     * (Not to be confused with fallOn(), which is related to fall-distance)
      *
      * @param player
      * @param data
@@ -308,6 +317,7 @@ public class NoFall extends Check {
         final PlayerMoveData validMove = data.playerMoves.getLatestValidMove();
         if (validMove != null && validMove.toIsValid) {
             // TODO: Need move data pTo, this location isn't updated
+            // TODO: Needs the supporting block mechanic in 1.20.
             final Material mat = player.getWorld().getBlockAt(Location.locToBlock(validMove.to.getX()), Location.locToBlock(validMove.to.getY()), Location.locToBlock(validMove.to.getZ())).getType();
             if ((BlockFlags.getBlockFlags(mat) & BlockFlags.F_STICKY) != 0) {
                 return damage / 5D;
@@ -367,7 +377,7 @@ public class NoFall extends Check {
      * @return
      */
     public boolean willDealFallDamage(final Player player, final double y, final double previousSetBackY, final MovingData data) {
-        return getDamage((float) getApplicableFallHeight(player, y, previousSetBackY, data)) - Magic.FALL_DAMAGE_DIST >= Magic.FALL_DAMAGE_MINIMUM;
+        return getDamage((float) getApplicableFallHeight(player, y, previousSetBackY, data), player) - attributeAccess.getHandle().getSafeFallDistance(player) >= Magic.MINIMUM_FALL_DAMAGE;
     }
 
 
@@ -377,15 +387,13 @@ public class NoFall extends Check {
      * @param minY
      * @param reallyOnGround
      * @param data
-     * @param cc
      */
-    private void adjustFallDistance(final Player player, final double minY, final boolean reallyOnGround, 
-                                    final MovingData data, final MovingConfig cc) {
+    private void adjustFallDistance(final Player player, final double minY, final boolean reallyOnGround, final MovingData data) {
         final float noFallFallDistance = Math.max(data.noFallFallDistance, (float) (data.noFallMaxY - minY));
-        if (noFallFallDistance >= Magic.FALL_DAMAGE_DIST) {
+        if (noFallFallDistance >= attributeAccess.getHandle().getSafeFallDistance(player)) {
             final float fallDistance = player.getFallDistance();
             if (noFallFallDistance - fallDistance >= 0.5f // TODO: Why not always adjust, if greater?
-                || noFallFallDistance >= Magic.FALL_DAMAGE_DIST && fallDistance < Magic.FALL_DAMAGE_DIST) { // Ensure damage.
+                || noFallFallDistance >= attributeAccess.getHandle().getSafeFallDistance(player) && fallDistance < attributeAccess.getHandle().getSafeFallDistance(player)) { // Ensure damage.
                 player.setFallDistance(noFallFallDistance);
             }
         }
@@ -487,7 +495,7 @@ public class NoFall extends Check {
             // Just reset.
             data.clearNoFallData();
             // Ensure very big/strange moves don't yield violations.
-            if (toY - fromY <= -Magic.FALL_DAMAGE_DIST) {
+            if (toY - fromY <= -attributeAccess.getHandle().getSafeFallDistance(player)) {
                 data.noFallSkipAirCheck = true;
             }
         }
@@ -495,7 +503,7 @@ public class NoFall extends Check {
             // Check if to deal damage (fall back damage check).
             touchDown(player, minY, previousSetBackY, data, cc, pData); // Includes the current y-distance on descend!
             // Ensure very big/strange moves don't yield violations.
-            if (toY - fromY <= -Magic.FALL_DAMAGE_DIST) {
+            if (toY - fromY <= -attributeAccess.getHandle().getSafeFallDistance(player)) {
                 data.noFallSkipAirCheck = true;
             }
         }
@@ -567,7 +575,7 @@ public class NoFall extends Check {
         if (cc.noFallDealDamage) {
             handleOnGround(player, minY, previousSetBackY, true, data, cc, pData);
         }
-        else adjustFallDistance(player, minY, true, data, cc);
+        else adjustFallDistance(player, minY, true, data);
     }
 
 

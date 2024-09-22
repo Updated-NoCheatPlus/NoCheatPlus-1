@@ -25,7 +25,8 @@ import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 
 /**
- * Utility methods for dealing with axis-aligned bounding boxes.
+ * Utility methods for dealing with axis-aligned bounding boxes <br>
+ * (A bounding box defined by its minimum and maximum corner coordinates in a 3D space)
  */
 public class AxisAlignedBBUtils {
     
@@ -33,7 +34,7 @@ public class AxisAlignedBBUtils {
     
     /**
      * Infers a new axis-aligned bounding box from the given Entity's NMS width and height parameters.
-     * This method calculates the bounding box centered at the specified location with the entity's dimensions.
+     * This method calculates the bounding box centered at its location and dimensions.
      *
      * @param entity The entity for which to calculate the AABB
      * @return A new array of doubles containing the entity's AABB coordinates in the following order:
@@ -53,7 +54,7 @@ public class AxisAlignedBBUtils {
     
     /**
      * Infers a new axis-aligned bounding box from the given Entity's NMS width and height parameters.
-     * This method calculates the bounding box centered at the specified location with the entity's dimensions.
+     * This method calculates the bounding box centered at its location and dimensions.
      * <p>The width resolution is adjusted to 0.5 units by rounding to the nearest half unit.</p>
      *
      * @param entity The entity for which to calculate the AABB
@@ -78,8 +79,7 @@ public class AxisAlignedBBUtils {
      * Moves am AABB by the specified translation vector.
      * <p>This method adjusts the positions of each bounding box by adding the given offsets in the X, Y, and Z directions. 
      * The input array is assumed to contain multiple AABBs, each defined by 6 consecutive values representing the 
-     * minimum and maximum coordinates in the X, Y, and Z dimensions. The method returns a new array with the translated
-     * bounding boxes.
+     * minimum and maximum coordinates in the X, Y, and Z dimensions. 
      *
      * @param AABB An array of bounding boxes.
      * @param x The translation offset in the X direction.
@@ -106,10 +106,9 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Expands or contracts an axis-aligned bounding box to ensure it includes a specified coordinate point.
+     * Expands an axis-aligned bounding box to ensure it includes a specified coordinate point.
      *
-     * <p>The bounding box is adjusted based on the provided coordinate point `(x, y, z)`. If the point is outside the current
-     * bounds of the AABB, the method expands the bounding box to include this point. If the point is within the current bounds, 
+     * <p> If the point is outside the current bounds of the AABB, the method expands the bounding box to include this point. If the point is within the current bounds, 
      * the AABB remains unchanged. The adjustments are made only in the directions where necessary:
      * <ul>
      *   <li>If `x` is less than the current minimum X, the minimum X boundary is adjusted.</li>
@@ -274,17 +273,23 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Test if a single bounding box collides with a block bounding box
-     * 
-     * @param rawAABB Bounding box of a block. Can be complex (read as: formed by multiple bounding boxes)
-     * @param x Coordinate of block
-     * @param y Coordinate of block
-     * @param z Coordinate of block
-     * @param sAABB Single bounding box to check. If given a complex block, only the primary AABB is checked.
-     * @param allowEdge If to allow collision with the edges of the AABB
-     * @return True, if it collides.
+     * Checks if a single axis-aligned bounding box (AABB) collides with any part of a block's bounding box.
+     *
+     * @param rawAABB An array representing the bounding box of a block. This can be a complex shape, 
+     *                represented by multiple AABBs, with each AABB defined by six consecutive elements 
+     *                in the array: [minX, minY, minZ, maxX, maxY, maxZ]. The length of the array must be 
+     *                a multiple of 6. If a complex shape with multiple bounding boxes is passed, only the primary bounding box (first six elements) will be considered for collision detection.
+     * @param x The coordinate of the block's position in the world.
+     * @param y        
+     * @param z        
+     * @param sAABB The single AABB to check for collision. This is defined by an array of six elements: 
+     *              [minX, minY, minZ, maxX, maxY, maxZ]. 
+     * @param allowEdge A boolean indicating whether collisions at the edges of the AABBs should be considered 
+     *                  as a valid collision. If true, an AABB touching the edge of the block's AABB will 
+     *                  be considered a collision.
+     * @return Returns {@code true} if the single AABB collides with any part of the block's AABB, taking into account the {@code allowEdge} flag. Otherwise, returns {@code false}.
      */
-    static boolean isCollided(final double[] rawAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge) {
+    public static boolean isCollided(final double[] rawAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge) {
         if (rawAABB != null && sAABB != null && rawAABB.length % 6 == 0) {
             for (int i = 1; i <= (int)rawAABB.length / 6; i++) {
 
@@ -306,11 +311,12 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * All dimensions 0 ... 1.
+     * Checks if the provided block bounds represent a full block, where all dimensions
+     * are either 0 or 1.
      *
-     * @param bounds
-     *            Block bounds: minX, minY, minZ, maxX, maxY, maxZ
-     * @return true, if is full bounds
+     * @param bounds An array representing the block bounds in the order: minX, minY, minZ, maxX, maxY, maxZ.
+     * @return {@code true} if the bounds represent a full block (i.e., [0, 0, 0, 1, 1, 1]), 
+     *         {@code false} otherwise. Returns {@code false} if the bounds array is {@code null}.
      */
     public static final boolean isFullBounds(final double[] bounds) {
         if (bounds == null) return false;
@@ -323,29 +329,70 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Check if the bounds are the same. With null checks.
+     * Compares two sets of block bounds to determine if they are identical.
+     * This includes a null check to ensure both arrays are either non-null
+     * and identical, or both are null.
      *
-     * @param bounds1
-     *            the bounds1
-     * @param bounds2
-     *            the bounds2
-     * @return True, if the shapes have the exact same bounds, same if both are
-     *         null. In case of one parameter being null, false is returned,
-     *         even if the other is a full block.
+     * @param bounds1 The first block bounds array.
+     * @param bounds2 The second block bounds array.
+     * @return {@code true} if both bounds arrays are identical or both are {@code null}. 
+     *         Returns {@code false} if one of the bounds is {@code null} or if the arrays 
+     *         have differing values. Note: a full block in one array will not be considered
+     *         equal to a {@code null} array.
      */
     public static final boolean isSameShape(final double[] bounds1, final double[] bounds2) {
-        // TODO: further exclude simple full shape blocks, or confine to itchy block types
-        // TODO: make flags for it.
         if (bounds1 == null || bounds2 == null) {
             return bounds1 == bounds2;
         }
-        // Allow as ground for differing shapes.
         for (int i = 0; i < 6; i++) {
             if (bounds1[i] != bounds2[i]) {
-                // Simplistic.
                 return false;
             }
         }
         return true;
+    }
+    
+    /**
+     * Checks if the given point(specified by its x, y, z coordinates) lies within or on the edges of the AABB.
+     *
+     * @param x Position of the point.
+     * @param y
+     * @param z
+     * @param minX Minimum coordinates of the AABB.
+     * @param minY
+     * @param minZ
+     * @param maxX Maximum coordinates of the AABB.
+     * @param maxY
+     * @param maxZ
+     * @return {@code true} if the point lies inside or on the edges of the AABB; {@code false} otherwise.
+     */
+    public static boolean isInsideAABBIncludeEdges(final double x, final double y, final double z,
+                                                   final double minX, final double minY, final double minZ,
+                                                   final double maxX, final double maxY, final double maxZ) {
+        return !(x < minX || x > maxX || z < minZ || z > maxZ || y < minY || y > maxY);
+    }
+    
+    /**
+     * Checks if the given point (specified by its x, y, z coordinates) lies within or on the edges of the AABB.
+     *
+     * @param x Position of the point.
+     * @param y        
+     * @param z     
+     * @param AABB The axis-aligned bounding box represented as a double array with 6 elements:
+     *             [minX, minY, minZ, maxX, maxY, maxZ].
+     * @return {@code true} if the point lies inside or on the edges of the AABB; {@code false} otherwise.
+     * @throws IllegalArgumentException if the bounds array does not contain exactly 6 elements.
+     */
+    public static boolean isInsideAABBIncludeEdges(final double x, final double y, final double z, final double[] AABB) {
+        if (AABB == null || AABB.length != 6) {
+            throw new IllegalArgumentException("Bounds array must contain exactly 6 elements.");
+        }
+        final double minX = AABB[0];
+        final double minY = AABB[1];
+        final double minZ = AABB[2];
+        final double maxX = AABB[3];
+        final double maxY = AABB[4];
+        final double maxZ = AABB[5];
+        return isInsideAABBIncludeEdges(x, y, z, minX, minY, minZ, maxX, maxY, maxZ);
     }
 }

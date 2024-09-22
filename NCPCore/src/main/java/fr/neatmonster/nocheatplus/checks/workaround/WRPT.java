@@ -37,7 +37,6 @@ public class WRPT extends SimpleWorkaroundRegistry {
     // MOVING_SURVIVALFLY
     public static final String W_M_SF_TOUCHDOWN = "m.sf.touch_down_collision";
     public static final String W_M_SF_HEAD_OBSTRUCTION = "m.sf.head_obstruction_collision";
-    public static final String W_M_SF_PREPARE_TO_DESCEND ="m.sf.preparing_to_descend";
     public static final String W_M_SF_COULD_BE_SETBACK_LOOP = "m.sf.could_be_setback_loop";
     public static final String W_M_SF_LANDING_ON_PWDSNW_FALLDIST_25 = "m.sf.pwdsnw_landing_2.5_falldist";
     public static final String W_M_SF_POST_LOSTGROUND_CASE = "m.sf.after_lostground";
@@ -104,7 +103,6 @@ public class WRPT extends SimpleWorkaroundRegistry {
                 W_M_V_ENV_INWATER_BTS,
                 W_M_SF_LANDING_ON_PWDSNW_FALLDIST_25,
                 W_M_SF_COULD_BE_SETBACK_LOOP,
-                W_M_SF_PREPARE_TO_DESCEND,
                 W_M_SF_HEAD_OBSTRUCTION,
                 W_M_SF_TOUCHDOWN,
                 W_M_SF_LEVITATION_1_8_CLIENT,

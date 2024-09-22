@@ -20,6 +20,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.BubbleColumn;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeReference;
@@ -147,7 +149,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     Boolean onBouncyBlock = null;
 
     /** Is the player in a bubblestream? */
-    Boolean inBubblestream = null;
+    Boolean inBubbleStream = null;
 
 
     // "Heavy" object members that need to be set to null on cleanup. //    
@@ -225,7 +227,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Gets the vector.
+     * Gets the entity's position as a new Vector instance (disregarding rotation)
      *
      * @return the vector
      */
@@ -582,17 +584,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public final BlockCache getBlockCache() {
         return blockCache;
     }
-
-    /**
-     * Check if the player is in liquid within a given margin.
-     * 
-     * @param yMargin y margin to contract the player's bounding box with vertically.
-     * @return 
-     */
-    public boolean isSubmerged(final double yMargin) {
-        return BlockProperties.collides(blockCache, minX, minY + yMargin, minZ, maxX, maxY, maxZ, BlockFlags.F_LIQUID);
-    }
-
+    
     /**
      * Check if blocks with the attached flags hit the box.
      *
@@ -603,32 +595,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isNextToBlock(final double xzMargin, final long flags) {
         return BlockProperties.collides(blockCache, minX - xzMargin, minY, minZ - xzMargin, maxX + xzMargin, maxY, maxZ + xzMargin, flags);
-    }
-
-    /**
-     * Check if ground-like blocks hit the box.
-     *
-     * @param xzMargin
-     *            the xz margin
-     * @param yMargin
-     *            the y margin
-     * @return true, if is next to ground
-     */
-    public boolean isNextToGround(final double xzMargin, final double yMargin) {
-        return BlockProperties.collides(blockCache, minX - xzMargin, minY - yMargin, minZ - xzMargin, maxX + xzMargin, maxY + yMargin, maxZ + xzMargin, BlockFlags.F_GROUND);
-    }
-
-    /**
-     * Check if solid blocks hit the box.
-     *
-     * @param xzMargin
-     *            the xz margin
-     * @param yMargin
-     *            the y margin
-     * @return true, if is next to ground
-     */
-    public boolean isNextToSolid(final double xMargin, final double zMargin) {
-        return BlockProperties.collides(blockCache, minX - xMargin, minY, minZ - zMargin, maxX + xMargin, maxY, maxZ + zMargin, BlockFlags.F_SOLID);
     }
     
     /**
@@ -728,6 +694,69 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             }
         }
         return inLava;
+    }
+    
+    /**
+     * From Entity.java -> onAboveBubbleCol/onInsideBubbleColumn() and BlockBubbleColumn.java -> entityInside().<br>
+     * <p>This method checks whether the entity is within a bubble stream. If so, it determines
+     * if there is air above the column and whether the column is drag or not.</p>
+     * <hr>
+     * The server applies bubble column motion on calling the tryCheckInsideBlocks() method in Entity.java
+     *
+     * @param vector The current motion Vector of the entity.
+     * @return The modified motion Vector with adjusted vertical motion due to bubble column effects.
+     */
+    public Vector tryApplyBubbleColumnMotion(Vector vector) {
+        if (!isInBubbleStream()) {
+            // Client-version checking is already contained in isInBubbleStream.
+            return vector;
+        }
+        // This (redundant) collision check is needed because the block above is checked during the looping done in tryCheckInsideBlock() -> checkInsideBlocks() in Entity.java
+        // TODO: Clean-up pending...
+        boolean airAbove = false;
+        boolean isDrag = false;
+        final int iMinX = Location.locToBlock(minX + 0.001);
+        final int iMaxX = Location.locToBlock(maxX + 0.001);
+        final int iMinY = Location.locToBlock(minY + 0.001); // Fuck fences.
+        final int iMaxY = Math.min(Location.locToBlock(maxY - 0.001), blockCache.getMaxBlockY());
+        final int iMinZ = Location.locToBlock(minZ - 0.001);
+        final int iMaxZ = Location.locToBlock(maxZ - 0.001);
+        for (int x = iMinX; x <= iMaxX; x++) {
+            for (int z = iMinZ; z <= iMaxZ; z++) {
+                for (int y = iMaxY; y >= iMinY; y--) {
+                    // Set if above is clear
+                    IBlockCacheNode node = blockCache.getBlockCacheNode(x, y + 1, z);
+                    airAbove = BlockProperties.isAir(node.getType());
+                    // Set whether this column can drag players.
+                    BlockData data = world.getBlockAt(x, y, z).getBlockData(); // Mh. Heavy on performance.
+                    if (data instanceof BubbleColumn) {
+                        isDrag = ((BubbleColumn)data).isDrag();
+                    }
+                }
+            }
+        }
+        double yMotion;
+        if (airAbove) {
+            // Above the column
+            if (isDrag) {
+                yMotion = Math.max(-0.9D, vector.getY() - 0.03D);
+            }
+            else {
+                yMotion = Math.min(1.8D, vector.getY() + 0.1D);
+            }
+            vector = new Vector(vector.getX(), yMotion, vector.getZ());
+        }
+        else {
+            // Fully inside
+            if (isDrag) {
+                yMotion = Math.max(-0.3D, vector.getY() - 0.03D);
+            }
+            else {
+                yMotion = Math.min(0.7D, vector.getY() + 0.06D);
+            }
+            vector = new Vector(vector.getX(), yMotion, vector.getZ());
+        }
+        return vector;
     }
 
     /**
@@ -946,7 +975,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             else {
                 final Material typeId = getTypeIdBelow();
                 final long theseFlags = BlockFlags.getBlockFlags(typeId);
-                onSlimeBlock = (theseFlags & BlockFlags.F_SLIME) != 0; // isSupportedBy(BlockFlags.F_SLIME);
+                onSlimeBlock = isOnGround() && (theseFlags & BlockFlags.F_SLIME) != 0; // isSupportedBy(BlockFlags.F_SLIME);
             } 
         }
         return onSlimeBlock;
@@ -991,13 +1020,13 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * @return true, if is a bubblestream
      */
     public boolean isInBubbleStream() {
-        if (inBubblestream == null) {
+        if (inBubbleStream == null) {
             if (blockFlags != null && (blockFlags & BlockFlags.F_BUBBLE_COLUMN) == 0) {
-                inBubblestream = false;
+                inBubbleStream = false;
             }
-            else inBubblestream = isInsideBlock(BlockFlags.F_BUBBLE_COLUMN);
+            else inBubbleStream = isInsideBlock(BlockFlags.F_BUBBLE_COLUMN);
         }
-        return inBubblestream;
+        return inBubbleStream;
      
     }
 
@@ -1442,8 +1471,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
                     if (entry != null && (minEntry == null || entry.id < minEntry.id)) {
                         // Check vs. coverDistance, exclude cases where the piston can't push that far.
                         if (coverDistance > 0.0 
-                            && coversDistance(x + blockFace.getModX(), y + blockFace.getModY(), z + blockFace.getModZ(), 
-                                              direction, coverDistance)) {
+                            && coversDistance(x + blockFace.getModX(), y + blockFace.getModY(), z + blockFace.getModZ(), direction, coverDistance)) {
                             minEntry = entry;
                         }
                     }
@@ -1560,7 +1588,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         this.inLava = other.isInLava();
         this.inWeb = other.isInWeb();
         this.inBerryBush = other.isInBerryBush();
-        this.inBubblestream = other.isInBubbleStream();
+        this.inBubbleStream = other.isInBubbleStream();
         this.onHoneyBlock = other.isOnHoneyBlock();
         this.onSlimeBlock = other.isOnSlimeBlock();
         this.onIce = other.isOnIce();
@@ -1631,7 +1659,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
         // Reset cached values.
         node = nodeBelow = null;
-        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand  = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubblestream = null;
+        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand  = onHoneyBlock = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable = passableBox = inBubbleStream = null;
         onGroundMinY = Double.MAX_VALUE;
         notOnGroundMaxY = Double.MIN_VALUE;
         blockFlags = null;

@@ -14,8 +14,18 @@
  */
 package fr.neatmonster.nocheatplus.utilities.map;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.InputMismatchException;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -27,7 +37,6 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Openable;
 import org.bukkit.block.data.Waterlogged;
-import org.bukkit.block.data.type.BubbleColumn;
 import org.bukkit.block.data.type.Snow;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
@@ -37,7 +46,13 @@ import org.bukkit.inventory.ItemStack;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
-import fr.neatmonster.nocheatplus.compat.*;
+import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
+import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.BridgePotionEffect;
+import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
@@ -53,7 +68,9 @@ import fr.neatmonster.nocheatplus.logging.Streams;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
-import fr.neatmonster.nocheatplus.utilities.collision.*;
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
+import fr.neatmonster.nocheatplus.utilities.collision.BlockPositionContainer;
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.ICollidePassable;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.PassableAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.PassableRayTracing;
@@ -505,8 +522,8 @@ public class BlockProperties {
             friction = Magic.WATER_VERTICAL_INERTIA;
         }
         else if (eLoc.isInLava()) {
-            double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, eLoc.getBlockX(), eLoc.getBlockY(), eLoc.getBlockZ(), BlockFlags.F_LAVA, true);
-            if (GenericVersion.isAtLeast((LivingEntity) entity, "1.16") && liquidHeight <= (eLoc.getEyeHeight() < 0.4D ? 0.0D : 0.4D)) { // getFluidJumpThreshold in Entity.java... Set in BlockProperties?
+            double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, Location.locToBlock(thisMove.from.getX()), Location.locToBlock(thisMove.from.getY()), Location.locToBlock(thisMove.from.getZ()), BlockFlags.F_LAVA, true);
+            if (GenericVersion.isAtLeast(entity, "1.16") && liquidHeight <= (eLoc.getEyeHeight() < 0.4D ? 0.0D : 0.4D)) { // getFluidJumpThreshold in Entity.java... Set in BlockProperties?
                 friction = Magic.WATER_VERTICAL_INERTIA;
             }
             else friction = Magic.LAVA_VERTICAL_INERTIA;
@@ -2879,7 +2896,7 @@ public class BlockProperties {
      *            the z
      * @return true, if successful
      */
-    public static final boolean canClimbUp(final BlockCache cache, final int x, final int y, final int z) {
+    public static final boolean canBeClimbedUp(final BlockCache cache, final int x, final int y, final int z) {
         final Material id = cache.getType(x, y, z);
         if ((BlockFlags.getBlockFlags(id) & BlockFlags.F_CLIMBABLE) == 0) {
             return false;
@@ -3966,52 +3983,6 @@ public class BlockProperties {
         return false;
     }
 
-
-    /**
-     * Check if the given bounding box collides with a bubble stream that can drag the player.
-     *
-     * @param world
-     *            the world
-     * @param access
-     *            the access
-     * @param minX
-     *            the min x
-     * @param minY
-     *            the min y
-     * @param minZ
-     *            the min z
-     * @param maxX
-     *            the max x
-     * @param maxY
-     *            the max y
-     * @param maxZ
-     *            the max z
-     * @return true, if successful
-     */
-    public static final boolean isBubbleColumnDrag(final World world, final BlockCache access, 
-                                                   final double minX, final double minY, final double minZ, 
-                                                   final double maxX, final double maxY, final double maxZ) {
-        if (!Bridge1_13.hasIsSwimming()) return false;
-        final int iMinX = Location.locToBlock(minX);
-        final int iMaxX = Location.locToBlock(maxX);
-        final int iMinY = Location.locToBlock(minY);
-        final int iMaxY = Math.min(Location.locToBlock(maxY), access.getMaxBlockY());
-        final int iMinZ = Location.locToBlock(minZ);
-        final int iMaxZ = Location.locToBlock(maxZ);
-
-        for (int x = iMinX; x <= iMaxX; x++) {
-            for (int z = iMinZ; z <= iMaxZ; z++) {
-                 for (int y = iMaxY; y >= iMinY; y--) {
-                    BlockData data = world.getBlockAt(x,y,z).getBlockData();
-                    if (data instanceof BubbleColumn) {
-                        if (((BubbleColumn)data).isDrag()) return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     /**
      * Check if the given bounding box collides with a block of the given id,
      * taking into account the actual bounds of the block.
@@ -4064,7 +4035,7 @@ public class BlockProperties {
     }
 
     /**
-     * Check if the bounds collide with the block for the given type id at the
+     * Check if the given bounds collide with the block for the given type id at the
      * given position. This does not check workarounds for ground_height nor
      * passable.
      *

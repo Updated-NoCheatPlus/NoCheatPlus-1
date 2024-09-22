@@ -56,16 +56,22 @@ public class InputDirection {
     }
     
     /**
-     * Run an operation with strafeFactor and forwardFactor.
-     * 
-     * @param strafeFactor Factor to use with the strafe value
-     * @param forwardFactor Factor to use with the forward value
-     * @param operation     The operation to execute with strafeFactor and forwardFactor <br>
-     *                      0 = Sets the enum direction to NONE and resets values for both strafe and forward.<br>
-     *                      1 = Multiply strafe and forward by strafeFactor and forwardFactor respectively.<br>
-     *                      2 = Divide strafe and forward by strafeFactor and forwardFactor respectively.
+     * Performs an operation on the strafe and forward values using the given factors.
+     *
+     * @param strafeFactor  The factor used to adjust the strafe value (sideways movement).
+     * @param forwardFactor The factor used to adjust the forward value (forward/backward movement).
+     * @param operation     The type of operation to perform:
+     *                      <ul>
+     *                          <li><strong>0:</strong> Resets both strafe and forward values to zero 
+     *                          and sets their directions to `NONE`.</li>
+     *                          <li><strong>1:</strong> Multiplies the strafe value by {@code strafeFactor}
+     *                          and the forward value by {@code forwardFactor}.</li>
+     *                          <li><strong>2:</strong> Divides the strafe value by {@code strafeFactor}
+     *                          and the forward value by {@code forwardFactor}.</li>
+     *                      </ul>
+     * @throws IllegalArgumentException if the operation is not 0, 1, or 2.
      */
-    public void runOperation(double strafeFactor, double forwardFactor, int operation) {
+    public void operationToInt(double strafeFactor, double forwardFactor, int operation) {
         switch (operation) {
             case 0:
                 strafe = 0f;
@@ -81,10 +87,9 @@ public class InputDirection {
                 strafe /= strafeFactor;
                 forward /= forwardFactor;
                 break;
-            default: 
-                return;
+            default:
+                throw new IllegalArgumentException("Invalid operation: " + operation + ". Expected 0, 1, or 2.");
         }
-        
     }
     
     /**

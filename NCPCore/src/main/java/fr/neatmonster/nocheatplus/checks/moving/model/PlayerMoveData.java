@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
+import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 
 /**
  * Include player-specific data for a move.
@@ -76,7 +77,8 @@ public class PlayerMoveData extends MoveData {
 
     // Bounds set by checks.
     /**
-     * Estimated X distance only. Set in SurvivalFly.
+     * Estimated X distance only. Set in SurvivalFly. Could be overridden multiple times
+     * during processing of moving checks.
      */
     public double xAllowedDistance;
 
@@ -87,7 +89,8 @@ public class PlayerMoveData extends MoveData {
     public boolean collideX;
 
     /**
-     * Estimated Z distance only. Set in SurvivalFly.
+     * Estimated Z distance only. Set in SurvivalFly. Could be overridden multiple times
+     * during processing of moving checks.
      */
     public double zAllowedDistance;
 
@@ -103,7 +106,8 @@ public class PlayerMoveData extends MoveData {
     public double hAllowedDistance;
 
     /**
-     * Vertical allowed distance estimated by checks.
+     * Vertical allowed distance estimated by checks. Could be overridden multiple times
+     * during processing of moving checks.
      */
     public double yAllowedDistance;
     
@@ -152,15 +156,32 @@ public class PlayerMoveData extends MoveData {
     public SimpleEntry verVelUsed = null;
     
     /**
-     * Signal that this movement has horizontal impulse, meaning: the player has actively pressed a WASD key.
-     * Intention is to be able to differentiate when the player is actively moving VS being passively moved by other sources (i.e.: push and velocity)
+     * Indicates whether this movement has a horizontal impulse, meaning the player has actively pressed a WASD key.
+     * This helps differentiate between active movement by the player and passive movement caused by other sources 
+     * (e.g., push or velocity).
+     *
+     * <ul>
+     * <li>YES: The horizontal movement was predicted, confirming active player input.</li>
+     * <li>MAYBE: The horizontal movement could not be predicted, so it is unclear if the player actively pressed a WASD key.</li>
+     * <li>NO: The horizontal movement was predicted to have no active input from the player.</li>
+     * </ul>
      */
-    public boolean hasImpulse;
-
-    /** Signal the direction of this strafing movement (LEFT/RIGHT/NONE) */
+    public AlmostBoolean hasImpulse;
+    
+    /**
+     * Indicates the direction of strafing movement (LEFT/RIGHT/NONE).
+     *
+     * <p>This value is set even if the horizontal movement could not be predicted, so the strafe direction might be inaccurate.
+     * Check {@link PlayerMoveData#hasImpulse} to determine the reliability of this value.
+     */
     public InputDirection.StrafeDirection strafeImpulse;
-
-    /** Signal the direction of this forward movement (FORWARD/BACKWARD/NONE) */
+    
+    /**
+     * Indicates the direction of forward movement (FORWARD/BACKWARD/NONE).
+     *
+     * <p>This value is set even if the horizontal movement could not be predicted, so the forward direction might be inaccurate.
+     * Check {@link PlayerMoveData#hasImpulse} to determine the reliability of this value.
+     */
     public InputDirection.ForwardDirection forwardImpulse;
     
     /**
@@ -204,7 +225,7 @@ public class PlayerMoveData extends MoveData {
         verVelUsed = null;
         hasNoMovementDueToDuplicatePacket = false;
         negligibleHorizontalCollision = false;
-        hasImpulse = false;
+        hasImpulse = AlmostBoolean.NO;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();
     }

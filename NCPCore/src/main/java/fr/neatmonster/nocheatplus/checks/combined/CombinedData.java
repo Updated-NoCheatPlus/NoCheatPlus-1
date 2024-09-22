@@ -57,6 +57,8 @@ public class CombinedData extends ACheckData implements IDataOnRemoveSubCheckDat
     public long releaseItemTime = 0;
     /** Detection flag */
     public boolean isHackingRI = false;
+    /** Detection flag */
+    public boolean invalidItemUse = false;
     
     /**
      * Reduce Improbable's data by the given amount, capped at a minimum of 0.

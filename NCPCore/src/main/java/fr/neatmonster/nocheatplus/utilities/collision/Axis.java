@@ -53,10 +53,10 @@ public enum Axis {
     
     public static class RichAxisData {
         public Axis priority;
-        public BlockChangeTracker.Direction exclude;
-        public RichAxisData(Axis priority, BlockChangeTracker.Direction exclude) {
+        public BlockChangeTracker.Direction dirExclusion;
+        public RichAxisData(Axis priority, BlockChangeTracker.Direction dirExclusion) {
             this.priority = priority;
-            this.exclude = exclude;
+            this.dirExclusion = dirExclusion;
         }
     }
 }

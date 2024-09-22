@@ -85,12 +85,16 @@ public class PlayerLocation extends RichEntityLocation {
      * From TridentItem.java
      * Get the riptiding force. Not context-aware.
      *
-     * @param player
      * @param onGround
      * @return A Vector containing the riptiding force's components (x,y,z).
      */
-    public Vector getTridentPropellingForce(final Player player, boolean onGround) {
+    public Vector getTridentPropellingForce(boolean onGround) {
         // Only players are allowed to riptide (hence why this is in PlayerLocation and not RichEntity).
+        final IPlayerData pData = DataManager.getPlayerData(player);
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_13)) {
+            // Just to be sure.
+            return new Vector();
+        }
         final double RiptideLevel = BridgeEnchant.getRiptideLevel(player);
         if (RiptideLevel > 0.0) {
             // Compute the force of the push
@@ -112,12 +116,18 @@ public class PlayerLocation extends RichEntityLocation {
     
     /**
      * From EntityHuman.java <br>
-     * Set the speed needed to back the player off from edges in the given vector.
-     * This assumes that you have already checked for preconditions (!) <br>
-     * [Pre-requisites are: the player must be _shifting_(not sneaking); must be above ground; must have negative or 0 y-distance; must not be flying]
-     * 
-     * @param vector
-     * @return the modified vector
+     * Adjusts the player's movement vector to prevent falling off edges while shifting.
+     *
+     * <p>This function modifies the player's speed along the X and Z axes to keep them from moving over 
+     * the edge of a block. It assumes the player is shifting (The game uses the isShiftKeyDown() method here!), on the ground, not flying, and has a downward or
+     * no vertical movement.</p>
+     *
+     * <p>The function checks if the dispatched speed would place the player over empty space (indicating an 
+     * edge). If so, speed gets reduced in small steps of 0.05 units until the speed is considered to be safe or reaches zero, to prevent falling off.
+     * </p>
+     *
+     * @param vector The movement vector that may be modified to prevent falling off edges.
+     * @return The adjusted movement vector.
      */
     public Vector maybeBackOffFromEdge(Vector vector) {
         // Only players are capable of crouching (hence why this is in PlayerLocation and not RichEntity).
@@ -217,8 +227,8 @@ public class PlayerLocation extends RichEntityLocation {
      * @param fullHeight
      * @param yOnGround
      */
-    public void set(final Location location, final Player player, final double width,  
-            final double eyeHeight, final double height, final double fullHeight, final double yOnGround) {
+    public void set(final Location location, final Player player, final double width, final double eyeHeight, 
+                    final double height, final double fullHeight, final double yOnGround) {
         super.doSetExactHeight(location, player, true, width, eyeHeight, height, fullHeight, yOnGround);
         // Entity reference.
         this.player = player;

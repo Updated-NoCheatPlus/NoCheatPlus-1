@@ -29,6 +29,7 @@ import fr.neatmonster.nocheatplus.checks.access.ACheckData;
 import fr.neatmonster.nocheatplus.checks.moving.location.setback.DefaultSetBackStorage;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.TraceEntryPool;
+import fr.neatmonster.nocheatplus.checks.moving.model.InputDirection;
 import fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveConsistency;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveTrace;
@@ -40,6 +41,7 @@ import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleAxisVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
+import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeReference;
 import fr.neatmonster.nocheatplus.components.data.IDataOnReload;
 import fr.neatmonster.nocheatplus.components.data.IDataOnRemoveSubCheckData;
@@ -47,7 +49,9 @@ import fr.neatmonster.nocheatplus.components.data.IDataOnWorldUnload;
 import fr.neatmonster.nocheatplus.components.entity.IEntityAccessDimensions;
 import fr.neatmonster.nocheatplus.components.location.IGetPosition;
 import fr.neatmonster.nocheatplus.components.location.IPositionWithLook;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 import fr.neatmonster.nocheatplus.components.registry.IGetGenericInstance;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
@@ -56,6 +60,7 @@ import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
 import fr.neatmonster.nocheatplus.utilities.location.PlayerLocation;
 import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.workaround.IWorkaroundRegistry.WorkaroundSet;
 
@@ -63,6 +68,8 @@ import fr.neatmonster.nocheatplus.workaround.IWorkaroundRegistry.WorkaroundSet;
  * Player specific data for the moving checks.
  */
 public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData, IDataOnReload, IDataOnWorldUnload {
+    
+    private final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
 
     //////////////////////////////////////////////
     // Violation levels                         //
@@ -140,6 +147,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public double nextFrictionVertical = 0.0;
     /** Ordinary vertical friction factor (lava, water, air) */
     public double lastFrictionVertical = 0.0;
+    public double nextGravity = 0.0;
+    public double lastGravity = 0.0;
 
     // *----------Move / Vehicle move tracking----------*
     /** Keep track of currently processed (if) and past moves for player moving. Stored moves can be altered by modifying the int. */
@@ -231,8 +240,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     private boolean sfDirty = false;
     /** Basic envelope constraints/presets for lifting off ground. */
     public LiftOffEnvelope liftOffEnvelope = defaultLiftOffEnvelope;
-    /** Count how many moves have been made inside a medium (other than air). */
-    public int insideMediumCount = 0;
     /** Counting while the player is not on ground and not moving. A value < 0 means not hovering at all. */
     public int sfHoverTicks = -1;
     /** First count these down before incrementing sfHoverTicks. Set on join, if configured so. */
@@ -339,7 +346,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfHoverTicks = sfHoverLoginTicks = -1;
         sfDirty = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
-        insideMediumCount = 0;
         vehicleConsistency = MoveConsistency.INCONSISTENT;
         verticalBounce = null;
         blockChangeRef.valid = false;
@@ -370,7 +376,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         sfHoverTicks = -1; // 0 ?
         sfDirty = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
-        insideMediumCount = 0;
         removeAllPlayerSpeedModifiers();
         vehicleConsistency = MoveConsistency.INCONSISTENT; // Not entirely sure here.
         verticalBounce = null;
@@ -414,9 +419,23 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public void adjustMediumProperties(final Location loc, final MovingConfig cc, final Player player, final PlayerMoveData thisMove) {
         nextFrictionHorizontal = BlockProperties.getBlockFrictionFactor(player, loc, cc.yOnGround, thisMove);
         nextStuckInBlockHorizontal = BlockProperties.getStuckInBlockHorizontalFactor(player, loc, cc.yOnGround, thisMove);
-        nextBlockSpeedMultiplier = BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround, thisMove);
+        nextBlockSpeedMultiplier = MathUtil.lerp(attributeAccess.getHandle().getMovementEfficiency(player), BlockProperties.getBlockSpeedFactor(player, loc, cc.yOnGround, thisMove), 1.0f);
         nextFrictionVertical = BlockProperties.getVerticalFrictionFactor(player, loc, cc.yOnGround, thisMove);
         nextStuckInBlockVertical = BlockProperties.getStuckInBlockVerticalFactor(player, loc, cc.yOnGround, thisMove);
+    }
+    
+    /**
+     * Resets horizontal movement data for the player.
+     * Sets movement distances and impulses to their default (zero or none) values.
+     */
+    public void resetHorizontalData() {
+       final PlayerMoveData thisMove = playerMoves.getCurrentMove();
+        thisMove.xAllowedDistance = 0.0;
+        thisMove.zAllowedDistance = 0.0;
+        thisMove.hAllowedDistance = 0.0;
+        thisMove.hasImpulse = AlmostBoolean.NO;
+        thisMove.strafeImpulse = InputDirection.StrafeDirection.NONE;
+        thisMove.forwardImpulse = InputDirection.ForwardDirection.NONE;
     }
 
 
@@ -445,7 +464,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
             liftOffEnvelope = LiftOffEnvelope.NORMAL;
         }
         else liftOffEnvelope = LiftOffEnvelope.UNKNOWN;
-        insideMediumCount = 0;
     }
 
 
@@ -482,7 +500,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         playerMoves.invalidate();
         sfDirty = false;
         liftOffEnvelope = defaultLiftOffEnvelope;
-        insideMediumCount = 0;
         verticalBounce = null;
         blockChangeRef.valid = false;
         lastFrictionVertical = lastStuckInBlockVertical = lastStuckInBlockHorizontal = 1.0;

@@ -72,9 +72,9 @@ public class Magic {
     /** EntityLiving, aiStep */
     public static final double NEGLIGIBLE_SPEED_THRESHOLD_LEGACY = 0.005;
     /** EntityLiving, jumpInLiquid */
-    public static final double LIQUID_SPEED_GAIN = 0.039;
+    public static final double LIQUID_SPEED_GAIN = 0.04;
     /** EntityLiving, goDownInWater */
-    public static final double LIQUID_GRAVITY = -LIQUID_SPEED_GAIN;
+    public static final double LEGACY_LIQUID_GRAVITY = 0.02;
     /** EntityLiving, travel */
     public static final double WATER_VERTICAL_INERTIA = 0.8;
     /** EntityLiving, travel */
@@ -201,7 +201,7 @@ public class Magic {
     /** The lower bound of fall distance for taking fall damage. */
     public static final double FALL_DAMAGE_DIST = 3.0;
     /** The minimum damage amount that actually should get applied. */
-    public static final double FALL_DAMAGE_MINIMUM = 0.5;
+    public static final double MINIMUM_FALL_DAMAGE = 0.5;
     /**
      * The maximum distance that can be achieved with bouncing back from slime
      * blocks.

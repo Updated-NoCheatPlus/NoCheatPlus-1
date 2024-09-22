@@ -194,20 +194,20 @@ public class BridgeMisc {
     }
 
     /**
-     * Test if the player is equipped with leather boots<br>
-     * Meant for checking if the player can stand on top of powder snow.
+     * Test if the player is equipped with leather boots.
      * 
      * @param player
      * @return
      */
-    public static boolean hasLeatherBootsOn(final Player player) {
+    public static boolean canStandOnPowderSnow(final Player player) {
         if (!hasIsFrozen()) {
             return false;
         }
-        else {
-            final ItemStack boots = player.getInventory().getBoots();
-            return boots != null && boots.getType() == Material.LEATHER_BOOTS;
+        if (DataManager.getPlayerData(player).getClientVersion().isLowerThan(ClientVersion.V_1_17)) {
+            return false;
         }
+        final ItemStack boots = player.getInventory().getBoots();
+        return boots != null && boots.getType() == Material.LEATHER_BOOTS;
     }
 
     /**

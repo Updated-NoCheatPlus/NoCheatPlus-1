@@ -411,7 +411,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
     }
     
     /** Cancelled events can still affect movement speed, since the mechanic we're checking is client-sided, so don't skip this listener */
-    @EventHandler(priority = EventPriority.MONITOR) 
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true) 
     public void onAttackingEntities(final EntityDamageByEntityEvent event) {
         final Entity attacker = event.getDamager();
         final Entity damaged = event.getEntity();
