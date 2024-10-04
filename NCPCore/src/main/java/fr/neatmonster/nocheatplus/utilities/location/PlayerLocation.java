@@ -65,7 +65,7 @@ public class PlayerLocation extends RichEntityLocation {
     }
 
     /**
-     * Straw-man method to account for this specific bug: https://bugs.mojang.com/browse/MC-2404
+     * Straw-man method to account for this specific bug: <a href="https://bugs.mojang.com/browse/MC-2404">...</a>
      * Should not be used outside its intended context (sneaking on edges), or if vanilla uses it.
      */
     public boolean isAboveGround() {
@@ -125,6 +125,9 @@ public class PlayerLocation extends RichEntityLocation {
      * <p>The function checks if the dispatched speed would place the player over empty space (indicating an 
      * edge). If so, speed gets reduced in small steps of 0.05 units until the speed is considered to be safe or reaches zero, to prevent falling off.
      * </p>
+     * 
+     *<hr>
+     * Note that -in vanilla- this check uses a copy of the current speed, not the original one, resulting in speed being hidden in certain cases.
      *
      * @param vector The movement vector that may be modified to prevent falling off edges.
      * @return The adjusted movement vector.
@@ -148,7 +151,7 @@ public class PlayerLocation extends RichEntityLocation {
                 xDistance -= 0.05;
             } 
             else xDistance += 0.05;
-            // You must update the AABB with the updated X/Z motion after each loop, because in vanilla, this function actually uses a copy of the existing velocity, not the original speed.
+            // Update the AABB with each iteration.
             offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, minY+yBelow, maxZ};
         }
         // Move AABB alongside the Z axis.

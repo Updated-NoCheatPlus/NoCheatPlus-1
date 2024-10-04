@@ -356,9 +356,7 @@ public class MovingUtil {
         if (Double.isInfinite(amplifier)) {
             return 0.0;
         }
-        else {
-            return 1.0 + amplifier;
-        }
+        return 1.0 + amplifier;
     }
 
 

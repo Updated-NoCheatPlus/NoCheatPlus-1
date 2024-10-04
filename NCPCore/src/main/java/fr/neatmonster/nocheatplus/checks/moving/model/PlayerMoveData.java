@@ -185,13 +185,21 @@ public class PlayerMoveData extends MoveData {
     public InputDirection.ForwardDirection forwardImpulse;
     
     /**
-     * Judge if this horizontal (x/z) collision is to be considered as minor.
+     * Judge if this horizontal collision ({@link PlayerMoveData#collideX} or {@link PlayerMoveData#collideZ}) is to be considered as minor.
      * This is for Minecraft's sprinting reset mechanic.
      * Only set if the appropriate speed to set was found.
+     * Therefore, this will return false if the predicted speed is uncertain (See {@link PlayerMoveData#hasImpulse}).
      */
     public boolean negligibleHorizontalCollision;
-
-
+    
+    /**
+     * Result of either {@link PlayerMoveData#collideX} or {@link PlayerMoveData#collideZ}.
+     * Set only if the appropriate speed to set was found.
+     * Therefore, this will return false if the predicted speed is uncertain (See {@link PlayerMoveData#hasImpulse}).
+     */
+    public boolean collidesHorizontally;
+    
+    
     @Override
     protected void resetBase() {
         // Properties of the player.
@@ -225,6 +233,7 @@ public class PlayerMoveData extends MoveData {
         verVelUsed = null;
         hasNoMovementDueToDuplicatePacket = false;
         negligibleHorizontalCollision = false;
+        collidesHorizontally = false;
         hasImpulse = AlmostBoolean.NO;
         // Super class last, because it'll set valid to true in the end.
         super.resetBase();

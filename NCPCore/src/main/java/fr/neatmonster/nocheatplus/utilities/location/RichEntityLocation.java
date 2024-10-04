@@ -603,7 +603,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * How Minecraft calculates liquid pushing speed.
+     * How Minecraft calculates liquid pushing speed.<br>
      * Can be found in: Entity.java, updateFluidHeightAndDoFluidPushing()
      * 
      * @param xDistance 
@@ -698,8 +698,8 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * Minecraft's function to calculate the liquid's flow force.
-     * 'FlowingFluid'.java / FluidTypeFlowing.java, getFlow()
+     * Minecraft's function to calculate the liquid's flow force. <br>
+     * Can be found in FlowingFluid.java / FluidTypeFlowing.java, getFlow()
      * 
      * @param x
      * @param y
@@ -836,7 +836,7 @@ public class RichEntityLocation extends RichBoundsLocation {
 
     /**
      * Very coarse test to check if something solid/ground-like collides within the given margin above the eye height of the player. <br>
-     * For a better (and more accurate) method, use RichEntityLocation#collide().
+     * For a better (and more accurate) method, use {@link RichEntityLocation#collide(Vector input, boolean onGround, MovingConfig cc, double[] AABB)}.
      *
      * @param marginAboveEyeHeight
      *            Must be greater than or equal zero.

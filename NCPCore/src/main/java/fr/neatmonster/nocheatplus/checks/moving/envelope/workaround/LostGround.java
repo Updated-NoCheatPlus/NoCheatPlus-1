@@ -116,7 +116,7 @@ public class LostGround {
             }
             // Try interpolating the ground collision from last-from to this-from.
             // Usually, this corresponds to a missed "fromOnGround" position with this move (with last missing a ground collision too, but with the "to" position).
-            // (In other words: lastMove: AIR -> TO LOST GROUND[see below](AIR)   -   thisMove: FROM LOST GROUND(AIR) -> AIR
+            // (In other words= lastMove: AIR -> TO LOST GROUND[see below](AIR)   -   thisMove: FROM LOST GROUND(AIR) -> AIR
             if (interpolateGround(player, from.getBlockCache(), from.getWorld(), from.getMCAccess(), "_from", tags, data,
                                  from.getX(), from.getY(), from.getZ(), lastMove, from.getBoxMarginHorizontal(), from.getyOnGround())) {
                 thisMove.fromLostGround = true;

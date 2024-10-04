@@ -39,6 +39,7 @@ public interface IAttributeAccess {
 
     /**
      * Sprint boost modifier as a multiplier.
+     * Do note that, in its current state, this attribute is not proofed against de-synchronization issues, hence its unreliability.
      * 
      * @param player
      * @return The sprint boost modifier as a multiplier. If not possible to
@@ -183,7 +184,7 @@ public interface IAttributeAccess {
     public float getMovementEfficiency(Player player);
     
     /**
-     * Retrieve the player's movement speed when submerged in water (depth strider). <br>
+     * Retrieve the player's movement speed when submerged in water (depth strider).
      * <hr>
      * <b>Note:</b> This attribute is exclusive to Minecraft 1.21 and later.
      *
@@ -225,7 +226,6 @@ public interface IAttributeAccess {
      * Retrieve the player's entity size scaling attribute as a multiplier. <br>
      * This attribute adjusts the size of the player entity, affecting both visual appearance and hitbox dimensions. 
      * A value of 1.0 represents the default size, while values above or below 1.0 adjust the entity size proportionally.
-     * The scaling affects gameplay elements such as hit detection and interaction range.
      * <hr>
      * <b>Note:</b> This attribute is exclusive to Minecraft 1.20.5 and later.
      *

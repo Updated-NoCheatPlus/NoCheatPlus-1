@@ -89,12 +89,12 @@ public enum LiftOffEnvelope {
         if (jumpEffectApplies && jumpAmplifier > 0.0) {
             // NOTE: The jumpAmplifier value is one higher than the MC level.
             if (jumpAmplifier < 10.0) {
-                // Classic.
+                // Linearly scale the height with the amplifier for lower amplifiers, starting with a base increase of 0.6 blocks.
                 // TODO: Can be confined more.
                 return maxJumpHeight + 0.6 + jumpAmplifier - 1.0;
             }
             else if (jumpAmplifier < 19) {
-                // Quadratic, without accounting for gravity.
+                // As the jump amplifier increases, the jump height grows quadratically instead of linearly (without gravity).
                 return 0.6 + (jumpAmplifier + 3.2) * (jumpAmplifier + 3.2) / 16.0;
             }
             else {

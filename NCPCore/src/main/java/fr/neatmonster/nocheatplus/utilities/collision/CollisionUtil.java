@@ -52,7 +52,7 @@ public class CollisionUtil {
     
     /** Margin of error used by Minecraft/NMS within collision-specific contexts */
     public static final double COLLISION_EPSILON = 1.0E-7;
-    private final static boolean serverHigherOEqual1_8 = ServerVersion.isAtLeast("1.8");
+    private final static boolean ServerIsAtLeast1_8 = ServerVersion.isAtLeast("1.8");
     /** Temporary use, setWorld(null) once finished. */
     private static final Location useLoc = new Location(null, 0, 0, 0);
 
@@ -63,8 +63,8 @@ public class CollisionUtil {
      *
      * @param collisionVector
      * @param to The location where the player has moved to. You must specifically use the "to" location, as it contains the most recent rotation. Using the "from" location would mean using the last rotation of the player.
-     * @param strafeImpulse The player's sideways input force, represented as a double (see InputDirection.java)
-     * @param forwardImpulse The player's forward input force, represented as a double (see InputDirection.java)
+     * @param strafeImpulse The player's sideways input force, represented as a double (see {@link fr.neatmonster.nocheatplus.checks.moving.model.InputDirection})
+     * @param forwardImpulse The player's forward input force, represented as a double (see {@link fr.neatmonster.nocheatplus.checks.moving.model.InputDirection})
      * @return True, if the collision's angle is less than 0.13962633907794952.
      */
     public static boolean isHorizontalCollisionNegligible(Vector collisionVector, final PlayerLocation to, double strafeImpulse, double forwardImpulse) {
@@ -1016,7 +1016,7 @@ public class CollisionUtil {
      *         Otherwise, returns false.
      */
     public static boolean addWorldBorder(Entity entity, double[] AABB, List<double[]> collisionBoxes, boolean onlyCheckCollide) {
-        if (serverHigherOEqual1_8) {
+        if (ServerIsAtLeast1_8) {
             WorldBorder border = entity.getWorld().getWorldBorder();
             Location tloc = border.getCenter();
             double centerX = tloc.getX();

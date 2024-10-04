@@ -17,12 +17,17 @@ package fr.neatmonster.nocheatplus.compat.spigotcb1_11_R1;
 import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
 import org.bukkit.entity.Player;
 
-import fr.neatmonster.nocheatplus.compat.AttribUtil;
-import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
-import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
 import net.minecraft.server.v1_11_R1.AttributeInstance;
 import net.minecraft.server.v1_11_R1.AttributeModifier;
 import net.minecraft.server.v1_11_R1.GenericAttributes;
+
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
+import fr.neatmonster.nocheatplus.compat.AttribUtil;
+import fr.neatmonster.nocheatplus.compat.BridgeEnchant;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.players.DataManager;
+import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 public class AttributeAccess implements IAttributeAccess {
 
@@ -33,13 +38,14 @@ public class AttributeAccess implements IAttributeAccess {
     }
 
     @Override
-    public double getSpeedAttributeMultiplier(Player player) {
+    public double getSpeedMultiplier(Player player) {
         final AttributeInstance attr = ((CraftLivingEntity) player).getHandle().getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
         final double val = attr.getValue() / attr.b();
         final AttributeModifier mod = attr.a(AttribUtil.ID_SPRINT_BOOST);
         if (mod == null) {
             return val;
-        } else {
+        } 
+        else {
             return val / AttribUtil.getMultiplier(mod.c(), mod.d());
         }
     }
@@ -47,17 +53,92 @@ public class AttributeAccess implements IAttributeAccess {
     @Override
     public float getMovementSpeed(final Player player) {
         // / by 2 to get the base value 0.1f
-        return (player.getWalkSpeed() / 2f) * (float)getSpeedAttributeMultiplier(player);
+        return (player.getWalkSpeed() / 2f) * (float)getSpeedMultiplier(player);
     }
 
     @Override
-    public double getSprintAttributeMultiplier(Player player) {
+    public double getSprintMultiplier(Player player) {
         final AttributeModifier mod = ((CraftLivingEntity) player).getHandle().getAttributeInstance(GenericAttributes.MOVEMENT_SPEED).a(AttribUtil.ID_SPRINT_BOOST);
         if (mod == null) {
             return 1.0;
-        } else {
+        } 
+        else {
             return AttribUtil.getMultiplier(mod.c(), mod.d());
         }
+    }
+    
+    ////////////////////////////////////////////////////////////////
+    // Modern attributes. Not available for legacy versions.      //
+    ////////////////////////////////////////////////////////////////
+    @Override
+    public double getGravity(Player player) {
+        return Magic.DEFAULT_GRAVITY;
+    }
+    
+    @Override
+    public double getSafeFallDistance(Player player) {
+        return Magic.FALL_DAMAGE_DIST;
+    }
+    
+    @Override
+    public double getFallDamageMultiplier(Player player) {
+        return 1.0;
+    }
+    
+    @Override
+    public double getBreakingSpeedMultiplier(Player player) {
+        return 1.0;
+    }
+    
+    @Override
+    public double getJumpGainMultiplier(Player player) {
+        return 1.0;
+    }
+    
+    @Override
+    public double getPlayerSneakingFactor(Player player) {
+        return Magic.SNEAK_MULTIPLIER;
+    }
+    
+    @Override
+    public double getPlayerMaxBlockReach(Player player) {
+        return 4.5;
+    }
+    
+    @Override
+    public double getPlayerMaxAttackReach(Player player) {
+        return 3.0;
+    }
+    
+    @Override
+    public double getMaxStepUp(Player player) {
+        final MovingConfig cc = DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class);
+        return cc.sfStepHeight;
+    }
+    
+    @Override
+    public float getMovementEfficiency(Player player) {
+        return 0.0f;
+    }
+    
+    @Override
+    public float getWaterMovementEfficiency(Player player) {
+        return BridgeEnchant.getDepthStriderLevel(player);
+    }
+    
+    @Override
+    public double getSubmergedMiningSpeedMultiplier(Player player) {
+        return 1.0;
+    }
+    
+    @Override
+    public double getMiningEfficiency(Player player) {
+        return 0.0;
+    }
+    
+    @Override
+    public double getEntityScale(Player player) {
+        return 1.0;
     }
 
 }

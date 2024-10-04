@@ -175,12 +175,16 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Horizontal velocity modeled as an axis (always positive) */
     private final FrictionAxisVelocity horVel = new FrictionAxisVelocity();
     /** Whether the calculated explosion velocity should be applied. */
+    @Deprecated
     public boolean shouldApplyExplosionVelocity = false;
     /** Velocity explosion counter (X). */
+    @Deprecated
     public double explosionVelAxisX = 0.0;
     /** Velocity explosion counter (Y). */
+    @Deprecated
     public double explosionVelAxisY = 0.0;
     /** Velocity explosion counter (Z). */
+    @Deprecated
     public double explosionVelAxisZ = 0.0;
     /** Compatibility entry for bouncing off of slime blocks and the like. */
     public SimpleEntry verticalBounce = null;
@@ -229,8 +233,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     public Location noFallCurrentLocOnWindChargeHit = null;
 
     // *----------Data of the SurvivalFly check----------*
-    /** Default lift-off envelope, used after resetting. <br> TODO: Test, might be better ground. */
-    private static final LiftOffEnvelope defaultLiftOffEnvelope = LiftOffEnvelope.NORMAL;
+    /** Default lift-off envelope, used after resetting. <br> TODO: Test UNKNOWN vs NORMAL. */
+    private static final LiftOffEnvelope defaultLiftOffEnvelope = LiftOffEnvelope.UNKNOWN;
     /** playerMoveCount at the time of the last sf violation. */
     public int sfVLMoveCount = 0;
     /** Count in air events for this jumping phase, resets when landing on ground, with set-backs and similar. */
@@ -270,9 +274,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     // HOT FIX / WORKAROUNDS                    //
     //////////////////////////////////////////////
-    /** 
+    /**
      * Set to true after login/respawn, only if the set back is reset there. Reset in MovingListener after handling PlayerMoveEvent.
-     * For more details see: https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/6d6f908512543f6289b51bb4c60a1940bcea9d4d 
+     * For more details see: <a href="https://github.com/Updated-NoCheatPlus/NoCheatPlus/commit/6d6f908512543f6289b51bb4c60a1940bcea9d4d">...</a> 
      */
     public boolean joinOrRespawn = false;
     /** Number of (player/vehicle) move events since set.back. Update after running standard checks on that EventPriority level (not MONITOR). */
@@ -429,7 +433,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * Sets movement distances and impulses to their default (zero or none) values.
      */
     public void resetHorizontalData() {
-       final PlayerMoveData thisMove = playerMoves.getCurrentMove();
+        final PlayerMoveData thisMove = playerMoves.getCurrentMove();
         thisMove.xAllowedDistance = 0.0;
         thisMove.zAllowedDistance = 0.0;
         thisMove.hAllowedDistance = 0.0;

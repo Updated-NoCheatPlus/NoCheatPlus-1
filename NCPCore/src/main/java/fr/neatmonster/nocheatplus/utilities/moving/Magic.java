@@ -14,7 +14,6 @@
  */
 package fr.neatmonster.nocheatplus.utilities.moving;
 
-import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 
 
@@ -232,17 +231,6 @@ public class Magic {
         // TODO: Does this have to be the dynamic walk speed (refactoring)?
         return isSwimming ? WALK_SPEED * modSwim[2] + 0.1 : WALK_SPEED * modSwim[0] + 0.07; // 0.244
     }
-    
-    public static boolean recentlyInBubbleStream(int limit, MovingData data) {
-    	limit = Math.min(limit, data.playerMoves.getNumberOfPastMoves());
-        for (int i = 0; i < limit; i++) {
-            final PlayerMoveData pastMove = data.playerMoves.getPastMove(i);
-            if (pastMove.from.inBubbleStream && !data.playerMoves.getCurrentMove().from.inBubbleStream) {
-                return true;
-            }
-        }
-        return false;
-	}
 
     /**
      * Test for a specific move in-air -> water, then water -> in-air.

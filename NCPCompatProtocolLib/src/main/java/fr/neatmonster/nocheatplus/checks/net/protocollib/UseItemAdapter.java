@@ -298,6 +298,7 @@ public class UseItemAdapter extends BaseAdapter {
             }
             // Shields and swords (legacy)... Bukkit takes care here, but set anyway.
             if (ServerVersion.isAtLeast("1.9") && pData.getClientVersion().isAtLeast(ClientVersion.V_1_9)) {
+                // Both server and client are on a version that support shield (thus, sword-blocking is not possible)
             	if (m == Material.SHIELD) {
             	    pData.setItemInUse(m);
                     data.offHandUse = e.getHand() == EquipmentSlot.OFF_HAND;
@@ -305,7 +306,7 @@ public class UseItemAdapter extends BaseAdapter {
             	}
             }
             else if (MaterialUtil.isSword(m) && (ServerVersion.isLowerThan("1.9") || pData.getClientVersion().isAtMost(ClientVersion.V_1_8))) {
-            	// Legacy server. Blocking is done with swords.
+            	// Legacy server. Or legacy client on a modern server. Blocking is done with swords in both cases.
             	pData.setItemInUse(m);
             	// (Off hand doesn't exist)
             	return;
@@ -321,7 +322,7 @@ public class UseItemAdapter extends BaseAdapter {
             // Tridents (1.13)... 
             if (m == BridgeMaterial.TRIDENT && item.getDurability() < m.getMaxDurability() - 1 && pData.getClientVersion().isAtLeast(ClientVersion.V_1_13)
             	&& (
-                    // 1:If the trident has riptide enchant, it can only be used in rain or water 
+                    // 1: If the trident has riptide enchant, it can only be used in rain or water 
             		BridgeEnchant.getRiptideLevel(p) > 0.0
                     && (
                         // 2: In water

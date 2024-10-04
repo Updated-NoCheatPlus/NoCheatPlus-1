@@ -163,7 +163,7 @@ public class NetData extends ACheckData {
             }
         }, null);
         if (!SchedulerHelper.isTaskScheduled(task)) {
-            StaticLog.logWarning("Failed to schedule packet set back task for player for player: " + player.getName());
+            StaticLog.logWarning("Failed to schedule packet set back task for player: " + player.getName());
         }
         mData.resetTeleported(); // Cleanup, just in case.
     }

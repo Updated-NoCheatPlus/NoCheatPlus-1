@@ -2857,7 +2857,7 @@ public class BlockProperties {
             if (nodeAbove != null && (aboveFlags & liquidTypeFlag) != 0) {
                 // Same liquid type above, full block height
                 liquidHeight = 1;
-                // Wtf - case block water has above is flowing although it look like a full block
+                // Needed because of cases where the block above is flowing but the game counts it as a full block ???
                 if (clearDefinition) {
                     liquidHeight = LIQUID_HEIGHT_LOWERED;
                 }
@@ -4309,7 +4309,7 @@ public class BlockProperties {
     }
 
     /**
-     * An isOnGround check that takes coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
+     * A convenience wrapper around the isOnGround check that takes coordinates as parameters and dispatches them to the isOnGround function as arguments for minXYZ and maxXYZ.
      * For the minXYZ arguments, the minimum value between the given coordinates is used.
      * For the maxXYZ arguments, the maximum value between the given coordinates is used.
      *

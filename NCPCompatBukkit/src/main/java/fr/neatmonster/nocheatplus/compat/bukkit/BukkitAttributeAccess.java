@@ -165,7 +165,6 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getJumpGainMultiplier(Player player) {
-        final MovingData data = DataManager.getPlayerData(player).getGenericInstance(MovingData.class);
         if (ServerVersion.isLowerThan("1.20.5")) {
             // Doesn't exist. Calculate manually.
             return 1.0;

@@ -25,6 +25,13 @@ import fr.neatmonster.nocheatplus.utilities.moving.MovingUtil;
 public class PlayerEnvelopes {
     
     private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
+    
+    
+   /* public static boolean isExtremeMoveLegit() {
+        return BridgeMisc.isRipgliding(player) 
+               || Bridge1_13.isRiptiding(player) && (thisMove.collideY || lastMove.collideY) 
+               || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && Bridge1_9.getLevitationAmplifier(player) >= 50
+    }*/
 
     /**
      * Jump off the top off a block with the ordinary jumping envelope, however
@@ -185,8 +192,6 @@ public class PlayerEnvelopes {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
-        // NoCheatPlus definition of "jumping" is pretty similar to Minecraft's which is moving from ground with the correct speed.
-        // Of course, since we have our own onGround handling, we need to take care of all caveats that it entails... (Lost ground, delayed jump etc...)
         // 0: Early return conditions.
         if (thisMove.hasLevitation || thisMove.isRiptiding || thisMove.isGliding) {
             // Cannot jump for sure under these conditions
@@ -218,7 +223,7 @@ public class PlayerEnvelopes {
                 // 1: 1-tick-delayed-jump cases: ordinary and with lost ground
                 // By "1-tick-delayed-jump" we mean a specific case where the player jumps, but sends a packet with 0 y-dist while still leaving ground (from ground -> to air)
                 // On the next tick, a packet containing the jump motion (0.42) is sent, but the player is already fully in air (air -> air))
-                // Mostly observed when jumping up a 1-block-high slope and then jumping immediately after on the edges of the block. 
+                // Mostly observed when jumping up a 1-block-high slope and then jumping immediately after, on the edge of the block. 
                 // Technically, this should be considered a lost ground case, however the ground status is detected in this case, just with a delay.
                 // TODO: Check for abuses. Check for more strict conditions.
                 || lastMove.toIsValid && lastMove.yDistance <= 0.0 && !from.seekCollisionAbove() // This behaviour has not hitherto been observed with head obstruction, thus we can confine this edge case by ruling head obstruction cases out. We call seekCollisionAbove() as we don't need accuracy in this case.
@@ -242,14 +247,13 @@ public class PlayerEnvelopes {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         // Step-up is handled by the collide() function in Minecraft, which is called on every move, so one could technically step up even while ripdiing or gliding.
-       /* if (thisMove.isRiptiding) {
+       if (thisMove.isRiptiding) {
             return false;
-        }
-        if (thisMove.isGliding) {
-            return false;
-        }
-        */
-        return  
+       }
+       if (thisMove.isGliding) {
+           return false;
+       }
+       return  
                 // 0: NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
                 fromOnGround && toOnGround && MathUtil.almostEqual(thisMove.yDistance, attributeAccess.getHandle().getMaxStepUp(player), Magic.PREDICTION_EPSILON)
                 // 0: Wildcard couldstep
