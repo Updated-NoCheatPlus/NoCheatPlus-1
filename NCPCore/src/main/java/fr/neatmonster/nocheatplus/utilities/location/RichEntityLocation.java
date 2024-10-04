@@ -570,33 +570,67 @@ public class RichEntityLocation extends RichBoundsLocation {
         if (input.isZero()) {
             return new Vector();
         }
+        // Clone or create the AABB
         double[] tAABB = AABB == null ? AxisAlignedBBUtils.createAABB(entity) : AABB.clone();
         List<double[]> collisionBoxes = new ArrayList<>();
-        CollisionUtil.getCollisionBoxes(blockCache, entity, AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
+        // Populate the list.
+        CollisionUtil.getCollisionBoxes(blockCache, entity, AxisAlignedBBUtils.expandTowards(tAABB, input.getX(), input.getY(), input.getZ()), collisionBoxes, false);
         Vector collisionVector = input.lengthSquared() == 0.0 ? input : CollisionUtil.collideBoundingBox(input, tAABB, collisionBoxes);
         boolean collideX = input.getX() != collisionVector.getX();
         boolean collideY = input.getY() != collisionVector.getY();
         boolean collideZ = input.getZ() != collisionVector.getZ();
-        boolean touchGround = onGround || collideY && collisionVector.getY() < 0.0;
+        boolean touchGround = onGround || collideY && collisionVector.getY() < 0.0; // Already on ground. Or this downward collision would result in the player touching the ground.
         // TODO: Not only cc.sfStepHeight (0.6), change on vehicle(boats:0.0, other vehicle 1.0)
+        // TODO: This needs optimization badly, because we call this function on every move and for every combination of movement.
         // Entity is on ground, collided with a wall and can actually step upwards: try to make it step up.
+        // Messy and quite hard on the eyes, but since we need to account for different versions, this will have to do.
         if (cc.sfStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
-            Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
-            // Introduced in 1.8
-            if (GenericVersion.isAtLeast(entity,"1.8")) {
-                Vector stepFix = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), AxisAlignedBBUtils.expandToCoordinate(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
-                // Check this very useful video for a visual representation of this function is doing: https://www.youtube.com/watch?v=Awa9mZQwVi8
-                if (stepFix.getY() < cc.sfStepHeight) {
-                    Vector stepUpAttempt2 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);
-                    if (TrigUtil.distanceSquared(stepUpAttempt2) > TrigUtil.distanceSquared(stepUpVector)) {
-                        // Did the step-up iteration yield a higher distance? If so, apply this step motion
-                        stepUpVector = stepUpAttempt2;
+            // Modern clients have a better step up handling
+            boolean ClientOrServerIsAtLeast1_21 = GenericVersion.isAtLeast(entity, "1.21");
+            boolean ClientOrServerIsAtLeast1_8 = GenericVersion.isAtLeast(entity, "1.8");
+            if (ClientOrServerIsAtLeast1_21) {
+                // Adjust the AABB for ground collision if falling, or use the current AABB if not.
+                double[] groundCollisionAABB = collideY && input.getY() < 0.0 ? AxisAlignedBBUtils.move(tAABB, 0.0, collisionVector.getY(), 0.0) : tAABB;
+                // Expand the AABB upwards by the step height (to simulate stepping up) and by the horizontal movement (X and Z).
+                double[] stepUpAttemptAABB = AxisAlignedBBUtils.expandTowards(groundCollisionAABB, collisionVector.getX(), cc.sfStepHeight, collisionVector.getZ());
+                if (!(collideY && input.getY() < 0.0)) {
+                    // If no downward collision, apply a very small downward offset to ensure correct collision detection after stepping up.
+                    stepUpAttemptAABB = AxisAlignedBBUtils.expandTowards(stepUpAttemptAABB, 0.0, -9.999999747378752E-6D, 0.0);
+                }
+                // Collect collision boxes around the newly expanded AABB (to simulate stepping up).
+                // TODO: Instead of redundantly create a new list, maybe just clear collisionBox and re-use that instead? 
+                List<double[]> collisionBoxes_1 = new ArrayList<>();
+                CollisionUtil.getCollisionBoxes(blockCache, entity, stepUpAttemptAABB, collisionBoxes_1, false);
+                // Collect possible step heights based on the surrounding collision boxes.
+                final float[] stepHeights = CollisionUtil.collectStepHeights(groundCollisionAABB, collisionBoxes_1, (float)cc.sfStepHeight, (float)collisionVector.getY());
+                for (float stepHeight : stepHeights) {
+                    // Iterate through the possible step heights and check if stepping up is valid.
+                    Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), stepHeight, input.getZ()), groundCollisionAABB, collisionBoxes_1);
+                    if (TrigUtil.distanceSquared(stepUpVector) > TrigUtil.distanceSquared(collisionVector)) {
+                         final double diff = tAABB[1] - groundCollisionAABB[1]; // Difference in Y axis due to stepping up.
+                         collisionVector = stepUpVector.add(new Vector(0.0, -diff, 0.0)); // Adjust the final movement vector.
+                         break;
                     }
                 }
             }
-            // Did the step-up yield a higher distance? If so, apply step motion
-            if (TrigUtil.distanceSquared(stepUpVector) > TrigUtil.distanceSquared(collisionVector)) {
-                return stepUpVector.add(CollisionUtil.collideBoundingBox(new Vector(0.0, -stepUpVector.getY() + input.getY(), 0.0), AxisAlignedBBUtils.move(tAABB, stepUpVector.getX(), stepUpVector.getY(), stepUpVector.getZ()), collisionBoxes));
+            else {
+                // First ste-up fix iteration introduced in 1.8 (then changed in 1.21)
+                Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), cc.sfStepHeight, input.getZ()), tAABB, collisionBoxes);
+                if (ClientOrServerIsAtLeast1_8) {
+                    Vector stepFix = CollisionUtil.collideBoundingBox(new Vector(0.0, cc.sfStepHeight, 0.0), AxisAlignedBBUtils.expandTowards(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
+                    // Check this very useful video for a visual representation of this function is doing: https://www.youtube.com/watch?v=Awa9mZQwVi8
+                    if (stepFix.getY() < cc.sfStepHeight) {
+                        Vector stepUpAttempt2 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);
+                        if (TrigUtil.distanceSquared(stepUpAttempt2) > TrigUtil.distanceSquared(stepUpVector)) {
+                            // Did the step-up iteration yield a higher distance? If so, apply this step motion
+                            stepUpVector = stepUpAttempt2;
+                        }
+                    }
+                }
+                // Did the step-up yield a higher distance? If so, apply step motion (normal. 1.7 and below don't have the fix above)
+                if (TrigUtil.distanceSquared(stepUpVector) > TrigUtil.distanceSquared(collisionVector)) {
+                    return stepUpVector.add(CollisionUtil.collideBoundingBox(new Vector(0.0, -stepUpVector.getY() + input.getY(), 0.0), AxisAlignedBBUtils.move(tAABB, stepUpVector.getX(), stepUpVector.getY(), stepUpVector.getZ()), collisionBoxes));
+                }
             }
         }
         return collisionVector;

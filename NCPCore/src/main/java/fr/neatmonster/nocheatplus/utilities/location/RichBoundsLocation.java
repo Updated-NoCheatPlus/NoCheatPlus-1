@@ -857,7 +857,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      */
     public boolean isResetCond() {
         // NOTE: if optimizing, setYOnGround has to be kept in mind. 
-        return isInLiquid() || isOnClimbable() || isInWeb() || isInBerryBush() || isInPowderSnow();
+        return isInLiquid() || isOnClimbable() || isInWeb() || isInBerryBush() || isInPowderSnow() || isInBubbleStream();
     }
 
     /**

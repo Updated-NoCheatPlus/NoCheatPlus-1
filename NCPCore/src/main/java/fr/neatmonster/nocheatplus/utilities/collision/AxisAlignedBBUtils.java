@@ -23,6 +23,7 @@ import org.bukkit.entity.Entity;
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 
 /**
  * Utility methods for dealing with axis-aligned bounding boxes <br>
@@ -76,15 +77,13 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Moves am AABB by the specified translation vector.
-     * <p>This method adjusts the positions of each bounding box by adding the given offsets in the X, Y, and Z directions. 
-     * The input array is assumed to contain multiple AABBs, each defined by 6 consecutive values representing the 
-     * minimum and maximum coordinates in the X, Y, and Z dimensions. 
+     * Moves an AABB by the specified coordinate points
+     * <p>This method offsets the positions of each bounding box by adding the given offsets in the X, Y, and Z directions.
      *
      * @param AABB An array of bounding boxes.
-     * @param x The translation offset in the X direction.
-     * @param y The translation offset in the Y direction.
-     * @param z The translation offset in the Z direction.
+     * @param x The offset in the X direction.
+     * @param y The offset in the Y direction.
+     * @param z The offset in the Z direction.
      *
      * @return A new array of bounding boxes, each translated by the given offsets. Returns the original array if it does not 
      *         have a length that is a multiple of 6.
@@ -106,7 +105,7 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Expands an axis-aligned bounding box to ensure it includes a specified coordinate point.
+     * Expands an axis-aligned bounding box to ensure it includes the given point (specified by its x, y, z coordinates).
      *
      * <p> If the point is outside the current bounds of the AABB, the method expands the bounding box to include this point. If the point is within the current bounds, 
      * the AABB remains unchanged. The adjustments are made only in the directions where necessary:
@@ -126,7 +125,7 @@ public class AxisAlignedBBUtils {
      *
      * @return A new bounding box where the dimensions have been adjusted to include the specified coordinate point.
      */
-    public static double[] expandToCoordinate(double[] AABB, double x, double y, double z) {
+    public static double[] expandTowards(double[] AABB, double x, double y, double z) {
         double[] tAABB = AABB.clone();
         if (x < 0.0D) {
             tAABB[0] += x;
@@ -375,7 +374,7 @@ public class AxisAlignedBBUtils {
     /**
      * Checks if the given point (specified by its x, y, z coordinates) lies within or on the edges of the AABB.
      *
-     * @param x Position of the point.
+     * @param x Position of the point...
      * @param y        
      * @param z     
      * @param AABB The axis-aligned bounding box represented as a double array with 6 elements:
@@ -394,5 +393,68 @@ public class AxisAlignedBBUtils {
         final double maxY = AABB[4];
         final double maxZ = AABB[5];
         return isInsideAABBIncludeEdges(x, y, z, minX, minY, minZ, maxX, maxY, maxZ);
+    }
+    
+    /**
+     * Returns a list of Y-axis point positions within the bounding box.
+     * The points are generated based on the precision determined by the 
+     * bounding box dimensions.
+     *
+     * @param AABB The AABB on which the points are determined.
+     * @return a list of Y-axis positions, either min and max Y values or 
+     *         evenly spaced points between them.
+     */
+    public static List<Double> getYPointPositions(double[] AABB) {
+        return getYPointPositions(AABB[0], AABB[1], AABB[2], AABB[3], AABB[4], AABB[5]);
+    }
+    
+    /**
+     * Generates a list of Y-axis positions based on the given AABB coordinates.
+     * If the AABB is sufficiently large, it subdivides the Y-axis into evenly 
+     * spaced points. If the bounding box is very small, it returns an empty list.
+     *
+     * @param minX Coordinates of the AABB...
+     * @param minY 
+     * @param minZ
+     * @param maxX 
+     * @param maxY 
+     * @param maxZ 
+     * @return A List of Y-axis points, either evenly spaced or just the min and max Y values
+     */
+    private static List<Double> getYPointPositions(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        if (!(maxX - minX < CollisionUtil.COLLISION_EPSILON) && !(maxY - minY < CollisionUtil.COLLISION_EPSILON) && !(maxZ - minZ < CollisionUtil.COLLISION_EPSILON)) {
+            int xBitPrecision = MathUtil.findBits(minX, maxX);
+            int yBitPrecision = MathUtil.findBits(minY, maxY);
+            int zBitPrecision = MathUtil.findBits(minZ, maxZ);
+            
+            if (xBitPrecision < 0 || yBitPrecision < 0 || zBitPrecision < 0) {
+                // Return a list containing minY and maxY when bits cannot be determined
+                List<Double> result = new ArrayList<>();
+                result.add(minY);
+                result.add(maxY);
+                return result;
+            }
+            else if (xBitPrecision == 0 && yBitPrecision == 0 && zBitPrecision == 0) {
+                // Return a list with 0 - 1 if no subdivisions are needed
+                List<Double> result = new ArrayList<>();
+                result.add(0.0);
+                result.add(1.0);
+                return result;
+            }
+            else {
+                // Calculate the number of subdivisions based on Y precision
+                int subdivisions = 1 << yBitPrecision;
+                List<Double> result = new ArrayList<>();
+                // Generate the list of evenly spaced Y points
+                for (int index = 0; index <= subdivisions; index++) {
+                    result.add((double) index / (double) subdivisions);
+                }
+                return result;
+            }
+        } 
+        else {
+            // Return an empty list if the bounding box is (way) too small
+            return new ArrayList<>();
+        }
     }
 }

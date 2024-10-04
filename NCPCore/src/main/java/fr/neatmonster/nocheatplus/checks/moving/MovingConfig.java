@@ -45,10 +45,7 @@ import fr.neatmonster.nocheatplus.worlds.IWorldData;
  * assigned to it.
  */
 public class MovingConfig extends ACheckConfig {
-
-    // Model flying ids.
-    public static final String ID_JETPACK_ELYTRA = "jetpack.elytra";
-
+    
     // INSTANCE
     public final boolean ignoreCreative;
     public final boolean ignoreAllowFlight;

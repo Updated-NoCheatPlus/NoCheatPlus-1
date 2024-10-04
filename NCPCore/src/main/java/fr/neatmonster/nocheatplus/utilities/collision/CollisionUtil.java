@@ -15,7 +15,10 @@
 package fr.neatmonster.nocheatplus.utilities.collision;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -1064,6 +1067,54 @@ public class CollisionUtil {
             }
         }
         return false;
+    }
+    
+    /**
+     * Collects possible step heights for a given bounding box by analyzing its interaction
+     * with other bounding boxes in the environment. The method compares the Y-axis point
+     * positions of the bounding boxes and returns a sorted array of possible step heights.
+     *
+     * @param AABB An array representing the bounding box as [minX, minY, minZ, maxX, maxY, maxZ].
+     * @param collisionsBoxes A List of other bounding boxes, each represented as a double array.
+     * @param stepHeight The maximum step height that can be traversed.
+     * @param collideY The Y-coordinate of the collision point to avoid.
+     * @return A sorted array of valid step heights.
+     */
+    public static float[] collectStepHeights(double[] AABB, List<double[]> collisionsBoxes, float stepHeight, float collideY) {
+        // Using a set to store unique step heights
+        Set<Float> stepHeights = new HashSet<>();
+        // Extract the minimum Y-coordinate from the collisionBox
+        double minY = AABB[1];
+        
+        // Iterate over all collision boxes
+        for (double[] collision : collisionsBoxes) {
+            // For each block, get possible Y-axis step points (minY and maxY)
+            List<Double> yPoints = AxisAlignedBBUtils.getYPointPositions(collision);
+            
+            for (double possibleStepY : yPoints) {
+                float yDiff = (float) (possibleStepY - minY); // Difference in height
+                // Only consider steps above the current position but not equal to the collision point
+                if (yDiff >= 0.0F && yDiff != collideY) {
+                    if (yDiff > stepHeight) {
+                        break; // Stop further processing for this block, as it exceeds max step height
+                    }
+                    // Add valid step heights to the set
+                    stepHeights.add(yDiff);
+                }
+            }
+        }
+        
+        // Convert the set of step heights to a list, then sort the list
+        List<Float> sortedStepHeights = new ArrayList<>(stepHeights);
+        Collections.sort(sortedStepHeights);
+        
+        // Convert the sorted list to an array of floats
+        float[] stepHeightArray = new float[sortedStepHeights.size()];
+        for (int i = 0; i < sortedStepHeights.size(); i++) {
+            stepHeightArray[i] = sortedStepHeights.get(i);
+        }
+        // Return the sorted array of step heights
+        return stepHeightArray;  
     }
     
     /**

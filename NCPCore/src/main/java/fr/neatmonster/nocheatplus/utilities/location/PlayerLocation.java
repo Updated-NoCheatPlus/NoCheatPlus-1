@@ -71,10 +71,13 @@ public class PlayerLocation extends RichEntityLocation {
     public boolean isAboveGround() {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
-        double yBelow = player.getFallDistance() - cc.sfStepHeight;
-        double[] AABB = new double[]{minX, minY+yBelow, minZ, maxX, maxY+yBelow, maxZ};
+        // TODO / NOTE: getFallDistance() or noFallFallDistance here? We'll have to look out for potential abuses (if there's room for any).
+        double yBelow = player.getFallDistance() - cc.sfStepHeight; // Technically, the operands where inverted in 1.20.5 (subsequently, the addition to minY was inverted to a subtraction)
+        double extraExpansion = pData.getClientVersion().isHigherThan(ClientVersion.V_1_20_3) ? 9.999999747378752E-6D : 0.0; // Introduced in 1.20.6 with the function revision.
+        double[] AABB = new double[]{minX, minY + yBelow - extraExpansion, minZ, maxX, minY, maxZ}; // Skip using maxY as we do not care of the top of the box here.
         return  isOnGround() 
-                || pData.getClientVersion().isAtLeast(ClientVersion.V_1_16_2) 
+                // This fix was introduced in 1.16.2
+                || pData.getClientVersion().isAtLeast(ClientVersion.V_1_16_2)
                 && (
                     player.getFallDistance() < cc.sfStepHeight && !CollisionUtil.isEmpty(blockCache, player, AABB)
                 )
@@ -82,8 +85,8 @@ public class PlayerLocation extends RichEntityLocation {
     }
     
     /**
-     * From TridentItem.java
-     * Get the riptiding force. Not context-aware.
+     * From {@code TridentItem.java}.<br>
+     * Gets the riptiding force. Not context-aware.
      *
      * @param onGround
      * @return A Vector containing the riptiding force's components (x,y,z).
@@ -115,18 +118,20 @@ public class PlayerLocation extends RichEntityLocation {
     }
     
     /**
-     * From EntityHuman.java <br>
-     * Adjusts the player's movement vector to prevent falling off edges while shifting.
-     *
+     * From {@code EntityHuman.java}. <br>
+     * Up to 1.14, this method was contained in the move() function in {@code Entity.java}. In 1.14, it was decoupled from it and put in its own method but still in the Entity class. 
+     * In 1.15 it was finally moved to the EntityHuman class without any change to its logic.<br>
+     * In 1.20.5, its logic was slightly revised.
+     * <hr><br>
      * <p>This function modifies the player's speed along the X and Z axes to keep them from moving over 
      * the edge of a block. It assumes the player is shifting (The game uses the isShiftKeyDown() method here!), on the ground, not flying, and has a downward or
      * no vertical movement.</p>
      *
-     * <p>The function checks if the dispatched speed would place the player over empty space (indicating an 
+     * <p>The function checks if the passed speed Vector would place the player over empty space (indicating an 
      * edge). If so, speed gets reduced in small steps of 0.05 units until the speed is considered to be safe or reaches zero, to prevent falling off.
      * </p>
      * 
-     *<hr>
+     *<hr><br>
      * Note that -in vanilla- this check uses a copy of the current speed, not the original one, resulting in speed being hidden in certain cases.
      *
      * @param vector The movement vector that may be modified to prevent falling off edges.
@@ -140,51 +145,92 @@ public class PlayerLocation extends RichEntityLocation {
         double zDistance = vector.getZ();
         /** Parameter for searching for collisions below */
         double yBelow = pData.getClientVersion().isAtLeast(ClientVersion.V_1_11) ? -cc.sfStepHeight : -1 + CollisionUtil.COLLISION_EPSILON;
-
-        // Move AABB alongside the X axis.
-        double[] offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, minY+yBelow, maxZ}; // Skip using maxY, as we do not care of the top of the box in this case.
-        while (xDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_X)) {
-            if (xDistance < 0.05 && xDistance >= -0.05) {
-                xDistance = 0.0;
-            } 
-            else if (xDistance > 0.0) {
-                xDistance -= 0.05;
-            } 
-            else xDistance += 0.05;
-            // Update the AABB with each iteration.
-            offsetAABB_X = new double[]{minX+xDistance, minY+yBelow, minZ, maxX+xDistance, minY+yBelow, maxZ};
+        
+        // LEGACY UP TO 1.15
+        if (pData.getClientVersion().isLowerThan(ClientVersion.V_1_20_6)) { // 1.20.6 and .5 have the same protocol version, so we cannot distinguish.
+            // Move AABB alongside the X axis.
+            double[] offsetAABB_X = new double[]{minX + xDistance, minY + yBelow, minZ, maxX + xDistance, minY, maxZ}; // Skip using maxY, as we do not care of the top of the box in this case.
+            while (xDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_X)) {
+                if (xDistance < 0.05 && xDistance >= -0.05) {
+                    xDistance = 0.0;
+                } 
+                else if (xDistance > 0.0) {
+                    xDistance -= 0.05;
+                } 
+                else xDistance += 0.05;
+                // Update the AABB with each iteration.
+                offsetAABB_X = new double[]{minX + xDistance, minY + yBelow, minZ, maxX + xDistance, minY, maxZ};
+            }
+            
+            // Move AABB alongside the Z axis.
+            double[] offsetAABB_Z = new double[]{minX, minY + yBelow, minZ + zDistance, maxX, minY, maxZ + zDistance};
+            while (zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_Z)) {
+                if (zDistance < 0.05 && zDistance >= -0.05) {
+                    zDistance = 0.0;
+                } 
+                else if (zDistance > 0.0) {
+                    zDistance -= 0.05;
+                } 
+                else zDistance += 0.05;
+                offsetAABB_Z = new double[]{minX, minY + yBelow, minZ + zDistance, maxX, minY, maxZ + zDistance};
+            }
+            
+            // Move AABB alongside both (diagonally)
+            double[] offsetAABB_XZ = new double[]{minX + xDistance, minY + yBelow, minZ + zDistance, maxX + xDistance, minY, maxZ + zDistance};
+            while (xDistance != 0.0 && zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_XZ)) {
+                if (xDistance < 0.05 && xDistance >= -0.05) {
+                    xDistance = 0.0;
+                } 
+                else if (xDistance > 0.0) {
+                    xDistance -= 0.05;
+                } 
+                else xDistance += 0.05;
+                
+                if (zDistance < 0.05 && zDistance >= -0.05) {
+                    zDistance = 0.0;
+                }
+                 else if (zDistance > 0.0) {
+                    zDistance -= 0.05;
+                } 
+                else zDistance += 0.05;
+                offsetAABB_XZ = new double[]{minX + xDistance, minY + yBelow, minZ + zDistance, maxX + xDistance, minY, maxZ + zDistance};
+            }
         }
-        // Move AABB alongside the Z axis.
-        double[] offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, minY+yBelow, maxZ+zDistance};
-        while (zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_Z)) {
-            if (zDistance < 0.05 && zDistance >= -0.05) {
-                zDistance = 0.0;
-            } 
-            else if (zDistance > 0.0) {
-                zDistance -= 0.05;
-            } 
-            else zDistance += 0.05;
-            offsetAABB_Z = new double[]{minX, minY+yBelow, minZ+zDistance, maxX, minY+yBelow, maxZ+zDistance};
-        }
-        // Move AABB alongside both (diagonally)
-        double[] offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, minY+yBelow, maxZ+zDistance};
-        while (xDistance != 0.0 && zDistance != 0.0 && CollisionUtil.isEmpty(blockCache, player, offsetAABB_XZ)) {
-            if (xDistance < 0.05 && xDistance >= -0.05) {
-                xDistance = 0.0;
-            } 
-            else if (xDistance > 0.0) {
-                xDistance -= 0.05;
-            } 
-            else xDistance += 0.05;
-
-            if (zDistance < 0.05 && zDistance >= -0.05) {
-                zDistance = 0.0;
-            } 
-            else if (zDistance > 0.0) {
-                zDistance -= 0.05;
-            } 
-            else zDistance += 0.05;
-            offsetAABB_XZ = new double[]{minX+xDistance, minY+yBelow, minZ+zDistance, maxX+xDistance, minY+yBelow, maxZ+zDistance};
+        else {
+            double signumX = Math.signum(xDistance) * 0.05D;
+            double signumZ;
+            double[] offsetAABB_X = new double[]{minX + xDistance, minY + yBelow - 9.999999747378752E-6D, minZ, maxX + xDistance, minY, maxZ}; // Skip using maxY, as we do not care of the top of the box in this case.
+            for (signumZ = Math.signum(zDistance) * 0.05D; xDistance != 0.0D && CollisionUtil.isEmpty(blockCache, player, offsetAABB_X); xDistance -= signumX) {
+                if (Math.abs(xDistance) <= 0.05D) {
+                    xDistance = 0.0D;
+                    break;
+                }
+                offsetAABB_X = new double[]{minX + xDistance, minY + yBelow - 9.999999747378752E-6D, minZ, maxX + xDistance, minY, maxZ};
+            }
+            
+            double[] offsetAABB_Z = new double[]{minX, minY + yBelow - 9.999999747378752E-6D, minZ + zDistance, maxX, minY, maxZ + zDistance};
+            while (zDistance != 0.0D && CollisionUtil.isEmpty(blockCache, player, offsetAABB_Z)) {
+                if (Math.abs(zDistance) <= 0.05D) {
+                    zDistance = 0.0D;
+                    break;
+                }
+                zDistance -= signumZ;
+                offsetAABB_Z = new double[]{minX, minY + yBelow - 9.999999747378752E-6D, minZ + zDistance, maxX, minY, maxZ + zDistance};
+            }
+            
+            double[] offsetAABB_XZ = new double[]{minX + xDistance, minY + yBelow - 9.999999747378752E-6D, minZ + zDistance, maxX + xDistance, minY, maxZ + zDistance};
+            while (xDistance != 0.0D && zDistance != 0.0D && CollisionUtil.isEmpty(blockCache, player, offsetAABB_XZ)) {
+                if (Math.abs(xDistance) <= 0.05D) {
+                    xDistance = 0.0D;
+                } 
+                else xDistance -= signumX;
+                
+                if (Math.abs(zDistance) <= 0.05D) {
+                    zDistance = 0.0D;
+                } 
+                else zDistance -= signumZ;
+                offsetAABB_XZ = new double[]{minX + xDistance, minY + yBelow - 9.999999747378752E-6D, minZ + zDistance, maxX + xDistance, minY, maxZ + zDistance};
+            }
         }
         vector = new Vector(xDistance, 0.0, zDistance);
         return vector;

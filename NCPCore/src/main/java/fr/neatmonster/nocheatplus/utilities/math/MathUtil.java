@@ -16,6 +16,8 @@ package fr.neatmonster.nocheatplus.utilities.math;
 
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
+
 /**
  * Auxiliary static methods for dealing with mathematical operations.
  */
@@ -295,18 +297,43 @@ public class MathUtil {
         return startValue + factor * (endValue - startValue);
     }
     
-    
     /**
      * Returns a normalized version of the given vector, ensuring that no NaN values 
      * are produced. If the length of the vector is less than 1.0E-4, 
      * an empty vector (0, 0, 0) is returned instead of attempting normalization.
      *
-     * @param vector the input vector to be normalized
-     * @return a normalized version of the input vector, or a zero vector if the 
-     *         length of the input vector is below 1.0E-4.
+     * @param vector The input vector to be normalized
+     * @return A normalized version of the input vector, or a zero vector if the 
+     *         length of the input vector is smaller than 1.0E-4.
      */
     public static Vector normalizedVectorWithoutNaN(Vector vector) {
         double var0 = vector.length();
         return var0 < 1.0E-4 ? new Vector() : vector.multiply(1 / var0);
+    }
+    
+    /**
+     * Determines the bit precision needed to accurately subdivide the given range (min to max).
+     * It scales the range to a power of two, and checks how many bits can be used to represent it.
+     *
+     * @param min The minimum value in the range
+     * @param max The maximum value in the range
+     * @return The bit precision as an integer (0 to 3), or -1 if the range cannot be subdivided
+     */
+    public static int findBits(double min, double max) {
+        if (!(min < -CollisionUtil.COLLISION_EPSILON) && !(max > 1.0000001)) {
+            for (int bitLevel = 0; bitLevel <= 3; bitLevel++) {
+                // Calculate the scaling factor as a power of two based on the bit level
+                int scaleFactor = 1 << bitLevel;
+                double scaledMin = min * (double) scaleFactor;
+                double scaledMax = max * (double) scaleFactor;
+                // Check if the scaled values are sufficiently close to integers, within an epsilon margin
+                boolean isMinCloseToInteger = Math.abs(scaledMin - (double) Math.round(scaledMin)) < CollisionUtil.COLLISION_EPSILON * (double) scaleFactor;
+                boolean isMaxCloseToInteger = Math.abs(scaledMax - (double) Math.round(scaledMax)) < CollisionUtil.COLLISION_EPSILON * (double) scaleFactor;
+                if (isMinCloseToInteger && isMaxCloseToInteger) {
+                    return bitLevel;
+                }
+            }
+        }
+        return -1;
     }
 }
