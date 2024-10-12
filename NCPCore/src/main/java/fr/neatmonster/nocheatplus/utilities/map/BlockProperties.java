@@ -4206,7 +4206,7 @@ public class BlockProperties {
             return true;
         }
         // Check for multi-AABB blocks (starting from the 2nd AABB in the array. 1st has already been checked above).
-        return AxisAlignedBBUtils.isCollided(AABB, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge, 2);
+        return AxisAlignedBBUtils.getNumberOfAABBs(AABB) > 1 && AxisAlignedBBUtils.isCollided(AABB, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge, 2);
     }
 
     /**
