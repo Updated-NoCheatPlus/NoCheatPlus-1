@@ -15,7 +15,7 @@
 package fr.neatmonster.nocheatplus.utilities;
 
 /**
- * Simple parameter/thing validation.
+ * Simple parameter/thing for recurring validation.
  * 
  * @author asofold
  *
@@ -36,5 +36,23 @@ public class Validate {
             }
         }
     }
-
+    
+    /**
+     * Validates that the given double array's length is a multiple of 6.
+     * 
+     * <p>Currently, this is rather meant to validate double arrays containing multiple bounding boxes, each defined by six consecutive elements 
+     * [minX, minY, minZ, maxX, maxY, maxZ].<br>
+     *
+     * @param array The double array to validate.
+     * 
+     * @throws IllegalArgumentException If the array length is not a multiple of 6.
+     */
+    public static void validateAABBArrayLength(final double[] array) {
+        if (array == null) {
+            throw new NullPointerException("The array is null.");
+        }
+        if (array.length % 6 != 0) {
+            throw new IllegalArgumentException("Array length is not a multiple of 6. Actual length: " + array.length);
+        }
+    }
 }

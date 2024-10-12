@@ -312,6 +312,7 @@ public class MathUtil {
     }
     
     /**
+     * From {@code VoxelShape.java}.<br>
      * Determines the bit precision needed to accurately subdivide the given range (min to max).
      * It scales the range to a power of two, and checks how many bits can be used to represent it.
      *

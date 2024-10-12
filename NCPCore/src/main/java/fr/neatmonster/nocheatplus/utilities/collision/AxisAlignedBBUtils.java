@@ -15,14 +15,17 @@
 package fr.neatmonster.nocheatplus.utilities.collision;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.util.BoundingBox;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
+import fr.neatmonster.nocheatplus.utilities.Validate;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 
 /**
@@ -31,13 +34,121 @@ import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
  */
 public class AxisAlignedBBUtils {
     
+    /*
+      TODO: Perhaps, instead of working with doubles (which has the disadvantage of having to remember each index for each coordinate (AABB[0-1-2-3-4-5]), we could make an instance class of some sort (AxisAlignedBB.java / CollisionBox.java / BoundingBox.java (...) (minXYZ,maxXYZ)
+      Similar to Bukkit's BoundingBox.java 
+     */
     private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
     
     /**
-     * Infers a new axis-aligned bounding box from the given Entity's NMS width and height parameters.
+     * Infers how many AABBs are supposed to be present in the given double array (represented as 6 consecutive doubles in the following order:
+     * {minX, minY, minZ, maxX, maxY, maxZ}). <br>
+     * To know how many AABBs are contained in a given array, you can divide its length by 6 (array.length / 6).
+     * The length must therefore be a multiple of 6. <br>
+     * 
+     * @example 
+     * <li>If the array contains 2 AABBs, they'll be represented as 12 consecutive doubles, thus -> 12 / 6 = 2. </li>
+     * <li>If 3 AABBs are contained, 18 doubles -> 18 / 6 = 3. And so on...</li>
+     *      
+     * @param array The array to inspect. It is expected to contain multiple bounding boxes (more than 6 elements), but can also contain a single one.
+     * 
+     * @throws IllegalArgumentException if the given array's length isn't a multiple of 6.
+     * 
+     * @return An int indicating how many AABBs are supposed to be represented in the array.
+     */
+    public static int getNumberOfAABBs(double[] array) {
+        Validate.validateAABBArrayLength(array);
+        return (int)array.length / 6;
+    }
+    
+    /**
+     * Converts a BoundingBox object (Bukkit) into a double array representing its min/max coordinates.
+     *
+     * @param box The BoundingBox to be converted.
+     * @return A double array containing the minX, minY, minZ, maxX, maxY, maxZ coords of the bounding box.
+     */
+    public static double[] toArray(BoundingBox box) {
+        return new double[] {
+                box.getMinX(), box.getMinY(), box.getMinZ(), // Min coordinates of the bounding box.
+                box.getMaxX(), box.getMaxY(), box.getMaxZ()  // Max coordinates of the bounding box.
+        };
+    }
+    
+    /**
+     * Extracts the individual bounding box from a multi-bounding box double array, based on the given index.
+     * Rather meant to be used if you already know in advance which bounding box you need in the array.
+     *
+     * <p>The input array is expected to contain multiple bounding boxes, each represented by 6 consecutive doubles: 
+     * minX, minY, minZ, maxX, maxY, maxZ. The length must therefore be a multiple of 6.
+     *
+     * @example
+     * Given a multiAABB array representing two bounding boxes:
+     * <pre>
+     * double[] multiAABB = {0.0, 0.0, 0.0, 1.0, 1.0, 1.0,  // AABB 1
+     *                       1.0, 1.0, 1.0, 2.0, 2.0, 2.0}; // AABB 2
+     *
+     * double[] AABB_1st = extractBoundingBox(multiAABB, 1); // Returns {0.0, 0.0, 0.0, 1.0, 1.0, 1.0}
+     * double[] AABB_2nd = extractBoundingBox(multiAABB, 2); // Returns {1.0, 1.0, 1.0, 2.0, 2.0, 2.0}
+     * </pre>
+     * 
+     * @param multiAABB An array containing multiple bounding boxes. If the array contains only a single bounding box, the method will just return it.
+     * @param boxNumber The 1-based index of the bounding box to retrieve (starting from 1).
+     *
+     * @throws IllegalArgumentException If the multiAABB length is not a multiple of 6, or if boxNumber is out of bounds.
+     *
+     * @return A double array representing the individual bounding box.
+     */
+    public static double[] extractBoundingBox(double[] multiAABB, int boxNumber) {
+        int numberOfAABBs = getNumberOfAABBs(multiAABB);
+        if (boxNumber < 1 || boxNumber > numberOfAABBs) {
+            throw new IllegalArgumentException("boxNumber is out of bounds. Valid indices are between 1 and " + numberOfAABBs);
+        }
+        if (numberOfAABBs == 1) {
+            return multiAABB;
+        }
+        // Calculate the starting position for the requested bounding box
+        int start = (boxNumber - 1) * 6;
+        // Extract the individual bounding box
+        return new double[] {
+                multiAABB[start],//0  // minX
+                multiAABB[start + 1], // minY
+                multiAABB[start + 2], // minZ
+                multiAABB[start + 3], // maxX
+                multiAABB[start + 4], // maxY
+                multiAABB[start + 5]  // maxZ
+        };
+    }
+    
+    /**
+     * Splits a multi-bounding box array into individual bounding boxes and collects them into a list.
+     *
+     * @param multiAABB An array of bounding boxes where each box is represented by 6 consecutive doubles: 
+     *                  minX, minY, minZ, maxX, maxY, maxZ. The length of this array must be a multiple of 6.
+     *
+     * @throws IllegalArgumentException If multiAABB length is not a multiple of 6.
+     *
+     * @return The bounding boxes List.
+     */
+    public static List<double[]> splitIntoSingle(double[] multiAABB) {
+        // If there is only one bounding box, return it in a single-item list
+        int numberOfAABBs = getNumberOfAABBs(multiAABB);
+        if (numberOfAABBs == 1) {
+            // Minor performance gain: avoid creating a list if the passed array only contains a single AABB.
+            // (Also makes the method more semantically correct).
+            return Collections.singletonList(multiAABB);
+        }
+        List<double[]> list = new ArrayList<>();
+        for (int i = 1; i <= numberOfAABBs; i++) {
+            list.add(extractBoundingBox(multiAABB, i));
+        }
+        return list;
+    }
+    
+    /**
+     * Infers a new axis-aligned bounding box from the given Entity's width and height.
      * This method calculates the bounding box centered at its location and dimensions.
      *
-     * @param entity The entity for which to calculate the AABB
+     * @param entity The entity for which to calculate the AABB.
      * @return A new array of doubles containing the entity's AABB coordinates in the following order:
      *         {minX, minY, minZ, maxX, maxY, maxZ}     
      */
@@ -54,16 +165,16 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Infers a new axis-aligned bounding box from the given Entity's NMS width and height parameters.
+     * Infers a new axis-aligned bounding box from the given Entity's width and height.
      * This method calculates the bounding box centered at its location and dimensions.
      * <p>The width resolution is adjusted to 0.5 units by rounding to the nearest half unit.</p>
      *
-     * @param entity The entity for which to calculate the AABB
+     * @param entity The entity for which to calculate the AABB.
      * @param loc The central location around which the AABB is to be created
      * @return A new array of doubles containing the entity's AABB coordinates in the following order:
      *         {minX, minY, minZ, maxX, maxY, maxZ}
      */
-    public static double[] createAABBAtHorizontalResolution(Entity entity, Location loc) {
+    public static double[] createAABBAtWidthResolution(Entity entity, Location loc) {
         final double widthRes = Math.round(mcAccess.getHandle().getWidth(entity) * 500.0) / 1000.0;
         final double height = mcAccess.getHandle().getHeight(entity);
         return new double[] {
@@ -77,35 +188,36 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Moves an AABB by the specified coordinate points
-     * <p>This method offsets the positions of each bounding box by adding the given offsets in the X, Y, and Z directions.
+     * Offsets an AABB by the specified coordinate points.
+     * <p>The method supports multi-bounding box double arrays. If a multi-AABB is passed, each bounding box in the array will be offset.</p>
      *
-     * @param AABB An array of bounding boxes.
-     * @param x The offset in the X direction.
-     * @param y The offset in the Y direction.
-     * @param z The offset in the Z direction.
+     * @param AABB A double array containing a single or multiple bounding boxes.
+     * @param x The offsets in the x, y and z dimensions...
+     * @param y 
+     * @param z 
+     * 
+     * @throws IllegalArgumentException If the array length is not a multiple of 6.
      *
-     * @return A new array of bounding boxes, each translated by the given offsets. Returns the original array if it does not 
-     *         have a length that is a multiple of 6.
+     * @return A new array of bounding boxes, each translated by the given offsets.<br> 
+     *     
      */
     public static double[] move(double[] AABB, double x, double y, double z) {
-        if (AABB.length % 6 == 0) {
-            double[] tAABB = AABB.clone();
-            for (int i = 1; i <= (int)tAABB.length / 6; i++) {
-                tAABB[i*6-6] += x;
-                tAABB[i*6-3] += x;
-                tAABB[i*6-5] += y;
-                tAABB[i*6-2] += y;
-                tAABB[i*6-4] += z;
-                tAABB[i*6-1] += z;
-            }
-            return tAABB;
+        double[] tAABB = AABB.clone();
+        // The loop starts at i = 1 and runs until i is equal to the number of AABBs in the array. (i.e.: if there are 2 AABB in the array, they'll be represented as 12 doubles -> 12 / 6 = 2, that why the array length must be a multiple of 6)
+        for (int i = 1; i <= getNumberOfAABBs(AABB); i++) {
+            // Indices are calculated using [i * 6 - X] expressions, where X ensures you target the specific coordinates for each AABB.
+            tAABB[i*6-6] += x; // i.e.: For the first AABB in the array 1 * 6 - 6 = 0: This is the index for minX coordinate of the first AABB and so on...
+            tAABB[i*6-3] += x;
+            tAABB[i*6-5] += y;
+            tAABB[i*6-2] += y;
+            tAABB[i*6-4] += z;
+            tAABB[i*6-1] += z;
         }
-        return AABB;
+        return tAABB;
     }
     
     /**
-     * Expands an axis-aligned bounding box to ensure it includes the given point (specified by its x, y, z coordinates).
+     * Expands or contracts an axis-aligned bounding box to ensure it includes the given point (specified by its x, y, z coordinates).
      *
      * <p> If the point is outside the current bounds of the AABB, the method expands the bounding box to include this point. If the point is within the current bounds, 
      * the AABB remains unchanged. The adjustments are made only in the directions where necessary:
@@ -148,29 +260,7 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Splits a multi-bounding box array into individual bounding boxes.
-     *
-     * <p>The input array is expected to contain multiple bounding boxes. This method divides the input array into separate bounding boxes and 
-     * collects them into a list.
-     *
-     * @param multiAABB An array of bounding boxes where each bounding box is represented by 6 consecutive doubles: 
-     *                  minX, minY, minZ, maxX, maxY, maxZ. The length of this array must be a multiple of 6.
-     *
-     * @return A list of bounding boxes, where each bounding box is represented as a double array with 6 values: 
-     *         minX, minY, minZ, maxX, maxY, maxZ. Returns an empty list if the input array length is not a multiple of 6.
-     */
-    public static List<double[]> splitIntoSingle(double[] multiAABB) {
-        List<double[]> a = new ArrayList<>();
-        if (multiAABB.length % 6 == 0) {
-            for (int i = 1; i <= (int)multiAABB.length / 6; i++) {
-                a.add(new double[] {multiAABB[i*6-6], multiAABB[i*6-5], multiAABB[i*6-4], multiAABB[i*6-3], multiAABB[i*6-2], multiAABB[i*6-1]});
-            }
-        }
-        return a;
-    }
-    
-    /**
-     * Calculates the adjusted offset in the X direction for an axis-aligned bounding box (AABB) when colliding with another bounding box.
+     * Calculates the adjusted offset in the X direction for an axis-aligned bounding box when colliding with another bounding box.
      *
      * <p>This method determines how much movement along the X axis is allowed before the bounding boxes intersect, given the
      * offset in the X direction. It ensures that the AABBs do not overlap in the Y and Z dimensions before computing the adjustment.
@@ -204,7 +294,7 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Calculates the adjusted offset in the Y direction for an axis-aligned bounding box (AABB) when colliding with another bounding box.
+     * Calculates the adjusted offset in the Y direction for an axis-aligned bounding box when colliding with another bounding box.
      *
      * <p>This method determines how much movement along the Y axis is allowed before the bounding boxes intersect, given the
      * offset in the Y direction. It ensures that the AABBs do not overlap in the X and Z dimensions before computing the adjustment.
@@ -238,7 +328,7 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Calculates the adjusted offset in the Z direction for an axis-aligned bounding box (AABB) when colliding with another bounding box.
+     * Calculates the adjusted offset in the Z direction for an axis-aligned bounding box when colliding with another bounding box.
      *
      * <p>This method determines how much movement along the Z axis is allowed before the bounding boxes intersect, given the
      * offset in the Z direction. It ensures that the AABBs do not overlap in the X and Y dimensions before computing the adjustment.
@@ -272,41 +362,89 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Checks if a single axis-aligned bounding box (AABB) collides with any part of a block's bounding box.
+     * Checks whether two axis-aligned bounding boxes intersect.
+     * An epsilon value is used to ensure precise comparisons between the AABBs' boundaries.
      *
-     * @param rawAABB An array representing the bounding box of a block. This can be a complex shape, 
-     *                represented by multiple AABBs, with each AABB defined by six consecutive elements 
-     *                in the array: [minX, minY, minZ, maxX, maxY, maxZ]. The length of the array must be 
-     *                a multiple of 6. If a complex shape with multiple bounding boxes is passed, only the primary bounding box (first six elements) will be considered for collision detection.
+     * @param aabb1 The first AABB, represented by a double array [minX, minY, minZ, maxX, maxY, maxZ].
+     * @param aabb2 The second AABB, represented by a double array [minX, minY, minZ, maxX, maxY, maxZ].
+     * @return True if the two AABBs intersect, false otherwise.
+     */
+    public static boolean isIntersected(double[] aabb1, double[] aabb2) {
+        return aabb2[3] - CollisionUtil.COLLISION_EPSILON > aabb1[0] && aabb2[0] + CollisionUtil.COLLISION_EPSILON < aabb1[3] // x
+                && aabb2[4] - CollisionUtil.COLLISION_EPSILON > aabb1[1] && aabb2[1] + CollisionUtil.COLLISION_EPSILON < aabb1[4] // y
+                && aabb2[5] - CollisionUtil.COLLISION_EPSILON > aabb1[2] && aabb2[2] + CollisionUtil.COLLISION_EPSILON < aabb1[5]; // z
+    }
+    
+    /**
+     * Checks if a single axis-aligned bounding box (sAABB) collides with any part of a block's bounding box.
+     *
+     * @param blockAABB A double array representing the bounding box of a block. This can be a complex shape, 
+     *                meaning the array can contain multiple bounding boxes each defined by six <i>consecutive</i> elements 
+     *                [minX, minY, minZ, maxX, maxY, maxZ / minX_1, minY_1 (...)], therefore, the length of the array must be a multiple of 6.<br>
      * @param x The coordinate of the block's position in the world.
-     * @param y        
-     * @param z        
-     * @param sAABB The single AABB to check for collision. This is defined by an array of six elements: 
-     *              [minX, minY, minZ, maxX, maxY, maxZ]. 
+     * @param y
+     * @param z
+     * @param sAABB The single double array containing the AABB to check for collision. <br>
+     *              If an array with multiple AABBs is passed, only the primary bounding box (first six doubles) will be considered for collision detection.
      * @param allowEdge A boolean indicating whether collisions at the edges of the AABBs should be considered 
      *                  as a valid collision. If true, an AABB touching the edge of the block's AABB will 
      *                  be considered a collision.
+     * @param startIndex The index (starting from 1) of the AABB in `blockAABB` from which to start checking for collisions.<br> Cannot be less than 1.
+     *
+     * @throws IllegalArgumentException If rawAABB length is not a multiple of 6 or is null, or the startIndex parameter is less than 1.
+     *
      * @return Returns {@code true} if the single AABB collides with any part of the block's AABB, taking into account the {@code allowEdge} flag. Otherwise, returns {@code false}.
      */
-    public static boolean isCollided(final double[] rawAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge) {
-        if (rawAABB != null && sAABB != null && rawAABB.length % 6 == 0) {
-            for (int i = 1; i <= (int)rawAABB.length / 6; i++) {
-
-                // Clearly outside AABB.
-                if (sAABB[0] > rawAABB[i*6-3] + x || sAABB[3] < rawAABB[i*6-6] + x || sAABB[1] > rawAABB[i*6-2] + y || sAABB[4] < rawAABB[i*6-5] + y
-                    || sAABB[2] > rawAABB[i*6-1] + z || sAABB[5] < rawAABB[i*6-4] + z) {
+    public static boolean isCollided(final double[] blockAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge, int startIndex) {
+        if (startIndex < 0) {
+            throw new IllegalArgumentException("startIndex cannot be less than 1. Index: " + startIndex);
+        }
+        if (blockAABB != null && sAABB != null) {
+            for (int i = startIndex; i <= getNumberOfAABBs(blockAABB); i++) {
+                if (sAABB[0] > blockAABB[i*6-3] + x 
+                    || sAABB[3] < blockAABB[i*6-6] + x 
+                    || sAABB[1] > blockAABB[i*6-2] + y 
+                    || sAABB[4] < blockAABB[i*6-5] + y 
+                    || sAABB[2] > blockAABB[i*6-1] + z 
+                    || sAABB[5] < blockAABB[i*6-4] + z) {
+                    // Outside AABB
                     continue;
                 }
                 // Hitting the max-edges (if allowed).
-                if (sAABB[0] == rawAABB[i*6-3] + x && (rawAABB[i*6-3] < 1.0 || allowEdge)
-                    || sAABB[1] == rawAABB[i*6-2] + y && (rawAABB[i*6-2] < 1.0 || allowEdge) 
-                    || sAABB[2] == rawAABB[i*6-1] + z && (rawAABB[i*6-1] < 1.0 || allowEdge)) {
+                if (sAABB[0] == blockAABB[i*6-3] + x && (blockAABB[i*6-3] < 1.0 || allowEdge) 
+                    || sAABB[1] == blockAABB[i*6-2] + y && (blockAABB[i*6-2] < 1.0 || allowEdge) 
+                    || sAABB[2] == blockAABB[i*6-1] + z && (blockAABB[i*6-1] < 1.0 || allowEdge)) {
+                    // Outside AABB
                     continue;
                 }
+                // Collision.
                 return true;
             }
         }
         return false;
+    }
+    
+    /**
+     * Checks if a single axis-aligned bounding box (sAABB) collides with any part of a block's bounding box.
+     *
+     * @param blockAABB A double array representing the bounding box of a block. This can be a complex shape, 
+     *                meaning the array can contain multiple bounding boxes each defined by six <i>consecutive</i> elements 
+     *                [minX, minY, minZ, maxX, maxY, maxZ / minX_1, minY_1 (...)], therefore, the length of the array must be a multiple of 6.<br>
+     * @param x The coordinate of the block's position in the world.
+     * @param y
+     * @param z
+     * @param sAABB The single double array containing the AABB to check for collision. <br>
+     *              If an array with multiple AABBs is passed, only the primary bounding box (first six doubles) will be considered for collision detection.
+     * @param allowEdge A boolean indicating whether collisions at the edges of the AABBs should be considered 
+     *                  as a valid collision. If true, an AABB touching the edge of the block's AABB will 
+     *                  be considered a collision.
+     *
+     * @throws IllegalArgumentException If rawAABB length is not a multiple of 6.
+     *
+     * @return Returns {@code true} if the single AABB collides with any part of the block's AABB, taking into account the {@code allowEdge} flag. Otherwise, returns {@code false}.
+     */
+    public static boolean isCollided(final double[] blockAABB, final int x, final int y, final int z, final double[] sAABB, final boolean allowEdge) {
+        return isCollided(blockAABB, x, y, z, sAABB, allowEdge, 1);
     }
     
     /**
@@ -409,6 +547,7 @@ public class AxisAlignedBBUtils {
     }
     
     /**
+     * From {@code VoxelShape.java}.<br>
      * Generates a list of Y-axis positions based on the given AABB coordinates.
      * If the AABB is sufficiently large, it subdivides the Y-axis into evenly 
      * spaced points. If the bounding box is very small, it returns an empty list.

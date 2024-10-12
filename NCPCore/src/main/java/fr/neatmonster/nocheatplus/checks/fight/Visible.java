@@ -90,7 +90,7 @@ public class Visible extends Check {
         }
         
         // Determine the entity's bounding box dimensions
-        final double[] AABB = AxisAlignedBBUtils.createAABBAtHorizontalResolution(damaged, dLoc);
+        final double[] AABB = AxisAlignedBBUtils.createAABBAtWidthResolution(damaged, dLoc);
 
         // Determine the attacker's eye position
         final double eyeX = loc.getX();

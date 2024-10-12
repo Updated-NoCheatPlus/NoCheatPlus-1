@@ -26,6 +26,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Stairs;
 
 import fr.neatmonster.nocheatplus.utilities.collision.Axis;
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
 public class BukkitStairs implements BukkitShapeModel {
@@ -138,7 +139,7 @@ public class BukkitStairs implements BukkitShapeModel {
         final double maxX = octet[3];
         final double maxY = octet[4];
         final double maxZ = octet[5];
-        for (int i = 2; i <= (int)bounds.length / 6; i++) {
+        for (int i = 2; i <= AxisAlignedBBUtils.getNumberOfAABBs(bounds); i++) {
                 
             final double tminX = bounds[i*6-6];
             final double tminY = bounds[i*6-5];

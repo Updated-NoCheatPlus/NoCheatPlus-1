@@ -24,7 +24,9 @@ import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 
 import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.utilities.Validate;
 import fr.neatmonster.nocheatplus.utilities.collision.Axis;
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
@@ -92,10 +94,7 @@ public class LegacyBlocks {
                 this.bounds = null;
                 return;
             }
-
-            if (bounds.length % 6 != 0) {
-                throw new IllegalArgumentException("The length must be a multiple of 6");
-            }
+            Validate.validateAABBArrayLength(bounds);
             this.bounds = bounds;
         }
 
@@ -109,9 +108,7 @@ public class LegacyBlocks {
 
         private static final double closedHeight = 0.1875;
         private static final double openWidth = 0.1875;
-        public BlockTrapDoor() {
-            
-        }
+        public BlockTrapDoor() {}
 
         @Override
         public double[] getShape(BlockCache cache, Material mat, int x, int y, int z, boolean old) {
@@ -165,15 +162,12 @@ public class LegacyBlocks {
 
     public static class BlockEndPortalFrame implements Block {
 
-        public BlockEndPortalFrame() {
-            
-        }
+        public BlockEndPortalFrame() {}
 
         public double[] getShapeLegacy(boolean hasEye) {
-            return hasEye ?
-              new double[] {0.0, 0.0, 0.0, 1.0, 0.8125, 1.0,
-                            0.3125, 0.8125, 0.3125, 0.6875, 1.0, 0.6875}
-            : new double[] {0.0, 0.0, 0.0, 1.0, 0.8125, 1.0};
+            return hasEye ? new double[] {0.0, 0.0, 0.0, 1.0, 0.8125, 1.0,
+                                          0.3125, 0.8125, 0.3125, 0.6875, 1.0, 0.6875} 
+                          : new double[] {0.0, 0.0, 0.0, 1.0, 0.8125, 1.0};
         }
 
         public double[] getShapeLegacy(int data) {
@@ -188,9 +182,7 @@ public class LegacyBlocks {
 
     public static class BlockPistonHead implements Block {
 
-        public BlockPistonHead() {
-            
-        }
+        public BlockPistonHead() {}
 
         @Override
         public double[] getShape(BlockCache cache, Material mat, int x, int y, int z, boolean old) {
@@ -292,9 +284,7 @@ public class LegacyBlocks {
         private final double[][] bottom_stairs = makeshape(bottomslabs, octet_npn, octet_ppn, octet_npp, octet_ppp);
         private final int[] shape_by_state = new int[]{12, 5, 3, 10, 14, 13, 7, 11, 13, 7, 11, 14, 8, 4, 1, 2, 4, 1, 2, 8};
 
-        public BlockStairs() {
-            
-        }
+        public BlockStairs() {}
 
         @Override
         public double[] getShape(BlockCache cache, Material mat, int x, int y, int z, boolean old) {
@@ -445,7 +435,7 @@ public class LegacyBlocks {
             final double maxX = octet[3];
             final double maxY = octet[4];
             final double maxZ = octet[5];
-            for (int i = 2; i <= (int)bounds.length / 6; i++) {
+            for (int i = 2; i <= AxisAlignedBBUtils.getNumberOfAABBs(bounds); i++) {
                     
                 final double tminX = bounds[i*6-6];
                 final double tminY = bounds[i*6-5];

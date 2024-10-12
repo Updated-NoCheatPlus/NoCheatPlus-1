@@ -72,20 +72,20 @@ public class SurvivalFly extends Check {
 
     /** To join some tags with moving check violations. */
     private final ArrayList<String> tags = new ArrayList<>(15);
+    
     private final ArrayList<String> justUsedWorkarounds = new ArrayList<>();
+    
     private final BlockChangeTracker blockChangeTracker;
+    
     private final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
     
     
-    /**
-     * Instantiates a new survival fly check.
-     */
     public SurvivalFly() {
         super(CheckType.MOVING_SURVIVALFLY);
         blockChangeTracker = NCPAPIProvider.getNoCheatPlusAPI().getBlockChangeTracker();
     }
-
-
+    
+    
     /**
      * Checks a player
      *
@@ -638,9 +638,9 @@ public class SurvivalFly extends Check {
      *     <li>Multiply the input vector (= the vector containing the player's WASD impulse) by 0.98</li>
      *     <li>{@code jumpFromGround()} is called if the player is on ground and has pressed the space bar.
      *   </ul>
-     * <li>Begin {@code EntityLiving.travel()} ({@code In EntityLiving.aiStep()})
+     * <li>Begin executing {@code EntityLiving.travel()} ({@code In EntityLiving.aiStep()})
      *   <ul>
-     *     <li>Invoke {@code Entity.moveRelative()} (apply acceleration, call {@code getInputVector()})
+     *     <li>Invoke {@code Entity.moveRelative()} (WASD inputs are transformed to acceleration vectors, call {@code getInputVector()})
      *     <li>If not in liquid or gliding, limit motion when on climbable via {@code handleRelativeFrictionAndCalculateMovement()}
      *     <li>Invoke {@code Entity.move()}
      *       <ul>
@@ -657,7 +657,7 @@ public class SurvivalFly extends Check {
      *         <li>Invoke {@code [Entity].getBlockSpeedFactor()} (soul sand, honey blocks)
      *       </ul>
      *   </ul>
-     * <li>Complete {@code EntityLiving.travel()}
+     * <li>Complete executing {@code EntityLiving.travel()}
      *   <ul>
      *     <li>{@code handleRelativeFrictionAndCalculateMovement()} (for snow climbing speed)
      *     <li>Apply gravity.
@@ -667,7 +667,7 @@ public class SurvivalFly extends Check {
      *   </ul>
      * <li>Complete {@code LivingEntity.aiStep()}
      * <li>Complete {@code LivingEntity.tick()}
-     * <li> Finally, send movement to the server.
+     * <li> Finally, send movement to the server .
      * </ul>
      *
      * <p>The movement speed estimate is calculated starting from the horizontal collision reset, calculating the client’s actions on the next move and then processing the actions performed prior.</p>
@@ -767,8 +767,8 @@ public class SurvivalFly extends Check {
                 if (toOnGround && thisMove.yDistance == 0.0) {
                     // Mojang... Why did you have to make the multiplier dependent to vertical motion, why...
                     isPredictable = false;
-                    thisMove.xAllowedDistance *= 0.5;
-                    thisMove.zAllowedDistance *= 0.5;
+                    thisMove.xAllowedDistance *= 0.6;
+                    thisMove.zAllowedDistance *= 0.6;
                 }
                 else {
                     // Otherwise, do attempt to predict. Hopefully this works.

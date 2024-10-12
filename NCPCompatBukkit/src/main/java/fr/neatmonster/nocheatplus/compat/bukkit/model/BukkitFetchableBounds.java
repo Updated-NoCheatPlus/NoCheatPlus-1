@@ -19,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.VoxelShape;
 
+import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 
 public class BukkitFetchableBounds implements BukkitShapeModel {
@@ -29,7 +30,7 @@ public class BukkitFetchableBounds implements BukkitShapeModel {
         final VoxelShape blockshape = block.getCollisionShape();
         double[] res = {};
         for (BoundingBox box : blockshape.getBoundingBoxes()) {
-            res = add(res, toArray(box));
+            res = add(res, AxisAlignedBBUtils.toArray(box));
         }
         if (res.length == 0) return null;
         return res;
@@ -40,10 +41,6 @@ public class BukkitFetchableBounds implements BukkitShapeModel {
         System.arraycopy(array1, 0, newArray, 0, array1.length);
         System.arraycopy(array2, 0, newArray, array1.length, array2.length);
         return newArray;
-    }
-
-    private double[] toArray(BoundingBox box) {
-        return new double[] {box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ()};
     }
 
     @Override

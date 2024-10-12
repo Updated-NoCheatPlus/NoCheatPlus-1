@@ -1070,6 +1070,7 @@ public class CollisionUtil {
     }
     
     /**
+     * From {@code Entity.java}.<br>
      * Collects possible step heights for a given bounding box by analyzing its interaction
      * with other bounding boxes in the environment. The method compares the Y-axis point
      * positions of the bounding boxes and returns a sorted array of possible step heights.
@@ -1080,7 +1081,7 @@ public class CollisionUtil {
      * @param collideY The Y-coordinate of the collision point to avoid.
      * @return A sorted array of valid step heights.
      */
-    public static float[] collectStepHeights(double[] AABB, List<double[]> collisionsBoxes, float stepHeight, float collideY) {
+    public static float[] collectCandidateStepUpHeights(double[] AABB, List<double[]> collisionsBoxes, float stepHeight, float collideY) {
         // Using a set to store unique step heights
         Set<Float> stepHeights = new HashSet<>();
         // Extract the minimum Y-coordinate from the collisionBox

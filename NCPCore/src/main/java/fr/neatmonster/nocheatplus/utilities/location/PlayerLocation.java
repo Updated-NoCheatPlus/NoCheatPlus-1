@@ -135,6 +135,7 @@ public class PlayerLocation extends RichEntityLocation {
      * Note that -in vanilla- this check uses a copy of the current speed, not the original one, resulting in speed being hidden in certain cases.
      *
      * @param vector The movement vector that may be modified to prevent falling off edges.
+     * 
      * @return The adjusted movement vector.
      */
     public Vector maybeBackOffFromEdge(Vector vector) {

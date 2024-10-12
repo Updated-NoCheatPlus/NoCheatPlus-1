@@ -4083,9 +4083,9 @@ public class BlockProperties {
             // Somehow null, early return.
             return false;
         }
+        
         // The block's AABB coordinates.
         double bMinX, bMinZ, bMinY, bMaxX, bMaxY, bMaxZ;
-        
         //////////////////////////////////////////////////////////////////
         // Fill in the horizontal bounds (minX, maxX, minZ, maxZ)...    //
         //////////////////////////////////////////////////////////////////
@@ -4200,51 +4200,13 @@ public class BlockProperties {
         //////////////////////////////////
         // Check for collision          //
         //////////////////////////////////
-        boolean collide = false;
-        boolean outOfBounds = false;
         final boolean allowEdge = (flags & BlockFlags.F_COLLIDE_EDGES) == 0;
         // Still keep this primary bounds check stand alone with loop below for flags compatibility
-        if (minX > bMaxX + x || maxX < bMinX + x || minY > bMaxY + y || maxY < bMinY + y || minZ > bMaxZ + z || maxZ < bMinZ + z) {
-            outOfBounds = true;
+        if (AxisAlignedBBUtils.isCollided(new double[]{bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ}, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge)) {
+            return true;
         }
-        // Hitting the max-edges (if allowed).
-        if (!outOfBounds 
-            && (
-                minX == bMaxX + x && (bMaxX < 1.0 || allowEdge)
-                || minY == bMaxY + y && (bMaxY < 1.0 || allowEdge)
-                || minZ == bMaxZ + z && (bMaxZ < 1.0 || allowEdge))) {
-            outOfBounds = true;
-        }
-
-        if (!outOfBounds) {
-            collide = true;
-        }
-        
-        // Check for multi-AABB blocks.
-        if (!collide && AABB.length > 6 && AABB.length % 6 == 0) {
-            for (int i = 2; i <= (int)AABB.length / 6; i++) {
-
-                // Clearly outside of AABB.
-                if (minX > AABB[i*6-3] + x || maxX < AABB[i*6-6] + x || minY > AABB[i*6-2] + y || maxY < AABB[i*6-5] + y
-                    || minZ > AABB[i*6-1] + z || maxZ < AABB[i*6-4] + z) {
-                    continue;
-                }
-                // Hitting the max-edges (if allowed).
-                if (minX == AABB[i*6-3] + x && (AABB[i*6-3] < 1.0 || allowEdge)
-                    || minY == AABB[i*6-2] + y && (AABB[i*6-2] < 1.0 || allowEdge) 
-                    || minZ == AABB[i*6-1] + z && (AABB[i*6-1] < 1.0 || allowEdge)) {
-                    continue;
-                }
-                collide = true;
-                break;
-            }
-        }
-
-        if (!collide) {
-            return false;
-        }
-        // Collision.
-        return true;
+        // Check for multi-AABB blocks (starting from the 2nd AABB in the array. 1st has already been checked above).
+        return AxisAlignedBBUtils.isCollided(AABB, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge, 2);
     }
 
     /**
@@ -4468,10 +4430,9 @@ public class BlockProperties {
                 return AlmostBoolean.MAYBE;
             }
         }
-        // Check if the collided (and solid ^) block contains the player's foot.
-        // (Block's min height is higher than the distance from foot to block) 
+        // Check whether the minimum ground height of the block is higher than where the entity’s bounding box ends in the Y-axis. 
+        // If it is, the entity is considered to be inside the block or “stuck,” which means this block isn’t a valid candidate for being ground.
         if (getGroundMinHeight(access, x, y, z, node, flags) > maxY - y) { // TODO: height >= ?
-            // Assume stuck in block; within block, this block collision is no candidate for ground.
             if (AxisAlignedBBUtils.isFullBounds(AABB)) {
                 return AlmostBoolean.NO;
             }
