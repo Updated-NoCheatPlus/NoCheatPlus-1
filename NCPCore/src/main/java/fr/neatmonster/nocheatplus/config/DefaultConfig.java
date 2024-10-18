@@ -431,7 +431,7 @@ public class DefaultConfig extends ConfigFile {
         set(ConfPaths.INVENTORY_INVENTORYMOVE_ACTIONS, "cancel vl>10 log:inventorymove:7:8:i cancel", 1154);
         // Gutenberg
         set(ConfPaths.INVENTORY_GUTENBERG_CHECK, "default", 785);
-        set(ConfPaths.INVENTORY_GUTENBERG_PAGELIMIT, 50, 1154);
+        set(ConfPaths.INVENTORY_GUTENBERG_PAGELIMIT, ServerVersion.compareMinecraftVersion("1.14") >= 0 ? 100 : 50, 1154);
         set(ConfPaths.INVENTORY_GUTENBERG_ACTIONS, "cancel log:gutenberg:0:10:if cmdc:kickinvaliddata:0:5", 1154);
         // Items
         set(ConfPaths.INVENTORY_ITEMS_CHECK, "default", 785);
