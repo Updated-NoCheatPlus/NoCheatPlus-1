@@ -1145,9 +1145,9 @@ public class SurvivalFly extends Check {
         final boolean yDirectionSwitch = lastMove.toIsValid && lastMove.yDistance != yDistance && (yDistance <= 0.0 && lastMove.yDistance >= 0.0 || yDistance >= 0.0 && lastMove.yDistance <= 0.0);
         /* Not on ground, not on climbable, not in liquids, not in stuck-speed, no lostground (...) */
         final boolean fullyInAir = !thisMove.touchedGroundWorkaround && !resetFrom && !resetTo;
-        /** 0: With space bar pressed. 1: with space bar not pressed */
-        double[] possibleLiquidSpeed = new double[2];
-        boolean[] collideLiquidY = new boolean[2];
+        /** 0: With space bar pressed. 1: with space bar not pressed 2: swimming not apply at all*/
+        double[] possibleLiquidSpeed = new double[3];
+        boolean[] collideLiquidY = new boolean[3];
         
         ///////////////////////////////////////////////////////////////////////////////////
         // Estimate the allowed yDistance (per-move distance check)                      //
@@ -1212,19 +1212,19 @@ public class SurvivalFly extends Check {
             
             // *----------Gravity, friction and other medium-dependent modifiers in LivingEntity.travel() (water first, then lava and finally air)----------*
             data.nextGravity = attributeAccess.getHandle().getGravity(player);
-            if (from.isInWater()) {
-                if (lastMove.collidesHorizontally && from.isOnClimbable() && pData.getClientVersion().isAtLeast(ClientVersion.V_1_14)) {
+            if (lastMove.from.inWater) {
+                if (lastMove.collidesHorizontally && lastMove.from.onClimbable && pData.getClientVersion().isAtLeast(ClientVersion.V_1_14)) {
                     thisMove.yAllowedDistance = 0.2;
                 }
                 // Water applies friction before calling the fluidFalling function.
                 thisMove.yAllowedDistance *= data.lastFrictionVertical;
                 tags.add("v_water");
             } 
-            else if (from.isInLava()) {
+            else if (lastMove.from.inLava) {
                 // Lava friction is quite odd. Depending on specified thresholds, it can be 0.5 or 0.8
                 if (data.lastFrictionVertical != Magic.LAVA_VERTICAL_INERTIA) {
                     thisMove.yAllowedDistance *= data.lastFrictionVertical;
-                    Vector fluidFallingAdjustMovement = from.getFluidFallingAdjustedMovement(data.lastGravity, thisMove.yAllowedDistance <= 0.0, new Vector(0.0, thisMove.yAllowedDistance, 0.0));
+                    Vector fluidFallingAdjustMovement = from.getFluidFallingAdjustedMovement(data.lastGravity, thisMove.yAllowedDistance <= 0.0, new Vector(0.0, thisMove.yAllowedDistance, 0.0), lastMove.isSprinting);
                     thisMove.yAllowedDistance = fluidFallingAdjustMovement.getY();
                 } 
                 else {
@@ -1253,15 +1253,16 @@ public class SurvivalFly extends Check {
                 tags.add("v_air");
             }
             // Fluidfalling(...) - done after friction (for water)
-            if (from.isInWater()) {
-                Vector fluidFallingAdjustMovement = from.getFluidFallingAdjustedMovement(data.lastGravity, lastMove.yAllowedDistance <= 0.0, new Vector(0.0, thisMove.yAllowedDistance, 0.0));
+            if (lastMove.from.inWater) {
+                Vector fluidFallingAdjustMovement = from.getFluidFallingAdjustedMovement(data.lastGravity, lastMove.yAllowedDistance <= 0.0, new Vector(0.0, thisMove.yAllowedDistance, 0.0), lastMove.isSprinting);
                 thisMove.yAllowedDistance = fluidFallingAdjustMovement.getY();
             }
             
             // *----------Finalize LivingEntity.travel; isFree() check----------*
             // Try making the player jump out of the liquid... 
             // This condition is the same for both lava and water, and is always done at the end of the travel() function.
-            if (from.isInLiquid() && thisMove.collidesHorizontally
+            if (lastMove.from.inLiquid && thisMove.collidesHorizontally
+                // TODO: CURRENT BROKEN, Some how do lastMove.from.isFreeFromObstructions?
                 && from.isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA)) {
                 thisMove.yAllowedDistance = 0.3;
                 tags.add("v_exiting_liquid");
@@ -1275,6 +1276,7 @@ public class SurvivalFly extends Check {
             checkNegligibleMomentumVertical(pData, thisMove);
             
             // *----------LivingEntity.travel(), handleRelativeFrictionAndCalculateMovement() -> handleOnClimbable()----------*
+            // TODO: Is it correct to put here?
             if (!from.isInLiquid() && from.isOnClimbable()) {
                 thisMove.yAllowedDistance = Math.max(thisMove.yAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED);
                 if (thisMove.yAllowedDistance < 0.0 && pData.isShiftKeyPressed() && !(BlockProperties.isScaffolding(from.getTypeId()) && pData.getClientVersion().isAtLeast(ClientVersion.V_1_14))) {
@@ -1292,21 +1294,21 @@ public class SurvivalFly extends Check {
                 // Initialize with the momentum that has hitherto been calculated.
                 possibleLiquidSpeed[0] = thisMove.yAllowedDistance;
                 possibleLiquidSpeed[1] = thisMove.yAllowedDistance;
+                possibleLiquidSpeed[2] = thisMove.yAllowedDistance;
                 // From: Entity.java -> aiStep() and KeyboardInput.java.
                 // When in liquid, the game doesn't care about players being on ground, only if they press the space bar
                 // When they do press it, the game sets the jumping field to true.
                 // However, we cannot know this, because the client doesn't send anything about it.
                 // Solution: brute force speed. Calculate both ascend speed and non-pressing-the-space-bar speed
-                double liquidHeight = BlockProperties.getLiquidHeightAt(from.getBlockCache(), Location.locToBlock(thisMove.from.getX()), Location.locToBlock(thisMove.from.getY()), Location.locToBlock(thisMove.from.getZ()), from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA, true);
-                boolean flag = from.isInWater() && liquidHeight > 0.0;
+                boolean flag = from.isInWater() && thisMove.submergedWaterHeight > 0.0;
                 double fluidJumpThreshold = from.getEyeHeight() < 0.4D ? 0.0D : 0.4D;
-                if (flag && (!from.isOnGround() || liquidHeight > fluidJumpThreshold)) {
+                if (flag && (!from.isOnGround() || thisMove.submergedWaterHeight > fluidJumpThreshold)) {
                     possibleLiquidSpeed[0] += Magic.LIQUID_SPEED_GAIN; // The game distinguishes liquid tagkeys, but the motion is the same...
                 } 
-                else if (from.isInLava() && (!from.isOnGround() || liquidHeight > fluidJumpThreshold)) {
+                else if (from.isInLava() && (!from.isOnGround() || thisMove.submergedLavaHeight > fluidJumpThreshold)) {
                     possibleLiquidSpeed[0] += Magic.LIQUID_SPEED_GAIN;
                 } 
-                else if ((from.isOnGround() || flag && liquidHeight <= fluidJumpThreshold) && data.jumpDelay == 0) {
+                else if ((from.isOnGround() || flag && thisMove.submergedWaterHeight <= fluidJumpThreshold) && data.jumpDelay == 0) {
                     possibleLiquidSpeed[0] = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) * attributeAccess.getHandle().getJumpGainMultiplier(player);
                     data.jumpDelay = Magic.MAX_JUMP_DELAY;
                     thisMove.hasImpulse = AlmostBoolean.YES; // Minecraft explicitly tells us that there's impulse in this case.
@@ -1314,6 +1316,19 @@ public class SurvivalFly extends Check {
                 if (BridgeMisc.hasGravity(player) && pData.getClientVersion().isLowerThan(ClientVersion.V_1_13)) {
                     possibleLiquidSpeed[0] -= Magic.LEGACY_LIQUID_GRAVITY;
                     possibleLiquidSpeed[1] -= Magic.LEGACY_LIQUID_GRAVITY;
+                }
+                
+                //*--------Player.java, travel(). Apply swimming speed-------*
+                // 1.13 swimming speed depends on the looking direction vector of the player.
+                if (thisMove.isSwimming && !player.isInsideVehicle()) { // inside vehicle checking would always return false, since Sf doesn't run for vehicles, but in the future, we might merge vehicle checks
+                    Vector lookVector = TrigUtil.getLookingDirection(to, player);
+                    double swimmingScalar = lookVector.getY() < -0.2 ? 0.085 : 0.06;
+                    // Note: Since thisMove.isJump is always false because not been set yet, make these conditions unusable, result in brute force
+                    //if (lookVector.getY() <= 0.0 || thisMove.isJump 
+                    //    || BlockProperties.getLiquidHeightAt(from.getBlockCache(), Location.locToBlock(from.getX()), Location.locToBlock(from.getY()+1.0-0.1), Location.locToBlock(from.getZ()), BlockFlags.F_WATER, true) != 0.0) {
+                        possibleLiquidSpeed[0] += (lookVector.getY() - possibleLiquidSpeed[0]) * swimmingScalar;
+                        possibleLiquidSpeed[1] += (lookVector.getY() - possibleLiquidSpeed[1]) * swimmingScalar;
+                    //}
                 }
             }
             
