@@ -94,7 +94,7 @@ public class LegacyBlocks {
                 this.bounds = null;
                 return;
             }
-            Validate.validateAABBArrayLength(bounds);
+            Validate.validateAABB(bounds);
             this.bounds = bounds;
         }
 

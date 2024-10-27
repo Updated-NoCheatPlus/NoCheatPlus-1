@@ -744,7 +744,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             else {
                 yMotion = Math.min(1.8D, vector.getY() + 0.1D);
             }
-            vector = new Vector(vector.getX(), yMotion, vector.getZ());
         }
         else {
             // Fully inside
@@ -754,8 +753,8 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             else {
                 yMotion = Math.min(0.7D, vector.getY() + 0.06D);
             }
-            vector = new Vector(vector.getX(), yMotion, vector.getZ());
         }
+        vector = new Vector(vector.getX(), yMotion, vector.getZ());
         return vector;
     }
 
@@ -848,12 +847,12 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Blocks that have "data-reset potential". <br>
+     * Check if the player is in blocks that have "data-reset potential". <br>
      * Namely fall distance, but not exclusively (i.e.: jumping phase is reset if in/on these blocks). <br>
      * Mostly concerns stuck-speed blocks, but can/does include blocks that aren't strictly related from one another, such as liquids and climbables.
      * Does not check for ground (!)
      *
-     * @return true, if is reset condition
+     * @return True, if the player is either in: liquid, climbable, webs, berry bushes, powder snow or in a bubble stream.
      */
     public boolean isResetCond() {
         // NOTE: if optimizing, setYOnGround has to be kept in mind. 

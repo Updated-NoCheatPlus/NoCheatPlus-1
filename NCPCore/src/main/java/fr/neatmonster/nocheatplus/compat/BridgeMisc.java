@@ -118,8 +118,15 @@ public class BridgeMisc {
     }
     
     /**
+     * Compatibility method to check for item-use, by using the first available method:
+     * 
+     * <li>{@link HumanEntity#isBlocking()}</li>
+     * <li>{@link HumanEntity#getItemInUse()}</li> 
+     * <li>{@link HumanEntity#isHandRaised()}</li>
+     * <p>Otherwise, fall back to our adapter (see UseItemAdapter)</p>
+     * <li>{@link IPlayerData#getItemInUse()}.</li>
+     * 
      * @param player
-     * @return Whether the player is using an item. If Bukkit doesn't provide the needed method(s), fallback to PlayerData.isUsingItem()
      */
     public static boolean isUsingItem(final Player player) {
     	if (player.isBlocking()) {

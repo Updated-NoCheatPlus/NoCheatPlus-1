@@ -638,7 +638,8 @@ public class SurvivalFly extends Check {
      *     <li>Multiply the input vector (= the vector containing the player's WASD impulse) by 0.98</li>
      *     <li>{@code jumpFromGround()} is called if the player is on ground and has pressed the space bar.
      *   </ul>
-     * <li>Begin executing {@code EntityLiving.travel()} ({@code In EntityLiving.aiStep()})
+     * <li>Begin executing {@code EntityLiving.travel()} ({@code In EntityLiving.aiStep()})<p> <b>Note:</b> from 1.21.2 and onwards, Mojang split the travel function into different helper methods to better
+     * distinguish between mediums (we now have {@code travelInAir()}, {@code travelInFluid()} and {@code travelFallFlying()}</p><br>
      *   <ul>
      *     <li>Invoke {@code Entity.moveRelative()} (WASD inputs are transformed to acceleration vectors, call {@code getInputVector()})
      *     <li>If not in liquid or gliding, limit motion when on climbable via {@code handleRelativeFrictionAndCalculateMovement()}
@@ -1154,6 +1155,7 @@ public class SurvivalFly extends Check {
         if (thisMove.yDistance == 0.0 && fromOnGround) {
             // No vertical motion in this case, as the player is on ground.
             thisMove.yAllowedDistance = 0.0;
+            // TODO: Early return here?
         }
         // Stepping and jumping have priority, due to both being a potential starting point for the move.
         else if (PlayerEnvelopes.isStepUpByNCPDefinition(pData, fromOnGround, toOnGround, player)) {
@@ -1260,7 +1262,7 @@ public class SurvivalFly extends Check {
             // Try making the player jump out of the liquid... 
             // This condition is the same for both lava and water, and is always done at the end of the travel() function.
             if (from.isInLiquid() && thisMove.collidesHorizontally
-                && from.isFreeFromObstructions(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA)) {
+                && from.isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA)) {
                 thisMove.yAllowedDistance = 0.3;
                 tags.add("v_exiting_liquid");
             }

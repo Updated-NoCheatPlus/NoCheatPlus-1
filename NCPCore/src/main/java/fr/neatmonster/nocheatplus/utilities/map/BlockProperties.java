@@ -4076,15 +4076,14 @@ public class BlockProperties {
                                               final int x, final int y, final int z, 
                                               final IBlockCacheNode node, final IBlockCacheNode nodeAbove, 
                                               final long flags) {
-        // Get the block's AABB (shape)
+        // Get the block's BLOCK_BOUNDS (shape)
         // Bounds are stored in order of minXYZ... maxXYZ
-        final double[] AABB = node.getBounds(access, x, y, z);
-        if (AABB == null) {
+        final double[] BLOCK_BOUNDS = node.getBounds(access, x, y, z);
+        if (BLOCK_BOUNDS == null) {
             // Somehow null, early return.
             return false;
         }
         
-        // The block's AABB coordinates.
         double bMinX, bMinZ, bMinY, bMaxX, bMaxY, bMaxZ;
         //////////////////////////////////////////////////////////////////
         // Fill in the horizontal bounds (minX, maxX, minZ, maxZ)...    //
@@ -4095,10 +4094,10 @@ public class BlockProperties {
         }
         else {
             // Auto-fill, if the block does not have full horizontal bounds.
-            bMinX = AABB[0]; 
-            bMinZ = AABB[2];
-            bMaxX = AABB[3]; 
-            bMaxZ = AABB[5]; 
+            bMinX = BLOCK_BOUNDS[0]; 
+            bMinZ = BLOCK_BOUNDS[2];
+            bMaxX = BLOCK_BOUNDS[3]; 
+            bMaxZ = BLOCK_BOUNDS[5]; 
         }
         
         //////////////////////////////////////////////////////////
@@ -4138,7 +4137,7 @@ public class BlockProperties {
                 else {
                     final int data = node.getData(access, x, y, z);
                     if ((data & 8) == 8) {
-                        bMaxY = Math.max(LIQUID_HEIGHT_LOWERED, AABB[4]);
+                        bMaxY = Math.max(LIQUID_HEIGHT_LOWERED, BLOCK_BOUNDS[4]);
                     } 
                     else bMaxY = (1 - (data + 1) / 9f);
                 }
@@ -4151,19 +4150,20 @@ public class BlockProperties {
         }
         else {
             // Auto-fill.
-            bMinY = AABB[1]; // minY
-            bMaxY = AABB[4]; // maxY
+            bMinY = BLOCK_BOUNDS[1]; // minY
+            bMaxY = BLOCK_BOUNDS[4]; // maxY
         }
         
         ////////////////////////////
         // Special cases...       //
         ////////////////////////////
-        // Fake the AABB of thin glass
+        // TODO: Deprecate and use a client-specific workaround now that we support client versions.
+        // Fake the BLOCK_BOUNDS of thin glass
         // (Bugged blocks bounds around 1.8. Mojang...)
         if ((flags & BlockFlags.F_FAKEBOUNDS) != 0) {
-            // Length / Margin of the AABB along the X axis
+            // Length / Margin of the BLOCK_BOUNDS along the X axis
             final double aaBBLengthZ = bMaxZ - bMinZ;
-            // Length / Margin of the AABB along the Z axis
+            // Length / Margin of the BLOCK_BOUNDS along the Z axis
             final double aaBBLengthX = bMaxX - bMinX;
             if (aaBBLengthZ == 0.125 && aaBBLengthX != 1.0) {
                 if (bMinX == 0.0) {
@@ -4205,8 +4205,8 @@ public class BlockProperties {
         if (AxisAlignedBBUtils.isCollided(new double[]{bMinX, bMinY, bMinZ, bMaxX, bMaxY, bMaxZ}, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge)) {
             return true;
         }
-        // Check for multi-AABB blocks (starting from the 2nd AABB in the array. 1st has already been checked above).
-        return AxisAlignedBBUtils.getNumberOfAABBs(AABB) > 1 && AxisAlignedBBUtils.isCollided(AABB, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge, 2);
+        // Check for multi-BLOCK_BOUNDS blocks (starting from the 2nd BLOCK_BOUNDS in the array. 1st has already been checked above).
+        return AxisAlignedBBUtils.getNumberOfAABBs(BLOCK_BOUNDS) > 1 && AxisAlignedBBUtils.isCollided(BLOCK_BOUNDS, x, y, z, new double[]{minX, minY, minZ, maxX, maxY, maxZ}, allowEdge, 2);
     }
 
     /**

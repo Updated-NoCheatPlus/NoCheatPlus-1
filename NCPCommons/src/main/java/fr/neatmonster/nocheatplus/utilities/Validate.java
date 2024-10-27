@@ -45,11 +45,14 @@ public class Validate {
      *
      * @param array The double array to validate.
      * 
-     * @throws IllegalArgumentException If the array length is not a multiple of 6.
+     * @throws IllegalArgumentException If the array length is not a multiple of 6, null or empty.
      */
-    public static void validateAABBArrayLength(final double[] array) {
+    public static void validateAABB(final double[] array) {
         if (array == null) {
             throw new NullPointerException("The array is null.");
+        }
+        if (array.length == 0) {
+            throw new IllegalArgumentException("The array is empty.");
         }
         if (array.length % 6 != 0) {
             throw new IllegalArgumentException("Array length is not a multiple of 6. Actual length: " + array.length);

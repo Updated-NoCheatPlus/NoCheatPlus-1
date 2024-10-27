@@ -52,12 +52,12 @@ public class AxisAlignedBBUtils {
      *      
      * @param array The array to inspect. It is expected to contain multiple bounding boxes (more than 6 elements), but can also contain a single one.
      * 
-     * @throws IllegalArgumentException if the given array's length isn't a multiple of 6.
+     * @throws IllegalArgumentException if the given array's length isn't a multiple of 6, null or is empty.
      * 
      * @return An int indicating how many AABBs are supposed to be represented in the array.
      */
     public static int getNumberOfAABBs(double[] array) {
-        Validate.validateAABBArrayLength(array);
+        Validate.validateAABB(array);
         return (int)array.length / 6;
     }
     
@@ -69,14 +69,15 @@ public class AxisAlignedBBUtils {
      */
     public static double[] toArray(BoundingBox box) {
         return new double[] {
-                box.getMinX(), box.getMinY(), box.getMinZ(), // Min coordinates of the bounding box.
-                box.getMaxX(), box.getMaxY(), box.getMaxZ()  // Max coordinates of the bounding box.
+                box.getMinX(), box.getMinY(), box.getMinZ(), 
+                box.getMaxX(), box.getMaxY(), box.getMaxZ()
         };
     }
     
     /**
-     * Extracts the individual bounding box from a multi-bounding box double array, based on the given index.
-     * Rather meant to be used if you already know in advance which bounding box you need in the array.
+     * Extracts the individual bounding box from a multi-bounding box double array, based on the given index (boxNumber).
+     * Currently, this is rather meant to be used if you already know in advance how many AABBs are present in the array and which one you need.<br>
+     * Otherwise, you should call {@link #splitIntoSingle(double[])} to get a list of individual bounding boxes.
      *
      * <p>The input array is expected to contain multiple bounding boxes, each represented by 6 consecutive doubles: 
      * minX, minY, minZ, maxX, maxY, maxZ. The length must therefore be a multiple of 6.
@@ -466,6 +467,17 @@ public class AxisAlignedBBUtils {
     }
     
     /**
+     * Checks if the given AABB is degenerate, meaning at least one of its corner is 0.0.<br>
+     * 
+     * @param AABB The AABB to check
+     * @return True, if at least one coordinate returns 0.0, false otherwise.
+     */
+    public static boolean isDegenerate(final double[] AABB) {
+        Validate.validateAABB(AABB);
+        return AABB[0] == 0.0 || AABB[2] == 0.0 || AABB[3] == 0.0 || AABB[5] == 0.0;
+    }
+    
+    /**
      * Compares two sets of block bounds to determine if they are identical.
      * This includes a null check to ensure both arrays are either non-null
      * and identical, or both are null.
@@ -490,7 +502,8 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Checks if the given point(specified by its x, y, z coordinates) lies within or on the edges of the AABB.
+     * Checks if the given point(specified by its x, y, z coordinates) lies within or on the edges of the AABB.<br>
+     * (No validation of the AABB is performed)
      *
      * @param x Position of the point.
      * @param y
@@ -521,9 +534,7 @@ public class AxisAlignedBBUtils {
      * @throws IllegalArgumentException if the bounds array does not contain exactly 6 elements.
      */
     public static boolean isInsideAABBIncludeEdges(final double x, final double y, final double z, final double[] AABB) {
-        if (AABB == null || AABB.length != 6) {
-            throw new IllegalArgumentException("Bounds array must contain exactly 6 elements.");
-        }
+        Validate.validateAABB(AABB);
         final double minX = AABB[0];
         final double minY = AABB[1];
         final double minZ = AABB[2];

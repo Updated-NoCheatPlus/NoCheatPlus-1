@@ -195,7 +195,7 @@ public interface IAttributeAccess {
     public float getWaterMovementEfficiency(Player player);
     
     /**
-     * Retrieve the player's mining speed factor when submerged in water as a multiplier. <br>
+     * Retrieve the player's mining speed factor when submerged in water. <br>
      * This factor indicates the effectiveness of mining underwater, with a factor of 1.0 meaning mining as quickly as on land, and lower values indicating reduced speed. 
      * It is a separate multiplier applied by the game in the `getDestroySpeed()` method in `EntityHuman.java`. 
      * This factor only accounts for the submersion condition; other factors such as not touching the ground also affect mining speed.
@@ -210,7 +210,7 @@ public interface IAttributeAccess {
     public double getSubmergedMiningSpeedMultiplier(Player player);
     
     /**
-     * Retrieve the player's mining efficiency attribute (as an addition operation). <br>
+     * Retrieve the player's mining efficiency attribute. <br>
      * It affects the speed at which a player can mine blocks using the correct tool, scaling with tool effectiveness and enchantments like Efficiency. 
      * A higher value results in faster mining with correct tools.
      * <hr>

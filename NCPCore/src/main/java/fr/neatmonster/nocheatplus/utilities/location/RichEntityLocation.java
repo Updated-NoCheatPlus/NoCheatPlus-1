@@ -527,7 +527,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     
     /**
      * From Entity.java <br>
-     * Checks if the bounding box of the entity, when moved by the specified offsets, is free from obstructions (liquid or solid blocks).
+     * Checks if the bounding box of the entity, when moved by the specified offsets, is free of any obstruction (liquid or solid blocks).
      *
      * @param xOffset The translation offset in the X direction.
      * @param yOffset The translation offset in the Y direction.
@@ -535,20 +535,20 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @param flag The bitmask flag used to determine the type of liquid to check for.
      * @return True, if the moved bounding box is free from obstructions, otherwise false.
      */
-    public boolean isFreeFromObstructions(double xOffset, double yOffset, double zOffset, long flag) {
-        return isFreeFromObstructions(AxisAlignedBBUtils.move(getAABBCopy(), xOffset, yOffset, zOffset), flag); 
+    public boolean isUnobstructed(double xOffset, double yOffset, double zOffset, long flag) {
+        return isUnobstructed(AxisAlignedBBUtils.move(getAABBCopy(), xOffset, yOffset, zOffset), flag); 
     }
     
     /**
      * From Entity.java <br>
-     * Checks if the specified axis-aligned bounding box (AABB) is free from obstructions (liquid or solid blocks).
+     * Checks if the specified axis-aligned bounding box (AABB) is free of any obstructions (liquid or solid blocks).
      *
      * @param AABB The axis-aligned bounding box represented as a double array with 6 elements:
      *             [minX, minY, minZ, maxX, maxY, maxZ].
      * @param flag The bitmask flag used to determine the type of liquid to check for.
      * @return True, if the AABB is free from obstructions and contains no specified type of liquid, otherwise false.
      */
-    public boolean isFreeFromObstructions(double[] AABB, long flag) {
+    public boolean isUnobstructed(double[] AABB, long flag) {
         return CollisionUtil.isEmpty(blockCache, entity, AABB) && !BlockProperties.containsAnyLiquid(blockCache, AABB, flag);
     }
 
@@ -590,9 +590,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         // Messy and quite hard on the eyes, but since we need to account for different versions, this will have to do.
         if (allowedStepHeight > 0.0 && touchGround && (collideX || collideZ)) {
             // Modern clients have a better step up handling
-            boolean ClientOrServerIsAtLeast1_21 = GenericVersion.isAtLeast(entity, "1.21");
-            boolean ClientOrServerIsAtLeast1_8 = GenericVersion.isAtLeast(entity, "1.8");
-            if (ClientOrServerIsAtLeast1_21) {
+            boolean EntityIsAtLeast1_21 = GenericVersion.isAtLeast(entity, "1.21");
+            boolean EntityIsAtLeast1_8 = GenericVersion.isAtLeast(entity, "1.8");
+            if (EntityIsAtLeast1_21) {
                 // Simulate the step-up: if this downward collision resulted in touching the ground, move the current AABB downwards as well. If the entity was already on ground, leave the AABB as is.
                 double[] groundCollisionAABB = collideY && input.getY() < 0.0 ? AxisAlignedBBUtils.move(tAABB, 0.0, collisionVector.getY(), 0.0) : tAABB;
                 // Then, expand the AABB upwards by the step height and by the horizontal collision
@@ -622,7 +622,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 // First ste-up fix iteration introduced in 1.8 (then changed in 1.21)
                 // https://www.youtube.com/watch?v=Awa9mZQwVi8
                 Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), allowedStepHeight, input.getZ()), tAABB, collisionBoxes);
-                if (ClientOrServerIsAtLeast1_8) {
+                if (EntityIsAtLeast1_8) {
                     Vector stepFix = CollisionUtil.collideBoundingBox(new Vector(0.0, allowedStepHeight, 0.0), AxisAlignedBBUtils.expandTowards(tAABB, input.getX(), 0.0, input.getZ()), collisionBoxes);
                     if (stepFix.getY() < allowedStepHeight) {
                         Vector stepUpAttempt2 = CollisionUtil.collideBoundingBox(new Vector(input.getX(), 0.0, input.getZ()), AxisAlignedBBUtils.move(tAABB, stepFix.getX(), stepFix.getY(), stepFix.getZ()), collisionBoxes).add(stepFix);

@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -66,15 +67,15 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 /**
- * Adapter for listening to packets and Bukkit events relevant to item use.<br>
+ * <p>Adapter for listening to packets and Bukkit events relevant to item use.</p>
  *
  * On versions 1.17 and above, the adapter will only register events related to a specific item-use exploit, 
- * as Bukkit provides the getItemInUse() method.<br>
+ * as Bukkit provides the {@link HumanEntity#getItemInUse()} method.<br>
  *
- * On versions 1.12 and above, all listeners will be registered because Bukkit does not offer a way to 
- * determine <em>which</em> item is in use; we can only detect if a player is using an item through player#isHandRaised().<br>
+ * <p>On versions 1.12 and above, up to 1.17, all listeners will be registered because Bukkit does not offer a way to 
+ * determine <em>which</em> item is in use; we can only detect if a player is using an item through {@link HumanEntity#isHandRaised()}.</p>
  *
- * The PlayerRespawnEvent is always listened to in order to fix a specific item desynchronization issue.
+ * The {@link PlayerRespawnEvent} is always listened to in order to fix a specific item desynchronization issue.
  */
 public class UseItemAdapter extends BaseAdapter {
     
@@ -257,7 +258,7 @@ public class UseItemAdapter extends BaseAdapter {
         }
 
         if (p.getGameMode() == GameMode.CREATIVE) {
-            // TODO: If merging SurvivalFly with CreativeFly, creative mode needs to be taken into consideration as well.
+            // TODO: If merging SurvivalFly and CreativeFly, creative mode needs to be taken into consideration as well.
             pData.setItemInUse(null);
             return;
         }
@@ -364,10 +365,10 @@ public class UseItemAdapter extends BaseAdapter {
         final MovingData mData = pData.getGenericInstance(MovingData.class);
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         if (e.getPreviousSlot() != e.getNewSlot()) {
-            if ((pData.getItemInUse() != null || p.isBlocking()) && mData.playerMoves.getCurrentMove() != null) {
+            /*if ((pData.getItemInUse() != null || p.isBlocking()) && mData.playerMoves.getCurrentMove() != null) {
                 p.getInventory().setHeldItemSlot(e.getPreviousSlot());
                 cData.invalidItemUse = true;
-            }
+            }*/
             // To avoid any more potential bypasses, let Minecraft forcibly release the item.
             pData.requestItemUseResync();
         }
@@ -403,7 +404,6 @@ public class UseItemAdapter extends BaseAdapter {
             }
         }
         
-        //Advanced check: do handle this one
         if (digtype == PlayerDigType.RELEASE_USE_ITEM) {
             pData.setItemInUse(null);
             long now = System.currentTimeMillis();

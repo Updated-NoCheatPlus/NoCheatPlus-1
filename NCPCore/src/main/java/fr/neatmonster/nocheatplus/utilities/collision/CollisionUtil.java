@@ -1084,7 +1084,7 @@ public class CollisionUtil {
     public static float[] collectCandidateStepUpHeights(double[] AABB, List<double[]> collisionsBoxes, float stepHeight, float collideY) {
         // Using a set to store unique step heights
         Set<Float> stepHeights = new HashSet<>();
-        // Extract the minimum Y-coordinate from the collisionBox
+        // Extract the minimum Y-coordinate from the AABB
         double minY = AABB[1];
         
         // Iterate over all collision boxes
