@@ -41,6 +41,10 @@ public class PlayerMoveData extends MoveData {
     
 	/** Player action set on PlayerMoveEvents. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
 	public boolean isGliding;
+    
+	public double submergedLavaHeight;
+    
+	public double submergedWaterHeight;
 
     /** Set with BridgeMisc.isUsingItem(player) on PlayerMoveEvents. */
     public boolean slowedByUsingAnItem;
@@ -207,6 +211,8 @@ public class PlayerMoveData extends MoveData {
         hasSlowfall = false;
         hasGravity = true; // Assume one to have gravity rather than the opposite... :)
         hasAttackSlowDown = false;
+        submergedLavaHeight = 0.0;
+        submergedWaterHeight = 0.0;
         isGliding = false;
     	isRiptiding = false;
     	isSprinting = false;

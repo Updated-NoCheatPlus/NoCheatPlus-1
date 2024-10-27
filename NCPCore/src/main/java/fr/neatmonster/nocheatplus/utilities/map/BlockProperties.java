@@ -519,11 +519,14 @@ public class BlockProperties {
         eLoc.set(loc, entity, yOnGround);
         double friction;
         if (eLoc.isInWater()) {
+            double liquidHeight = eLoc.getSubmergedLiquidHeight(BlockFlags.F_WATER);
+            thisMove.submergedWaterHeight = liquidHeight;
             friction = Magic.WATER_VERTICAL_INERTIA;
         }
         else if (eLoc.isInLava()) {
-            double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, Location.locToBlock(thisMove.from.getX()), Location.locToBlock(thisMove.from.getY()), Location.locToBlock(thisMove.from.getZ()), BlockFlags.F_LAVA, true);
-            if (GenericVersion.isAtLeast(entity, "1.16") && liquidHeight <= (eLoc.getEyeHeight() < 0.4D ? 0.0D : 0.4D)) { // getFluidJumpThreshold in Entity.java... Set in BlockProperties?
+            double liquidHeight = eLoc.getSubmergedLiquidHeight(BlockFlags.F_LAVA);
+            thisMove.submergedLavaHeight = liquidHeight;
+            if (liquidHeight <= (eLoc.getEyeHeight() < 0.4D ? 0.0D : 0.4D)) {
                 friction = Magic.WATER_VERTICAL_INERTIA;
             }
             else friction = Magic.LAVA_VERTICAL_INERTIA;

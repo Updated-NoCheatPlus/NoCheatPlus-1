@@ -737,6 +737,42 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
+     * Abridged version of getLiquidPushingVector for getting liquid submerged height
+     * 
+     * @param liquidTypeFlag The flags F_LAVA or F_WATER to use.
+     * @return Height have been sink into liquid.
+     */
+    public double getSubmergedLiquidHeight(final long liquidTypeFlag) {
+        if (isInLava() && GenericVersion.isLowerThan(entity, "1.16")) {
+            // Lava pushes entities starting from the nether update (1.16+)
+            return 0.0;
+        }
+        // No Location#locToBlock() here (!)
+        // Contract bounding box.
+        double extraContraction = GenericVersion.isLowerThan(entity, "1.13") ? 0.4 : 0.0;
+        final int iMinX = MathUtil.floor(minX + 0.001);
+        final int iMaxX = MathUtil.ceil(maxX - 0.001);
+        final int iMinY = MathUtil.floor(minY + 0.001 + extraContraction);
+        final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
+        final int iMinZ = MathUtil.floor(minZ + 0.001);
+        final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
+        double d2 = 0.0;
+        for (int x = iMinX; x < iMaxX; x++) {
+            for (int y = iMinY; y < iMaxY; y++) {
+                for (int z = iMinZ; z < iMaxZ; z++) {
+                    double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
+                    double liquidHeightToWorld = y + liquidHeight;
+                    if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
+                        // Collided.
+                        d2 = Math.max(liquidHeightToWorld - minY + 0.001, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                    }
+                }
+            }
+        }
+        return d2;
+    }
+    
+    /**
      * Minecraft's function to calculate the liquid's flow force. <br>
      * Can be found in FlowingFluid.java / FluidTypeFlowing.java, getFlow()
      * 
@@ -808,8 +844,9 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return A new Vector with adjusted Y-axis movement if conditions are met, 
      *         otherwise the original vector.
      */
-    public Vector getFluidFallingAdjustedMovement(double gravity, boolean isFalling, Vector vec) {
-        if (BridgeMisc.hasGravity((LivingEntity) entity) && !(entity instanceof Player && !((Player)entity).isSprinting())) { // Strictly, this is isSprinting, not swimming. But we also check for other entities in this class, and only players are capable of sprinting. Is this function used by the game for vehicles too?
+    // TODO: All call are from last move, should move to some where else?
+    public Vector getFluidFallingAdjustedMovement(double gravity, boolean isFalling, Vector vec, boolean isSprinting) {
+        if (BridgeMisc.hasGravity((LivingEntity) entity) && !isSprinting) { // Strictly, this is isSprinting, not swimming. But we also check for other entities in this class, and only players are capable of sprinting. Is this function used by the game for vehicles too?
             double liquidFallMovement;
             if (isFalling && Math.abs(vec.getY() - 0.005D) >= 0.003D && Math.abs(vec.getY() - gravity / 16.0D) < 0.003D) {
                 liquidFallMovement = -0.003D;
