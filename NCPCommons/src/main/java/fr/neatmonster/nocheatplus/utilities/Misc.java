@@ -43,5 +43,15 @@ public class Misc {
         }
         list.add(0, item);
     }
+    
+    /**
+     * Flooring method copied from the BukkitAPI (locToBlock)
+     * @param num
+     * @return
+     */
+    public static int floor(double num) {
+        final int floor = (int) num;
+        return floor == num ? floor : floor - (int) (Double.doubleToRawLongBits(num) >>> 63);
+    }
 
 }

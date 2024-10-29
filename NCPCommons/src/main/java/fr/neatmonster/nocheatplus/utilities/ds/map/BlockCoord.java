@@ -14,7 +14,7 @@
  */
 package fr.neatmonster.nocheatplus.utilities.ds.map;
 
-import org.bukkit.Location;
+import fr.neatmonster.nocheatplus.utilities.Misc;
 
 public class BlockCoord {
     private final int x;
@@ -43,9 +43,9 @@ public class BlockCoord {
      * @param z The z-coordinate.
      */
     public BlockCoord(double x, double y, double z) {
-        this.x = Location.locToBlock(x);
-        this.y = Location.locToBlock(y);
-        this.z = Location.locToBlock(z);
+        this.x = Misc.floor(x);
+        this.y = Misc.floor(y);
+        this.z = Misc.floor(z);
     }
     
     public int getX() {
