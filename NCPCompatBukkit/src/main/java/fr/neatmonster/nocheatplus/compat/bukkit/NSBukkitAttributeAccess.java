@@ -15,11 +15,9 @@
 package fr.neatmonster.nocheatplus.compat.bukkit;
 
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.attribute.AttributeModifier.Operation;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
@@ -35,6 +33,7 @@ import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
@@ -82,7 +81,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSpeedMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
         final double val = attrInst.getValue() / attrInst.getBaseValue();
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.NSID_SPRINT_BOOST);
         return mod == null ? val : (val / getMultiplier(mod));
@@ -90,7 +89,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSprintMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.NSID_SPRINT_BOOST);
         return mod == null ? 1.0 : getMultiplier(mod);
     }
@@ -108,7 +107,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
             return 0.0;
         }
         final PlayerMoveData thisMove = DataManager.getPlayerData(player).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_GRAVITY);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.GRAVITY);
         // Fail-safe.
         if (attrInst == null) {
             gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
@@ -122,7 +121,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSafeFallDistance(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SAFE_FALL_DISTANCE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SAFE_FALL_DISTANCE);
         // Fail-safe
         if (attrInst == null) return Magic.FALL_DAMAGE_DIST;
         return MathUtil.clamp(attrInst.getValue(), -1024.0, 1024.0);
@@ -130,7 +129,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getFallDamageMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_FALL_DAMAGE_MULTIPLIER);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.FALL_DAMAGE_MULTIPLIER);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 1.0, 100.0);
@@ -138,7 +137,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getBreakingSpeedMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.BLOCK_BREAK_SPEED);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return  MathUtil.clamp(attrInst.getValue(), 1.0, 1024.0);
@@ -146,7 +145,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getJumpGainMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_JUMP_STRENGTH);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.JUMP_STRENGTH);
         // Fail-safe
         if (attrInst == null) return 1.0;
         // Convert it to a multiplier, because we use our own handling for jumping motion.
@@ -156,7 +155,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getPlayerSneakingFactor(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_SNEAKING_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SNEAKING_SPEED);
         // Fail-safe.
         if (attrInst == null) return Magic.SNEAK_MULTIPLIER + BridgeEnchant.getSwiftSneakIncrement(player);
         return MathUtil.clamp(attrInst.getValue(), 0.0, 1.0);
@@ -164,7 +163,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getPlayerMaxBlockReach(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_INTERACTION_RANGE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.INTERACTION_RANGE);
         // Fail-safe
         if (attrInst == null) return 4.5;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -172,7 +171,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getPlayerMaxAttackReach(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.ATTACK_RANGE);
         // Fail-safe
         if (attrInst == null) return 3.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -180,11 +179,11 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getMaxStepUp(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_STEP_HEIGHT);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.STEP_HEIGHT);
         if (attrInst == null) {
             // Fail-safe.
             if (player.isInsideVehicle()) {
-                if (player.getVehicle() != null && player.getVehicle().getType().equals(EntityType.BOAT)) {
+                if (player.getVehicle() != null && MaterialUtil.isBoat(player.getVehicle().getType())) {
                     return 0.0;
                 }
                 return 1.0;
@@ -197,7 +196,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public float getMovementEfficiency(Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_EFFICIENCY);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_EFFICIENCY);
         // Fail-safe.
         if (attrInst == null) return 0.0f;
         return (float) MathUtil.clamp(attrInst.getValue(), 0.0, 1.0);
@@ -219,14 +218,14 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
             // Simulate what ViaVersion does for newer (1.21 clients) on older (1.21-) servers.
             return depthStrider / 3.0f;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_WATER_MOVEMENT_EFFICIENCY);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.WATER_MOVEMENT_EFFICIENCY);
         if (attrInst == null) return 0.0f;
         return (float) MathUtil.clamp(attrInst.getValue(), 0.0f, 1.0f);
     }
     
     @Override
     public double getSubmergedMiningSpeedMultiplier(Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_SUBMERGED_MINING_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SUBMERGED_MINING_SPEED);
         // Fail-safe.
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 20.0);
@@ -234,7 +233,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getMiningEfficiency(Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_MINING_EFFICIENCY);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MINING_EFFICIENCY);
         // Fail-safe.
         if (attrInst == null) return 0.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 1024.0);
@@ -242,7 +241,7 @@ public class NSBukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getEntityScale(Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SCALE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SCALE);
         // Fail-safe.
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0625, 16.0);

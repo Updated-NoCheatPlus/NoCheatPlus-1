@@ -59,7 +59,7 @@ import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
-import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;

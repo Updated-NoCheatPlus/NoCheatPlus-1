@@ -664,9 +664,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
         final int iMinZ = MathUtil.floor(minZ + 0.001);
         final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
-        double d2 = 0.0;
+        double maxSubmersionDepth = 0.0; // how far the entity is submerged in the liquid.
         Vector pushingVector = new Vector();
-        int k1 = 0;
+        int liquidCollisionCount = 0; // Count the number of blocks containing liquid that intersect with the entity’s bounding box
         // NMS collision method. We need to check for a second collision because of how Minecraft handles fluid pushing
         // (And we need the exact speed for predictions)
         for (int x = iMinX; x < iMaxX; x++) {
@@ -676,8 +676,8 @@ public class RichEntityLocation extends RichBoundsLocation {
                     if (GenericVersion.isLowerThan(entity, "1.13")) {
                         double liquidHeight = BlockProperties.getLiquidHeightAt(blockCache, x, y, z, liquidTypeFlag, false);
                         if (liquidHeight != 0.0) {
-                            double d0 = (float) (y + 1) - liquidHeight;
-                            if (iMaxY >= d0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
+                            double liquidSurfaceHeight = (float) (y + 1) - liquidHeight; // the vertical position of the liquid surface relative to the entity’s bounding box for collision checks.
+                            if (iMaxY >= liquidSurfaceHeight && !(entity instanceof Player && ((Player) entity).isFlying())) {
                                 // Collided
                                 Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
                                 pushingVector.add(flowVector);
@@ -690,14 +690,14 @@ public class RichEntityLocation extends RichBoundsLocation {
                         double liquidHeightToWorld = y + liquidHeight;
                         if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
                             // Collided.
-                            d2 = Math.max(liquidHeightToWorld - minY + 0.001, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                            maxSubmersionDepth = Math.max(liquidHeightToWorld - minY + 0.001, maxSubmersionDepth); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                             // Determine pushing speed by using the current flow of the liquid.
                             Vector flowVector = getFlowForceVector(x, y, z, liquidTypeFlag);
-                            if (d2 < 0.4) {
-                                flowVector = flowVector.multiply(d2);
+                            if (maxSubmersionDepth < 0.4) {
+                                flowVector = flowVector.multiply(maxSubmersionDepth);
                             }
                             pushingVector = pushingVector.add(flowVector);
-                            k1++ ;
+                            liquidCollisionCount++ ;
                         }
                     }
                 }
@@ -718,8 +718,9 @@ public class RichEntityLocation extends RichBoundsLocation {
             // NOTE: Water first then Lava (fixes issue with the player's box being both in water and in lava)
             double flowSpeedMultiplier = isInWater() ? 0.014 : (world.isUltraWarm() ? 0.007 : 0.0023333333333333335);
             if (pushingVector.lengthSquared() > 0.0) {
-                if (k1 > 0) {
-                   pushingVector = pushingVector.multiply(1.0 / k1);
+                if (liquidCollisionCount > 0) {
+                    // Average the pushing vector when calculating the liquid’s overall pushing force on the entity
+                   pushingVector = pushingVector.multiply(1.0 / liquidCollisionCount);
                 }
                 if (!(entity instanceof Player)) {
                     // Normalize the vector anyway if inside liquid on a vehicle... (ease some work with the (future) vehicle rework)
@@ -756,7 +757,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         final int iMaxY = MathUtil.ceil(maxY - 0.001 - extraContraction);
         final int iMinZ = MathUtil.floor(minZ + 0.001);
         final int iMaxZ = MathUtil.ceil(maxZ - 0.001);
-        double d2 = 0.0;
+        double maxSubmersionDepth = 0.0;
         for (int x = iMinX; x < iMaxX; x++) {
             for (int y = iMinY; y < iMaxY; y++) {
                 for (int z = iMinZ; z < iMaxZ; z++) {
@@ -764,12 +765,12 @@ public class RichEntityLocation extends RichBoundsLocation {
                     double liquidHeightToWorld = y + liquidHeight;
                     if (liquidHeightToWorld >= minY + 0.001 && liquidHeight != 0.0 && !(entity instanceof Player && ((Player) entity).isFlying())) {
                         // Collided.
-                        d2 = Math.max(liquidHeightToWorld - minY + 0.001, d2); // 0.001 is the Magic number the game uses to expand the box with newer versions.
+                        maxSubmersionDepth = Math.max(liquidHeightToWorld - minY + 0.001, maxSubmersionDepth); // 0.001 is the Magic number the game uses to expand the box with newer versions.
                     }
                 }
             }
         }
-        return d2;
+        return maxSubmersionDepth;
     }
     
     /**

@@ -35,7 +35,7 @@ import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;

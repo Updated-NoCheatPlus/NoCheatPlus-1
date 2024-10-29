@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.compat;
+package fr.neatmonster.nocheatplus.compat.bukkit;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,9 +55,7 @@ public class BridgeEntityType {
         if (type == null) {
             throw new NullPointerException("EntityType not present: " + StringUtil.join(names, ", "));
         }
-        else {
-            return type;
-        }
+        return type;
     }
     
     public static final EntityType EYE_OF_ENDER = getFirstNotNull("eye_of_ender", "ender_signal");

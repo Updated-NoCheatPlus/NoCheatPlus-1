@@ -47,6 +47,7 @@ import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.
 import fr.neatmonster.nocheatplus.checks.moving.player.UnusedVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.compat.*;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
 import fr.neatmonster.nocheatplus.components.data.IData;

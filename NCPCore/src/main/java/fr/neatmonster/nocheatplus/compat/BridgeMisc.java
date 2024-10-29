@@ -69,6 +69,25 @@ public class BridgeMisc {
     private static final boolean hasGetItemInUseMethod = ReflectionUtil.getMethodNoArgs(HumanEntity.class, "getItemInUse", ItemStack.class) != null;
     // introduced in 1.14
     private static final boolean hasEntityChangePoseEvent = ReflectionUtil.getClass("org.bukkit.event.entity.EntityPoseChangeEvent") != null;
+    // After 15 or so years, we finally get to know when players press WASD keys... Better late than never I guess.
+    private static final boolean hasPlayerInputEvent = ReflectionUtil.getClass("org.bukkit.event.player.PlayerInputEvent") != null;
+    private static final boolean hasInputGetterMethod = ReflectionUtil.getMethodNoArgs(Player.class, "getCurrentInput", boolean.class) != null;
+    
+    public static final boolean hasInputGetterMethod() {
+        return hasInputGetterMethod;
+    }
+    
+    /**
+     * Test if the player's input (WASD) can be known (server has the getter method and the client is at or above 1.21.2)
+     * @param player
+     * @return
+     */
+    public static final boolean isInputKnown(final Player player) {
+        return hasInputGetterMethod() && DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_21_2);
+    }
+    public static boolean hasPlayerInputEvent() {
+        return hasPlayerInputEvent;
+    }
 
     public static boolean hasEntityChangePoseEvent() {
         return hasEntityChangePoseEvent;
@@ -149,8 +168,13 @@ public class BridgeMisc {
     public static Material getItemInUse(final Player player) {
     	final IPlayerData pData = DataManager.getPlayerData(player);
         return hasGetItemInUseMethod() ? player.getItemInUse().getType() : pData.getItemInUse();
-    } 
-
+    }
+    
+    /**
+     * By default, this returns true if the {@link LivingEntity#hasGravity()} method isn't available.
+     * @param entity
+     * @return
+     */
     public static boolean hasGravity(final LivingEntity entity) {
         return hasGravityMethod ? entity.hasGravity() : true;
     }

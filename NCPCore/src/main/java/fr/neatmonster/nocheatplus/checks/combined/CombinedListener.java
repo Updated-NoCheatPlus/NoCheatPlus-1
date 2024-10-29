@@ -192,7 +192,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         // Did not toggle on.
         return false;
     }
-
     
     /** Check if this gliding phase should be aborted (We validate both toggle glide and gliding). */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)

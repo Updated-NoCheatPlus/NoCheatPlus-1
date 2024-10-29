@@ -53,7 +53,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
 import fr.neatmonster.nocheatplus.checks.net.model.DataPacketFlying;
-import fr.neatmonster.nocheatplus.compat.BridgeEntityType;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeEntityType;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;

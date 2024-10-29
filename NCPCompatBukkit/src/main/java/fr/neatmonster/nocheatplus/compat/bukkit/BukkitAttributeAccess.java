@@ -20,7 +20,6 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.attribute.AttributeModifier.Operation;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
@@ -36,6 +35,7 @@ import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.ReflectionUtil;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
@@ -89,7 +89,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSpeedMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
         final double val = attrInst.getValue() / attrInst.getBaseValue();
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.ID_SPRINT_BOOST);
         return mod == null ? val : (val / getMultiplier(mod));
@@ -97,7 +97,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSprintMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.ID_SPRINT_BOOST);
         return mod == null ? 1.0 : getMultiplier(mod);
     }
@@ -114,7 +114,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
         }
         else {
-            final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_GRAVITY);
+            final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.GRAVITY);
             // Fail-safe.
             if (attrInst == null) {
                 gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
@@ -133,7 +133,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return Magic.FALL_DAMAGE_DIST;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SAFE_FALL_DISTANCE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SAFE_FALL_DISTANCE);
         // Fail-safe
         if (attrInst == null) return Magic.FALL_DAMAGE_DIST;
         return MathUtil.clamp(attrInst.getValue(), -1024.0, 1024.0);
@@ -145,7 +145,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_FALL_DAMAGE_MULTIPLIER);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.FALL_DAMAGE_MULTIPLIER);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 1.0, 100.0);
@@ -157,7 +157,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_BREAK_SPEED);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.BLOCK_BREAK_SPEED);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return  MathUtil.clamp(attrInst.getValue(), 1.0, 1024.0);
@@ -169,7 +169,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_JUMP_STRENGTH);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.JUMP_STRENGTH);
         // Fail-safe
         if (attrInst == null) return 1.0;
         final double val = attrInst.getValue() / attrInst.getBaseValue();
@@ -188,7 +188,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 4.5;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_BLOCK_INTERACTION_RANGE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.INTERACTION_RANGE);
         // Fail-safe
         if (attrInst == null) return 4.5;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -200,7 +200,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 3.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.PLAYER_ENTITY_INTERACTION_RANGE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.ATTACK_RANGE);
         // Fail-safe
         if (attrInst == null) return 3.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -211,7 +211,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
         if (ServerVersion.isLowerThan("1.20.5")) {
             // Does not exist, calculate manually.
             if (player.isInsideVehicle()) {
-                if (player.getVehicle() != null && player.getVehicle().getType().equals(EntityType.BOAT)) {
+                if (player.getVehicle() != null && MaterialUtil.isBoat(player.getVehicle().getType())) {
                     // Boats are unable to step.
                     return 0.0;
                 }
@@ -221,11 +221,11 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             final MovingConfig cc = DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class);
             return cc.sfStepHeight;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_STEP_HEIGHT);
+        final AttributeInstance attrInst = player.getAttribute(Attribute.STEP_HEIGHT);
         if (attrInst == null) {
             // Fail-safe.
             if (player.isInsideVehicle()) {
-                if (player.getVehicle() != null && player.getVehicle().getType().equals(EntityType.BOAT)) {
+                if (player.getVehicle() != null && MaterialUtil.isBoat(player.getVehicle().getType())) {
                     return 0.0;
                 }
                 return 1.0;
@@ -279,7 +279,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
         if (ServerVersion.isLowerThan("1.20.5")) {
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.GENERIC_SCALE);
+        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SCALE);
         // Fail-safe.
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0625, 16.0);

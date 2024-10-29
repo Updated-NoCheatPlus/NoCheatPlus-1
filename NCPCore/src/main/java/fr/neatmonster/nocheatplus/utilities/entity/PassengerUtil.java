@@ -19,7 +19,6 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -38,6 +37,7 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.AuxMoving;
 
@@ -353,7 +353,7 @@ public class PassengerUtil {
                 boolean scheduledelay = cc.schedulevehicleSetPassenger;
                 if (data.vehicleSetPassengerTaskId == null) {
                     // TODO: Check which version fixed this?
-                    if (vehicle.getType() == EntityType.BOAT) {
+                    if (MaterialUtil.isBoat(vehicle.getType())) {
                         if (!handleVehicle.getHandle().addPassenger(player, vehicle)) {
                             // Not schedule set passenger for boat due to location async
                             // Re-add to vehicle then reject. Fix boat teleported but player didn't

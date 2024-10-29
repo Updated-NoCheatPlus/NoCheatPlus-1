@@ -21,7 +21,7 @@ import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.Check;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
-import fr.neatmonster.nocheatplus.compat.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.IBridgeCrossPlugin;
 import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;

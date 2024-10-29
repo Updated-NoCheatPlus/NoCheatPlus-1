@@ -14,6 +14,11 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.util.Vector;
+
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 
@@ -36,33 +41,35 @@ public class PlayerMoveData extends MoveData {
 	/** Whether this move has the slowfall effect active */
 	public boolean hasSlowfall;
 	
-	/** Whether this movement is influenced by gravity */
+	/** Whether this movement is influenced by gravity, as reported by {@link fr.neatmonster.nocheatplus.compat.BridgeMisc#hasGravity(LivingEntity)} */
 	public boolean hasGravity;
     
-	/** Player action set on PlayerMoveEvents. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
+	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
 	public boolean isGliding;
     
-	public double submergedLavaHeight;
+    /** Represents how far the player is submerged in lava */
+    public double submergedLavaHeight;
     
+    /** Represents how far the player is submerged in water */
 	public double submergedWaterHeight;
 
-    /** Set with BridgeMisc.isUsingItem(player) on PlayerMoveEvents. */
+    /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. */
     public boolean slowedByUsingAnItem;
 	
 	/** 
-	 * Player action set on PlayerMoveEvents. 
-	 * NOTE: this is NOT the propelling moment triggered by PlayerRiptideEvent, 
+	 * Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. 
+	 * NOTE: this is NOT the propelling moment triggered by {@link org.bukkit.event.player.PlayerRiptideEvent}, 
 	 * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, entityHuman.startAutoSpinAttack(20))
 	 */
 	public boolean isRiptiding;
 	
-	/** Player action set on PlayerMoveEvents */
+	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
 	public boolean isSprinting;
 	
-	/** Player action set on PlayerMoveEvents */
+	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
 	public boolean isCrouching;
 	
-	/** Player action set on PlayerMoveEvents */
+	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
 	public boolean isSwimming;
 	
     /**
@@ -116,7 +123,7 @@ public class PlayerMoveData extends MoveData {
     public double yAllowedDistance;
     
     /**
-     * The vertical collision as set by RichEntityLocation#collide() in SurvivalFly (vdistrel).
+     * The vertical collision as set by {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, MovingConfig, double[])} in SurvivalFly (vdistrel).
      * Note that this does not differentiate collision above VS below: it considers both.
      */
     public boolean collideY;
@@ -138,7 +145,7 @@ public class PlayerMoveData extends MoveData {
 
     // Meta stuff.
     /**
-     * Due to the thresholds and other subtleties with the PlayerMoveEvent, there could have been other
+     * Due to the thresholds and other subtleties with the {@link org.bukkit.event.player.PlayerMoveEvent}, there could have been other
      * (micro-) moves by the player which could not be checked, because Bukkit did not fire an event for them. One moving event
      * is split into several other moves, with a cap.
      */
@@ -146,7 +153,7 @@ public class PlayerMoveData extends MoveData {
     
     /**
      * Mojang introduced a new "mechanic" in 1.17 which allows player to re-send their position on right-clicking.
-     * On Bukkit's side, this translates in a PlayerMoveEvent which doesn't actually have any movement change (PME.getFrom() and PME.getTo() contain the same location)
+     * On Bukkit's side, this translates in a {@link org.bukkit.event.player.PlayerMoveEvent} which doesn't actually have any movement change ({@link PlayerMoveEvent#getFrom()} and {@link PlayerMoveEvent#getTo()} contain the same location)
      * This moving event is skipped from being processed.
      * Do note that players cannot send duplicate packets in a row: after we receive an "empty" PlayerMoveEvent, the next one incoming must have the actual movement change.
      * (Sequence is: normal PME -> duplicate PME -> normal PME(...))

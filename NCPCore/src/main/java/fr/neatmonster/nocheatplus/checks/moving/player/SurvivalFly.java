@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
+import org.bukkit.Input;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -158,6 +159,12 @@ public class SurvivalFly extends Check {
         if (data.jumpDelay > 0) {
             data.jumpDelay--;
         }
+        
+       if (BridgeMisc.hasInputGetterMethod()) {
+            final Input input = player.getCurrentInput();
+            player.sendMessage("Inputs: " + (input.isLeft() ? "LEFT" : "" ) + (input.isRight() ? " RIGHT" : "") + (input.isForward() ? " FORWARD" : "") + (input.isBackward() ? " BACKWARDS" : "") );
+        }
+        
 
 
         /////////////////////////////////////
@@ -1202,10 +1209,8 @@ public class SurvivalFly extends Check {
             }
             
             // *----------stuck-speed-momentum-reset----------*
-            // Momentum reset due to stuck speed...
             if (TrigUtil.lengthSquared(data.lastStuckInBlockHorizontal, data.lastStuckInBlockVertical, data.lastStuckInBlockHorizontal) > 1.0E-7) {
                 if (data.lastStuckInBlockVertical != 1.0) {
-                    // Throttle speed when stuck in
                     thisMove.yAllowedDistance = 0.0;
                 }
             }

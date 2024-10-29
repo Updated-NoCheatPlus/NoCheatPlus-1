@@ -537,7 +537,7 @@ public class VehicleEnvelope extends Check {
         checkDetails.inAir = !checkDetails.fromIsSafeMedium && !checkDetails.toIsSafeMedium;
         // Distinguish by entity class (needs future proofing at all?).
         if (vehicle != null && MaterialUtil.isBoat(vehicle.getType())) {
-            checkDetails.simplifiedType = EntityType.BOAT;
+            checkDetails.simplifiedType = vehicle.getType();
             checkDetails.maxAscend = MagicVehicle.maxAscend;
         }
         else if (vehicle instanceof Minecart) {

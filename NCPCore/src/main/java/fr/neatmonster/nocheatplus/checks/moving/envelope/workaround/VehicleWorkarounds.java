@@ -1,11 +1,10 @@
 package fr.neatmonster.nocheatplus.checks.moving.envelope.workaround;
 
-import org.bukkit.entity.EntityType;
-
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.vehicle.VehicleEnvelope.CheckDetails;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
+import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.MagicVehicle;
 
 /**
@@ -22,7 +21,7 @@ public class VehicleWorkarounds {
 	public static boolean oddInWaterAscend(final VehicleMoveData thisMove, final CheckDetails checkDetails, final MovingData data) {
 	    // (Try individual if this time, let JIT do the rest.)
 	    // Boat.
-	    if (checkDetails.simplifiedType == EntityType.BOAT) {
+	    if (MaterialUtil.isBoat(checkDetails.simplifiedType)) {
 	        if (thisMove.yDistance > MagicVehicle.maxAscend 
 	            && thisMove.yDistance < MagicVehicle.boatMaxBackToSurfaceAscend
 	            && data.ws.use(WRPT.W_M_V_ENV_INWATER_BTS)) {
@@ -62,7 +61,7 @@ public class VehicleWorkarounds {
 	    // TODO: Guard by past move tracking, instead of minDescend and maxDescend.
 	    // (Try individual if this time, let JIT do the rest.)
 	    // Boat.
-	    if (checkDetails.simplifiedType == EntityType.BOAT) {
+	    if (MaterialUtil.isBoat(checkDetails.simplifiedType)) {
 	        // Boat descending in-air, skip one vehicle move event during late in-air phase.
 	        if (data.sfJumpPhase > 54 && thisMove.yDistance < 2.0 * minDescend && thisMove.yDistance > 2.0 * maxDescend
 	                // TODO: Past move tracking.

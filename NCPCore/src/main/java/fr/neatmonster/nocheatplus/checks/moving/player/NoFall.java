@@ -43,6 +43,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.LocationData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.*;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;

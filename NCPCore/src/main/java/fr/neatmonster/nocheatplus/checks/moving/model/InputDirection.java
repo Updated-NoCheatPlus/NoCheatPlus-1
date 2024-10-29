@@ -14,6 +14,11 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
+import org.bukkit.Input;
+import org.bukkit.entity.Player;
+
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+
 /**
  * Meant to carry information regarding the player's key presses (WASD)
  */
@@ -29,7 +34,7 @@ public class InputDirection {
     private StrafeDirection sdir;
     
     /**
-     * Compose a new instance meant to represent the player's key presses.
+     * Composes a new InputDirection instance meant to represent the player's key presses.
      * 
      * @param strafe Represents sideways movement.
      * @param forward Represents forward and backward movement.
@@ -39,6 +44,22 @@ public class InputDirection {
         this.strafe = strafe;
         fdir = forward >= 0.0 ? forward == 0.0 ? ForwardDirection.NONE : ForwardDirection.FORWARD : ForwardDirection.BACKWARD;
         sdir = strafe >= 0.0 ? strafe == 0.0 ? StrafeDirection.NONE : StrafeDirection.LEFT : StrafeDirection.RIGHT;
+    }
+    
+    /**
+     * Composes a new InputDirection instance based on the player's current input.
+     *
+     * @param player The player whose input is being read.
+     */
+    public InputDirection(Player player) {
+        if (!BridgeMisc.hasInputGetterMethod()) {
+            throw new UnsupportedOperationException("getCurrentInput is not available.");
+        }
+        Input input = player.getCurrentInput();
+        this.strafe = input.isLeft() ? 1.0f : input.isRight() ? -1.0f : 0.0f;
+        this.forward = input.isForward() ? 1.0f : input.isBackward() ? -1.0f : 0.0f;
+        this.fdir = forward == 0.0f ? ForwardDirection.NONE : forward > 0 ? ForwardDirection.FORWARD : ForwardDirection.BACKWARD;
+        this.sdir = strafe == 0.0f ? StrafeDirection.NONE : strafe > 0 ? StrafeDirection.LEFT : StrafeDirection.RIGHT;
     }
     
     /**
