@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.compat;
+package fr.neatmonster.nocheatplus.compat.bukkit;
 
 import org.bukkit.potion.PotionEffectType;
 

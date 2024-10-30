@@ -36,7 +36,7 @@ public class BlockCoord {
     
     /**
      * Constructs a BlockCoord from double coordinates by converting them
-     * to block integer coordinates using Location.locToBlock().
+     * to block integer coordinates using the same method as Bukkit's Location#locToBlock().
      *
      * @param x The x-coordinate.
      * @param y The y-coordinate.

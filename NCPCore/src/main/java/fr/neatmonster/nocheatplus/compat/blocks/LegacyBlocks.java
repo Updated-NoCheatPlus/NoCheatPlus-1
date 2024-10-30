@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 
-import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.utilities.Validate;
 import fr.neatmonster.nocheatplus.utilities.collision.Axis;
 import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;

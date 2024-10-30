@@ -17,7 +17,7 @@ package fr.neatmonster.nocheatplus.test;
 import org.bukkit.Material;
 import org.junit.Test;
 
-import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.build.BuildParameters;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.PassableRayTracing;

@@ -12,7 +12,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package fr.neatmonster.nocheatplus.compat;
+package fr.neatmonster.nocheatplus.compat.bukkit;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.bukkit.Material;
 
+import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.prefixtree.SimpleCharPrefixTree;
 

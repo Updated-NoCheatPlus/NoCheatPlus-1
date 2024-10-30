@@ -19,7 +19,7 @@ import java.util.List;
 
 import org.bukkit.Material;
 
-import fr.neatmonster.nocheatplus.compat.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.activation.ActivationUtil;
 import fr.neatmonster.nocheatplus.compat.blocks.AbstractBlockPropertiesPatch;
 import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
@@ -30,7 +30,7 @@ import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
 
 /**
  * Multi client protocol support since 1.7, roughly.
- * 
+ * TODO: must get rid of in favour of direct modeling in getShape() methods in BukkitModels via ClientVersion
  * @author asofold
  *
  */

@@ -77,7 +77,7 @@ public enum AlmostBoolean{
     }
 
     /**
-     * Optimistic interpretation: true if not NO.
+     * Optimistic interpretation: true (only) if not NO.
      * 
      * @return true if the state is {@code YES} or {@code MAYBE}, false if the state is {@code NO}.
      */
