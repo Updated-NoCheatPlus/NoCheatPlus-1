@@ -1130,8 +1130,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /**
      * Check for on ground status, ignoring the block with ignoreFlags attached (no entities).
      *
-     * @param yOnGround
-     *            the y on ground
      * @param ignoreFlags
      *            Flags to not regard as ground.
      * @return true, if is on ground
@@ -1235,12 +1233,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
      * fcfs+no-consistency+no-actual-side-condition-checks.
      * <hr>
      * Assume this gets called after the ordinary isOnGround has returned false.
-     * 
-     * @param loc
-     * @param yShift
-     * @param blockChangetracker
-     * @param blockChangeRef
-     * @return
+     *
      */
     public final boolean isOnGroundOpportune(final double yOnGround, final long ignoreFlags,
                                              final BlockChangeTracker blockChangeTracker, final BlockChangeReference blockChangeRef,

@@ -539,6 +539,8 @@ public class RichEntityLocation extends RichBoundsLocation {
         return isUnobstructed(AxisAlignedBBUtils.move(getAABBCopy(), xOffset, yOffset, zOffset), flag); 
     }
     
+    /**
+     * From Entity.java <br>
      * Checks if the bounding box of the entity, when moved by the specified offsets, is free of any obstruction (liquid or solid blocks).
      * 
      * @return True, if the moved bounding box is free from obstructions, otherwise false.

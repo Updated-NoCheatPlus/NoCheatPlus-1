@@ -111,7 +111,7 @@ public class LocationData implements IGetLocationWithLook {
         onBlueIce = loc.isOnBlueIce();
         resetCond = loc.isResetCond();
         onBouncyBlock = loc.isOnBouncyBlock();
-        onGroundOrResetCond = loc.isResetCond();
+        onGroundOrResetCond = loc.isOnGroundOrResetCond();
         inBubbleStream = loc.isInBubbleStream();
         aboveStairs = loc.isAboveStairs();
         unobstructed = loc.isUnobstructed();
