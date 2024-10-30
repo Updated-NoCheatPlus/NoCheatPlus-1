@@ -1268,7 +1268,7 @@ public class SurvivalFly extends Check {
             // This condition is the same for both lava and water, and is always done at the end of the travel() function.
             if (lastMove.from.inLiquid && thisMove.collidesHorizontally
                 // TODO: CURRENT BROKEN, Some how do lastMove.from.isFreeFromObstructions?
-                && from.isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, from.isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA)) {
+                && lastMove.from.unobstructed) { // TODO: Not tested.
                 thisMove.yAllowedDistance = 0.3;
                 tags.add("v_exiting_liquid");
             }

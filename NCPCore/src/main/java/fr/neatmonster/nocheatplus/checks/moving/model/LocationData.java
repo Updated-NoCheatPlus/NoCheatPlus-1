@@ -36,7 +36,8 @@ public class LocationData implements IGetLocationWithLook {
     /** Must be checked before using any of the flags. */
     public boolean extraPropertiesValid = false;
     /** Basic environmental properties. */
-    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand, onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream;
+    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand,
+            onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream, unobstructed;
     /** Aggregate properties (reset means potentially resetting fall damage or other data). */
     public boolean resetCond, onGroundOrResetCond;
 
@@ -108,11 +109,12 @@ public class LocationData implements IGetLocationWithLook {
         onGround = loc.isOnGround();
         onIce = loc.isOnIce();
         onBlueIce = loc.isOnBlueIce();
-        resetCond = inLiquid || inWeb || onClimbable || inBerryBush || inPowderSnow;
+        resetCond = loc.isResetCond();
         onBouncyBlock = loc.isOnBouncyBlock();
-        onGroundOrResetCond = onGround || resetCond;
+        onGroundOrResetCond = loc.isResetCond();
         inBubbleStream = loc.isInBubbleStream();
         aboveStairs = loc.isAboveStairs();
+        unobstructed = loc.isUnobstructed();
         // Set valid flag last.
         extraPropertiesValid = true;
     }
@@ -143,6 +145,7 @@ public class LocationData implements IGetLocationWithLook {
             onBouncyBlock = other.onBouncyBlock;
             inBubbleStream = other.inBubbleStream;
             onGroundOrResetCond = other.onGroundOrResetCond;
+            unobstructed = other.unobstructed;
         }
         // Set valid flag last.
         extraPropertiesValid = other.extraPropertiesValid;
@@ -168,6 +171,7 @@ public class LocationData implements IGetLocationWithLook {
         onBouncyBlock = false;
         inBubbleStream = false;
         onGroundOrResetCond = false;
+        unobstructed = false;
     }
 
     public void addExtraProperties(final StringBuilder builder) {
@@ -221,5 +225,5 @@ public class LocationData implements IGetLocationWithLook {
     public String toString() {
         return "LocationData(" + worldName + "/" + LocUtil.simpleFormat(this) + ")";
     }
-
+    
 }

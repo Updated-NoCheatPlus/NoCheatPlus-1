@@ -539,6 +539,29 @@ public class RichEntityLocation extends RichBoundsLocation {
         return isUnobstructed(AxisAlignedBBUtils.move(getAABBCopy(), xOffset, yOffset, zOffset), flag); 
     }
     
+     * Checks if the bounding box of the entity, when moved by the specified offsets, is free of any obstruction (liquid or solid blocks).
+     * 
+     * @return True, if the moved bounding box is free from obstructions, otherwise false.
+     */
+    public boolean isUnobstructed() {
+        final IPlayerData pData;
+        if (!(entity instanceof Player)) {
+            if (entity.getPassengers().getFirst() instanceof Player) {
+                pData = DataManager.getPlayerData((Player) entity.getPassengers().getFirst());
+            }
+            else return false;
+        }
+        else pData = DataManager.getPlayerData((Player) entity);
+        final MovingData data = pData.getGenericInstance(MovingData.class);
+        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+        final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        // Un-comment this once x/y/zAllowedDistances is shared with vehicles too in MoveData, and we have a prediction for vehicles.
+        // final VehicleMoveData vehicleMove = data.vehicleMoves.getCurrentMove();
+        // final VehicleMoveData lastVehicleMove = data.vehicleMoves.getFirstPastMove();
+        unobstructed = isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
+        return unobstructed;
+    }
+    
     /**
      * From Entity.java <br>
      * Checks if the specified axis-aligned bounding box (AABB) is free of any obstructions (liquid or solid blocks).
