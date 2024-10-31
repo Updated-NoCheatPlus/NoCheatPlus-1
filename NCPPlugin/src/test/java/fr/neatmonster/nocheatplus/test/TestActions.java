@@ -29,8 +29,9 @@ import fr.neatmonster.nocheatplus.config.ConfigFile;
 import fr.neatmonster.nocheatplus.config.DefaultConfig;
 import fr.neatmonster.nocheatplus.penalties.PenaltyNode;
 import fr.neatmonster.nocheatplus.permissions.PermissionRegistry;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestActions {
+public class TestActions extends MockServerBase {
 
     @Test
     public void testOptimizedLogActionEmpty() {

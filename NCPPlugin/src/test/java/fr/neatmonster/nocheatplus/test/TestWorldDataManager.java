@@ -33,8 +33,9 @@ import fr.neatmonster.nocheatplus.config.DefaultConfig;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.worlds.IWorldData;
 import fr.neatmonster.nocheatplus.worlds.WorldDataManager;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestWorldDataManager {
+public class TestWorldDataManager extends MockServerBase {
 
     private WorldDataManager getWorldDataManager() {
         PluginTests.setUnitTestNoCheatPlusAPI(false);

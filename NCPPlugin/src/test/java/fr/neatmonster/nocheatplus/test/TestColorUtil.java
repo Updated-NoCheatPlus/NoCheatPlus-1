@@ -23,8 +23,9 @@ import org.bukkit.ChatColor;
 import org.junit.Test;
 
 import fr.neatmonster.nocheatplus.utilities.ColorUtil;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestColorUtil {
+public class TestColorUtil extends MockServerBase {
 	@Test
 	public void testRemoveColor(){
 		List<String[]> items = new LinkedList<String[]>();

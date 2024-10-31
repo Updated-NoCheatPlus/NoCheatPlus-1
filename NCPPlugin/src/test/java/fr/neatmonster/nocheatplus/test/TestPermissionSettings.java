@@ -21,8 +21,9 @@ import org.junit.Test;
 import fr.neatmonster.nocheatplus.permissions.PermissionPolicy;
 import fr.neatmonster.nocheatplus.permissions.PermissionSettings;
 import fr.neatmonster.nocheatplus.permissions.PermissionSettings.PermissionRule;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestPermissionSettings {
+public class TestPermissionSettings extends MockServerBase {
 
     @Test
     public void testRegex() {

@@ -25,9 +25,10 @@ import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.ITraceEntry;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.TraceEntryPool;
 import fr.neatmonster.nocheatplus.checks.moving.location.tracking.LocationTrace.TraceIterator;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
 
-public class TestLocationTrace {
+public class TestLocationTrace extends MockServerBase {
 
     /**
      * +- radius around 0.0.

@@ -22,11 +22,13 @@ import org.junit.Test;
 import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
 import fr.neatmonster.nocheatplus.config.ConfigFile;
+import fr.neatmonster.nocheatplus.config.DefaultConfig;
 import fr.neatmonster.nocheatplus.config.PathUtils;
 import fr.neatmonster.nocheatplus.config.RawConfigFile;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestConfig {
+public class TestConfig extends MockServerBase {
 
     private void testReadMaterial(String input, Material expectedMat) {
         Material mat = RawConfigFile.parseMaterial(input);
@@ -102,10 +104,10 @@ public class TestConfig {
         }
     }
 
-//    @Test
-//    public void testActionLists() {
-//        ConfigFile config = new DefaultConfig();
-//        config.getOptimizedActionList(ConfPaths.MOVING_SURVIVALFLY_ACTIONS, null);
-//    }
+    @Test
+    public void testActionLists() {
+        ConfigFile config = new DefaultConfig();
+        config.getOptimizedActionList(ConfPaths.MOVING_SURVIVALFLY_ACTIONS, null);
+    }
 
 }

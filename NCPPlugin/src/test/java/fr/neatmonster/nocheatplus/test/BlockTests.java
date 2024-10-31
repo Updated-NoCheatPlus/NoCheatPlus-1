@@ -26,13 +26,14 @@ import fr.neatmonster.nocheatplus.config.DefaultConfig;
 import fr.neatmonster.nocheatplus.config.RawConfigFile;
 import fr.neatmonster.nocheatplus.config.WorldConfigProvider;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
 /**
  * Auxiliary classes packed in here.
  * @author dev1mc
  *
  */
-public class BlockTests {
+public class BlockTests extends MockServerBase {
 
     public static class SimpleWorldConfigProvider <C extends RawConfigFile> implements WorldConfigProvider <C>{
 

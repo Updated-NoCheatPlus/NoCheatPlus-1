@@ -19,8 +19,9 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import fr.neatmonster.nocheatplus.permissions.PermissionPolicy;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestPermissionPolicy {
+public class TestPermissionPolicy extends MockServerBase {
 
     private void testToConfigString(PermissionPolicy policy, String expected) {
         if (!policy.policyToConfigLine().equals(expected)) {

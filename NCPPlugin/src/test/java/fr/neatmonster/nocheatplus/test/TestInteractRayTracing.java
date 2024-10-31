@@ -21,9 +21,11 @@ import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.logging.StaticLog;
 import fr.neatmonster.nocheatplus.utilities.build.BuildParameters;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.InteractRayTracing;
+import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.FakeBlockCache;
+import fr.neatmonster.nocheatplus.MockServerBase;
 
-public class TestInteractRayTracing {
+public class TestInteractRayTracing extends MockServerBase {
 
     public final class CenteredInteractRayTracing extends InteractRayTracing {
         private int centerX, centerY, centerZ;
@@ -45,6 +47,11 @@ public class TestInteractRayTracing {
         StaticLog.setUseLogManager(false);
         BlockTests.initBlockProperties();
         StaticLog.setUseLogManager(true);
+        // This hack was a solution when mocking fail to fully replicate, result Material.isSolid() always false -> block definition gone wrong
+        BlockFlags.setBlockFlags(Material.STONE, BlockFlags.FULLY_SOLID_BOUNDS);
+        BlockFlags.setBlockFlags(Material.DIRT, BlockFlags.FULLY_SOLID_BOUNDS);
+        BlockFlags.setBlockFlags(Material.OBSIDIAN, BlockFlags.FULLY_SOLID_BOUNDS);
+        BlockFlags.setBlockFlags(BridgeMaterial.GRASS_BLOCK, BlockFlags.FULLY_SOLID_BOUNDS);
     }
 
     @Test
