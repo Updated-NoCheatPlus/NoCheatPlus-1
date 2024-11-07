@@ -28,6 +28,7 @@ import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeBukkitAPI;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.components.registry.feature.IDisableListener;
@@ -81,7 +82,7 @@ public class Open extends Check implements IDisableListener {
      * @return If cancelling some event is opportune (open inventory and cancel flag set).
      */
     public boolean check(final Player player) {
-        final boolean isShulkerBox = player.getOpenInventory().getTopInventory().getType().toString().equals("SHULKER_BOX");
+        final boolean isShulkerBox = BridgeBukkitAPI.getTopInventory(player).getType().toString().equals("SHULKER_BOX");
         if (
             // TODO: POC: Item duplication with teleporting NPCS, having their inventory open.
             exeSet.getHandle().isRegardedAsNpc(player)
@@ -123,7 +124,7 @@ public class Open extends Check implements IDisableListener {
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
         final InventoryData data = pData.getGenericInstance(InventoryData.class);
         final boolean creative = player.getGameMode() == GameMode.CREATIVE && ((data.clickedSlotType == SlotType.QUICKBAR) || cc.openDisableCreative);
-        final boolean isMerchant = player.getOpenInventory().getTopInventory().getType() == InventoryType.MERCHANT;
+        final boolean isMerchant = BridgeBukkitAPI.getTopInventory(player).getType() == InventoryType.MERCHANT;
         final PlayerMoveData thisMove = mData.playerMoves.getCurrentMove();
         
         // Skipping conditions first.

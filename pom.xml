@@ -33,6 +33,7 @@
     <modules>
         <module>NCPBuildBase</module>
         <module>NCPCommons</module>
+        <module>NCPLegacy</module>
         <module>NCPCore</module>
         <module>NCPCompatBukkit</module>
         <module>NCPCompatProtocolLib</module>

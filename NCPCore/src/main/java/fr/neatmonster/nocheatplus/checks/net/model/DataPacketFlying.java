@@ -38,38 +38,43 @@ public class DataPacketFlying extends DataLocation {
     // TODO: hashCode + equals.
 
     public final boolean onGround;
+    public final boolean horizontalCollision;
     public final boolean hasPos;
     public final boolean hasLook;
     public final long time;
     private long sequence = 0;
 
-    public DataPacketFlying(boolean onGround, long time) {
+    public DataPacketFlying(boolean onGround, boolean horizontalCollision, long time) {
         super(0, 0, 0, 0, 0);
         this.onGround = onGround;
+        this.horizontalCollision = horizontalCollision;
         hasPos = false;
         hasLook = false;
         this.time = time;
     }
 
-    public DataPacketFlying(boolean onGround, float yaw, float pitch, long time) {
+    public DataPacketFlying(boolean onGround, boolean horizontalCollision, float yaw, float pitch, long time) {
         super(0, 0, 0, yaw, pitch);
+        this.horizontalCollision = horizontalCollision;
         this.onGround = onGround;
         hasPos = false;
         hasLook = true;
         this.time = time;
     }
 
-    public DataPacketFlying(boolean onGround, double x, double y, double z, long time) {
+    public DataPacketFlying(boolean onGround, boolean horizontalCollision, double x, double y, double z, long time) {
         super(x, y, z, 0, 0);
         this.onGround = onGround;
+        this.horizontalCollision = horizontalCollision;
         hasPos = true;
         hasLook = false;
         this.time = time;
     }
 
-    public DataPacketFlying(boolean onGround, double x, double y, double z, float yaw, float pitch, long time) {
+    public DataPacketFlying(boolean onGround, boolean horizontalCollision, double x, double y, double z, float yaw, float pitch, long time) {
         super(x, y, z, yaw, pitch);
         this.onGround = onGround;
+        this.horizontalCollision = horizontalCollision;
         hasPos = true;
         hasLook = true;
         this.time = time;
@@ -124,6 +129,8 @@ public class DataPacketFlying extends DataLocation {
         final StringBuilder builder = new StringBuilder(256);
         builder.append("Flying(ground=");
         builder.append(onGround);
+        builder.append(",horcollide=");
+        builder.append(horizontalCollision);
         if (hasPos) {
             builder.append(",x=");
             builder.append(getX());

@@ -33,6 +33,7 @@ import com.comphenix.protocol.reflect.StructureModifier;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetConfig;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeBukkitAPI;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
@@ -123,7 +124,7 @@ public class SoundDistance extends BaseAdapter {
     private boolean isSoundMonitoredLatest(final PacketContainer packetContainer) {
         StructureModifier<Sound> sounds = packetContainer.getSoundEffects();
         for (final Sound sound : sounds.getValues()) {
-            if (sound != null && effectNames.contains(sound.name())) {
+            if (sound != null && effectNames.contains(BridgeBukkitAPI.ConvertSoundToString(sound))) {
                 //debug(null, "MONITOR SOUND: " + sound);
                 return true;
             }

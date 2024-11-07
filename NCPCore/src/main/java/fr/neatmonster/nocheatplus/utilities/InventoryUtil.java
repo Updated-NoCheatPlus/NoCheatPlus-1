@@ -37,6 +37,7 @@ import fr.neatmonster.nocheatplus.checks.inventory.InventoryData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeBukkitAPI;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
@@ -200,8 +201,7 @@ public class InventoryUtil {
      * @return True, if the opened inventory is of any type that isn't CRAFTING/CREATIVE and is not null.
      */
     public static boolean hasInventoryOpenOwnExcluded(final Player player) {
-        final InventoryView view = player.getOpenInventory();
-        return view != null && view.getType() != InventoryType.CRAFTING && view.getType() != InventoryType.CREATIVE; // Exclude the CRAFTING and CREATIVE inv type.
+        return BridgeBukkitAPI.hasInventoryOpenOwnExcluded(player);
     }
 
    /**

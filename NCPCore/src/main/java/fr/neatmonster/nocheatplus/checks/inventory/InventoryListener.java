@@ -60,6 +60,7 @@ import fr.neatmonster.nocheatplus.checks.combined.Combined;
 import fr.neatmonster.nocheatplus.checks.combined.CombinedData;
 import fr.neatmonster.nocheatplus.checks.combined.Improbable;
 import fr.neatmonster.nocheatplus.compat.bukkit.BridgeHealth;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeBukkitAPI;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.components.NoCheatPlusAPI;
 import fr.neatmonster.nocheatplus.components.data.ICheckData;
@@ -587,7 +588,7 @@ public class InventoryListener  extends CheckListener implements JoinLeaveListen
         }
         final CombinedData cData = pData.getGenericInstance(CombinedData.class);
         final InventoryConfig cc = pData.getGenericInstance(InventoryConfig.class);
-        final Inventory inv = event.getPlayer().getOpenInventory().getTopInventory();
+        final Inventory inv = BridgeBukkitAPI.getTopInventory(event.getPlayer());
         if (moreInv.isEnabled(event.getPlayer(), pData) 
             && moreInv.check(event.getPlayer(), cData, pData, inv.getType(), inv, PoYdiff)) {
             for (int i = 1; i <= 4; i++) {

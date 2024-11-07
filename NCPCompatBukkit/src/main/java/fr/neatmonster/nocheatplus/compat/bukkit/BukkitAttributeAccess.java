@@ -16,7 +16,6 @@ package fr.neatmonster.nocheatplus.compat.bukkit;
 
 import java.util.UUID;
 
-import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.attribute.AttributeModifier.Operation;
@@ -88,7 +87,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSpeedMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getSpeedAttributeInstance(player);
         final double val = attrInst.getValue() / attrInst.getBaseValue();
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.ID_SPRINT_BOOST);
         return mod == null ? val : (val / getMultiplier(mod));
@@ -96,7 +95,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
     
     @Override
     public double getSprintMultiplier(final Player player) {
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.MOVEMENT_SPEED);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getSpeedAttributeInstance(player);
         final AttributeModifier mod = getModifier(attrInst, AttribUtil.ID_SPRINT_BOOST);
         return mod == null ? 1.0 : getMultiplier(mod);
     }
@@ -113,7 +112,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
         }
         else {
-            final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.GRAVITY);
+            final AttributeInstance attrInst = BridgeBukkitAPI.getGravityAttributeInstance(player);
             // Fail-safe.
             if (attrInst == null) {
                 gravity = thisMove.yDistance <= 0.0 && !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player)) ? Magic.SLOW_FALL_GRAVITY : Magic.DEFAULT_GRAVITY;
@@ -132,7 +131,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return Magic.FALL_DAMAGE_DIST;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SAFE_FALL_DISTANCE);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getSafeFallAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return Magic.FALL_DAMAGE_DIST;
         return MathUtil.clamp(attrInst.getValue(), -1024.0, 1024.0);
@@ -144,7 +143,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.FALL_DAMAGE_MULTIPLIER);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getFallMultAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 1.0, 100.0);
@@ -156,7 +155,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.BLOCK_BREAK_SPEED);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getBreakSpeedAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return 1.0;
         return  MathUtil.clamp(attrInst.getValue(), 1.0, 1024.0);
@@ -168,7 +167,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.JUMP_STRENGTH);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getJumpPowerAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return 1.0;
         final double val = attrInst.getValue() / attrInst.getBaseValue();
@@ -187,7 +186,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 4.5;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.INTERACTION_RANGE);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getBlockInteractionRangeAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return 4.5;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -199,7 +198,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             // Doesn't exist. Calculate manually.
             return 3.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.ATTACK_RANGE);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getEntityInteractionRangeAttributeInstance(player);
         // Fail-safe
         if (attrInst == null) return 3.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0, 64.0);
@@ -220,7 +219,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
             final MovingConfig cc = DataManager.getPlayerData(player).getGenericInstance(MovingConfig.class);
             return cc.sfStepHeight;
         }
-        final AttributeInstance attrInst = player.getAttribute(Attribute.STEP_HEIGHT);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getStepHeightAttributeInstance(player);
         if (attrInst == null) {
             // Fail-safe.
             if (player.isInsideVehicle()) {
@@ -278,7 +277,7 @@ public class BukkitAttributeAccess implements IAttributeAccess {
         if (ServerVersion.isLowerThan("1.20.5")) {
             return 1.0;
         }
-        final AttributeInstance attrInst = player.getAttribute(BridgeAttribute.SCALE);
+        final AttributeInstance attrInst = BridgeBukkitAPI.getScaleAttributeInstance(player);
         // Fail-safe.
         if (attrInst == null) return 1.0;
         return MathUtil.clamp(attrInst.getValue(), 0.0625, 16.0);

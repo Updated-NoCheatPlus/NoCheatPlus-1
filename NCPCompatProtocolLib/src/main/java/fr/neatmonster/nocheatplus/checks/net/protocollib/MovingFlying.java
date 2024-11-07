@@ -63,11 +63,12 @@ import fr.neatmonster.nocheatplus.worlds.IWorldData;
  *
  */
 public class MovingFlying extends BaseAdapter {
-
+    private static final boolean isServerAtLeast1_21_3 = ServerVersion.compareMinecraftVersion("1.21.3") >= 0;
     // Setup for flying packets.
     public static final int indexOnGround = 0;
-    public static final int indexhasPos = 1;
-    public static final int indexhasLook = 2;
+    public static final int indexhorizontalCollision = isServerAtLeast1_21_3 ? 1 : 0;
+    public static final int indexhasPos = 1 + indexhorizontalCollision;
+    public static final int indexhasLook = 2 + indexhorizontalCollision;
     public static final int indexX = 0;
     public static final int indexY = 1;
     public static final int indexZ = 2;
@@ -341,16 +342,17 @@ public class MovingFlying extends BaseAdapter {
 
         final PacketContainer packet = event.getPacket();
         final List<Boolean> booleans = packet.getBooleans().getValues();
-        if (booleans.size() != 3) {
+        if (booleans.size() != (isServerAtLeast1_21_3 ? 4 : 3)) {
             packetMismatch(event);
             return null;
         }
         final boolean onGround = booleans.get(MovingFlying.indexOnGround).booleanValue();
+        final boolean horizontalCollision = isServerAtLeast1_21_3 ? booleans.get(MovingFlying.indexhorizontalCollision).booleanValue() : false;
         final boolean hasPos = booleans.get(MovingFlying.indexhasPos).booleanValue();
         final boolean hasLook = booleans.get(MovingFlying.indexhasLook).booleanValue();
 
         if (!hasPos && !hasLook) {
-            return new DataPacketFlying(onGround, time);
+            return new DataPacketFlying(onGround, horizontalCollision, time);
         }
         final List<Double> doubles;
         final List<Float> floats;
@@ -379,13 +381,13 @@ public class MovingFlying extends BaseAdapter {
             floats = null;
         }
         if (hasPos && hasLook) {
-            return new DataPacketFlying(onGround, doubles.get(indexX), doubles.get(indexY), doubles.get(indexZ), floats.get(indexYaw), floats.get(indexPitch), time);
+            return new DataPacketFlying(onGround, horizontalCollision, doubles.get(indexX), doubles.get(indexY), doubles.get(indexZ), floats.get(indexYaw), floats.get(indexPitch), time);
         }
         else if (hasLook) {
-            return new DataPacketFlying(onGround, floats.get(indexYaw), floats.get(indexPitch), time);
+            return new DataPacketFlying(onGround, horizontalCollision, floats.get(indexYaw), floats.get(indexPitch), time);
         }
         else if (hasPos) {
-            return new DataPacketFlying(onGround, doubles.get(indexX), doubles.get(indexY), doubles.get(indexZ), time);
+            return new DataPacketFlying(onGround, horizontalCollision, doubles.get(indexX), doubles.get(indexY), doubles.get(indexZ), time);
         }
         else {
             throw new IllegalStateException("Can't be, it can't be!");
