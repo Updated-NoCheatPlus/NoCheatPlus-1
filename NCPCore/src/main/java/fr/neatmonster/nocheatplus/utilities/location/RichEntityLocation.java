@@ -560,8 +560,7 @@ public class RichEntityLocation extends RichBoundsLocation {
         // Un-comment this once x/y/zAllowedDistances is shared with vehicles too in MoveData, and we have a prediction for vehicles.
         // final VehicleMoveData vehicleMove = data.vehicleMoves.getCurrentMove();
         // final VehicleMoveData lastVehicleMove = data.vehicleMoves.getFirstPastMove();
-        unobstructed = isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - (lastMove.from.getY() + thisMove.yAllowedDistance) + lastMove.from.getY(), thisMove.zAllowedDistance, isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
-        return unobstructed;
+        return isUnobstructed(thisMove.xAllowedDistance, thisMove.yAllowedDistance + 0.6 - lastMove.to.getY() + lastMove.from.getY(), thisMove.zAllowedDistance, isInWater() ? BlockFlags.F_WATER : BlockFlags.F_LAVA);
     }
     
     /**

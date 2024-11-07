@@ -1180,7 +1180,8 @@ public class SurvivalFly extends Check {
         else {
             // Otherwise, a fully in-medium move.
             // Initialize with momentum (or lack thereof)
-            thisMove.yAllowedDistance = forceResetMomentum ? 0.0 : (lastMove.toIsValid ? lastMove.yDistance : 0.0);
+            // TODO: Not sure block.updateEntityAfterFallOn (lastMove.yDistance < 0.0 && fromOnGround) put here is correct?
+            thisMove.yAllowedDistance = forceResetMomentum || (lastMove.yDistance < 0.0 && fromOnGround) ? 0.0 : (lastMove.toIsValid ? lastMove.yDistance : 0.0);
             //////////////////////////////////////
             // Next client-tick/move            //
             //////////////////////////////////////
@@ -1266,9 +1267,9 @@ public class SurvivalFly extends Check {
             // *----------Finalize LivingEntity.travel; isFree() check----------*
             // Try making the player jump out of the liquid... 
             // This condition is the same for both lava and water, and is always done at the end of the travel() function.
-            if (lastMove.from.inLiquid && thisMove.collidesHorizontally
-                // TODO: CURRENT BROKEN, Some how do lastMove.from.isFreeFromObstructions?
-                && lastMove.from.unobstructed) { // TODO: Not tested.
+            if (lastMove.from.inLiquid && lastMove.collidesHorizontally
+                // TODO: Somewhat work. Incorrect horizontal move. Require this function call at the time BOTH horizontal and vertical calculating at the same time. Which is not possible with current infrastructure
+                && from.isUnobstructed()) {
                 thisMove.yAllowedDistance = 0.3;
                 tags.add("v_exiting_liquid");
             }

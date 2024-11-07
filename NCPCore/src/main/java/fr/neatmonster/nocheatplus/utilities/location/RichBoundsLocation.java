@@ -150,9 +150,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
     /** Is the player in a bubblestream? */
     Boolean inBubbleStream = null;
-    
-    /** Is the path where the player has moved to/from unobstructed ? */
-    Boolean unobstructed = null;
 
 
     // "Heavy" object members that need to be set to null on cleanup. //    
@@ -660,16 +657,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
             aboveStairs = standsOnBlock(BlockFlags.F_STAIRS);
         }
         return aboveStairs;
-    }
-    
-    /**
-     * Straw-man method to allow tracking this flag with the past-move-tracking system. 
-     * The flag is actually set in {@link RichEntityLocation#isUnobstructed()}
-     *
-     * @return always false.
-     */
-    public boolean isUnobstructed() {
-        return unobstructed;
     }
 
     /**
@@ -1603,7 +1590,6 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         this.onClimbable = other.isOnClimbable();
         this.onBouncyBlock = other.isOnBouncyBlock();
         this.aboveStairs = other.isAboveStairs();
-        this.unobstructed = other.isUnobstructed();
     }
 
     /**
@@ -1667,7 +1653,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         node = nodeBelow = null;
         aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand  = onHoneyBlock 
         = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable 
-        = passableBox = inBubbleStream = unobstructed = null;
+        = passableBox = inBubbleStream = null;
         onGroundMinY = Double.MAX_VALUE;
         notOnGroundMaxY = Double.MIN_VALUE;
         blockFlags = null;
