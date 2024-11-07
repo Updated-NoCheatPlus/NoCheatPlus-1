@@ -12,7 +12,7 @@ import fr.neatmonster.nocheatplus.utilities.StringUtil;
 /**
  * Utility class providing static methods to bridge compatibility issues
  * arising from changes in Bukkit attributes between Minecraft versions,
- * specifically from MC 1.21.2 to 1.20.3.
+ * specifically from MC 1.21.2 to 1.21.3.
  */
 public class BridgeAttribute {
     
@@ -82,7 +82,4 @@ public class BridgeAttribute {
     public static final Attribute BLOCK_BREAK_SPEED = getFirstNotNull("block_break_speed", "player_block_break_speed");
     public static final Attribute FALL_DAMAGE_MULTIPLIER = getFirstNotNull("fall_damage_multiplier", "generic_fall_damage_multiplier");
     public static final Attribute SAFE_FALL_DISTANCE = getFirstNotNull("safe_fall_distance", "generic_safe_fall_distance");
-    
-    
-    
 }

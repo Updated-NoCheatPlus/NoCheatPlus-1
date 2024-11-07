@@ -8,6 +8,7 @@ import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
 import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
@@ -175,7 +176,12 @@ public class PlayerEnvelopes {
                     // 1:  99.9% of cases...
                     isJump(from, to, player, fromOnGround, toOnGround)
                     // 1: The odd one out. We can't know the ground status of the player, so this will have to do.
-                    || isVerticallyConstricted(from, to, pData) && !forceSetOffGround // At least ensure to not apply this when we're brute-forcing speed with off-ground
+                    || isVerticallyConstricted(from, to, pData)
+                    && (
+                         !forceSetOffGround && pData.getClientVersion().isLowerThan(ClientVersion.V_1_21_2) // At least ensure to not apply this when we're brute-forcing speed with off-ground
+                         || BridgeMisc.isInputKnown(player) && player.getCurrentInput().isJump()
+                    
+                    )
                );
     }
 

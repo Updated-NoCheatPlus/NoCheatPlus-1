@@ -34,6 +34,11 @@ public class InputDirection {
     private StrafeDirection sdir;
     
     /**
+     * Empty constructor to let it fail.
+     */
+    public InputDirection() {}
+    
+    /**
      * Composes a new InputDirection instance meant to represent the player's key presses.
      * 
      * @param strafe Represents sideways movement.
@@ -58,8 +63,8 @@ public class InputDirection {
         Input input = player.getCurrentInput();
         this.strafe = input.isLeft() ? 1.0f : input.isRight() ? -1.0f : 0.0f;
         this.forward = input.isForward() ? 1.0f : input.isBackward() ? -1.0f : 0.0f;
-        this.fdir = forward == 0.0f ? ForwardDirection.NONE : forward > 0 ? ForwardDirection.FORWARD : ForwardDirection.BACKWARD;
-        this.sdir = strafe == 0.0f ? StrafeDirection.NONE : strafe > 0 ? StrafeDirection.LEFT : StrafeDirection.RIGHT;
+        this.fdir = forward == 0.0f ? ForwardDirection.NONE : forward > 0.0 ? ForwardDirection.FORWARD : ForwardDirection.BACKWARD;
+        this.sdir = strafe == 0.0f ? StrafeDirection.NONE : strafe > 0.0 ? StrafeDirection.LEFT : StrafeDirection.RIGHT;
     }
     
     /**

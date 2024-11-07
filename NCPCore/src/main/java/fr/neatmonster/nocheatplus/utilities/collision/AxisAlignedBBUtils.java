@@ -467,7 +467,8 @@ public class AxisAlignedBBUtils {
     }
     
     /**
-     * Checks if the given AABB is degenerate, meaning at least one of its corner is 0.0.<br>
+     * Checks if the given AABB is degenerate, meaning at least one of its corner (min/max/XZ) is 0.0.<br>
+     * Does not support multi-bounding box arrays. If a multi AABB is passed, only the primary box will be checked.
      * 
      * @param AABB The AABB to check
      * @return True, if at least one coordinate returns 0.0, false otherwise.
@@ -475,6 +476,23 @@ public class AxisAlignedBBUtils {
     public static boolean isDegenerate(final double[] AABB) {
         Validate.validateAABB(AABB);
         return AABB[0] == 0.0 || AABB[2] == 0.0 || AABB[3] == 0.0 || AABB[5] == 0.0;
+    }
+    
+    /**
+     * Checks if the given array bounds is all 0.
+     * 
+     * @param bounds
+     * @return
+     */
+    public static boolean isZero(final double[] bounds) {
+        Validate.validateAABB(bounds);
+        // Check if all elements are 0
+        for (double bound : bounds) {
+            if (bound != 0.0) {
+                return false;
+            }
+        }
+        return true;
     }
     
     /**

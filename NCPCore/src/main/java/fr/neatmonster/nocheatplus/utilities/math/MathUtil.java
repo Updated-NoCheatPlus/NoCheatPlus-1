@@ -17,6 +17,7 @@ package fr.neatmonster.nocheatplus.utilities.math;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 
 /**
  * Auxiliary static methods for dealing with mathematical operations.
@@ -336,5 +337,27 @@ public class MathUtil {
             }
         }
         return -1;
+    }
+    
+    /**
+     * Simply checks if the actual distance is higher than allowed.
+     * 
+     * @param distance
+     * @param allowedDistance
+     * @return
+     */
+    public static boolean exceedsAllowedDistance(double distance, double allowedDistance) {
+        return Math.abs(distance) > Math.abs(allowedDistance);
+    }
+    
+    /**
+     * Checks if the difference between actual speed and allowed one is less than {@link Magic#PREDICTION_EPSILON}
+     * 
+     * @param actual The current/actual speed of the player
+     * @param allowed The speed that we have predicted.
+     * @return True, if the offset is less than {@link Magic#PREDICTION_EPSILON}
+     */
+    public static boolean isOffsetWithinPredictionEpsilon(double actual, double allowed) {
+        return almostEqual(actual, allowed, Magic.PREDICTION_EPSILON);
     }
 }

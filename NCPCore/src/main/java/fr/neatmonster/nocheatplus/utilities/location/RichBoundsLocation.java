@@ -70,10 +70,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     /** Bounding box. */
     double minX, maxX, minY, maxY, minZ, maxZ;
 
-    /** Horizontal margin for the bounding box (center towards edge). */
+    /** Horizontal margin for the bounding box (center x/z towards edge). */
     double boxMarginHorizontal;
 
-    /** Vertical margin for the bounding box (y towards top). */
+    /** Vertical margin for the bounding box (center y towards top). */
     double boxMarginVertical;
 
     /** Minimal yOnGround for which the player is on ground. No extra xz/y margin.*/

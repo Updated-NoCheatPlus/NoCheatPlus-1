@@ -72,20 +72,12 @@ public class BridgeMisc {
     private static final boolean hasEntityChangePoseEvent = ReflectionUtil.getClass("org.bukkit.event.entity.EntityPoseChangeEvent") != null;
     // After 15 or so years, we finally get to know when players press WASD keys... Better late than never I guess.
     private static final boolean hasPlayerInputEvent = ReflectionUtil.getClass("org.bukkit.event.player.PlayerInputEvent") != null;
-    private static final boolean hasInputGetterMethod = ReflectionUtil.getMethodNoArgs(Player.class, "getCurrentInput", boolean.class) != null;
+    private static final boolean hasInputGetterMethod = ReflectionUtil.getMethodNoArgs(Player.class, "getCurrentInput") != null;
     
     public static final boolean hasInputGetterMethod() {
         return hasInputGetterMethod;
     }
     
-    /**
-     * Test if the player's input (WASD) can be known (server has the getter method and the client is at or above 1.21.2)
-     * @param player
-     * @return
-     */
-    public static final boolean isInputKnown(final Player player) {
-        return hasInputGetterMethod() && DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_21_2);
-    }
     public static boolean hasPlayerInputEvent() {
         return hasPlayerInputEvent;
     }
@@ -104,6 +96,15 @@ public class BridgeMisc {
     
     public static boolean hasAnyUsingItemMethod() {
         return hasGetItemInUseMethod || hasIsHandRaisedMethod;
+    }
+    
+    /**
+     * Test if <b>both</b> client and server are on a version that support impulse-sending (at or above 1.21.2)
+     * @param player
+     * @return
+     */
+    public static final boolean isInputKnown(final Player player) {
+        return hasInputGetterMethod() && DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_21_2);
     }
     
     /**
@@ -165,7 +166,13 @@ public class BridgeMisc {
         final IPlayerData pData = DataManager.getPlayerData(player);
         return pData.getItemInUse() != null;
     }
-
+    
+    /**
+     * Get the Material type of the item the player is currently using.
+     *
+     * @param player
+     * @return True, if either {@link Player#getItemInUse()} or {@link IPlayerData#getItemInUse()} returns true
+     */
     public static Material getItemInUse(final Player player) {
     	final IPlayerData pData = DataManager.getPlayerData(player);
         return hasGetItemInUseMethod() ? player.getItemInUse().getType() : pData.getItemInUse();
@@ -177,7 +184,7 @@ public class BridgeMisc {
      * @return
      */
     public static boolean hasGravity(final LivingEntity entity) {
-        return hasGravityMethod ? entity.hasGravity() : true;
+        return !hasGravityMethod || entity.hasGravity();
     }
 
     public static boolean hasIsFrozen() {

@@ -53,7 +53,6 @@ import fr.neatmonster.nocheatplus.utilities.CheckUtils;
 import fr.neatmonster.nocheatplus.utilities.StringUtil;
 import fr.neatmonster.nocheatplus.utilities.ds.count.ActionFrequency;
 import fr.neatmonster.nocheatplus.utilities.location.LocUtil;
-import fr.neatmonster.nocheatplus.worlds.IWorldData;
 
 /**
  * Run checks related to moving (pos/look/flying). Skip packets that shouldn't
@@ -215,7 +214,6 @@ public class MovingFlying extends BaseAdapter {
         final NetData data = pData.getGenericInstance(NetData.class);
         data.lastKeepAliveTime = time; // Update without much of a contract.
         // TODO: Leniency options too (packet order inversion). -> current: flyingQueue is fetched.
-        final IWorldData worldData = pData.getCurrentWorldDataSafe();
         final NetConfig cc = pData.getGenericInstance(NetConfig.class);
         boolean cancel = false;
         // Interpret the packet content.

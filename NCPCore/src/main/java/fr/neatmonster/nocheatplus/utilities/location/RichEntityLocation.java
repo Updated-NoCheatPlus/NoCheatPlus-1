@@ -26,6 +26,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
@@ -33,6 +34,8 @@ import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
+import fr.neatmonster.nocheatplus.components.modifier.IAttributeAccess;
+import fr.neatmonster.nocheatplus.components.registry.event.IGenericInstanceHandle;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
@@ -62,8 +65,10 @@ public class RichEntityLocation extends RichBoundsLocation {
     // Final members //
     /** The mc access. */
     private final IHandle<MCAccess> mcAccess;
-
-
+    
+    private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
+    
+    
     // Simple members //
     /** Full bounding box width. */
     /*
@@ -179,7 +184,7 @@ public class RichEntityLocation extends RichBoundsLocation {
            return onBouncyBlock;
        }
         if (GenericVersion.isLowerThan(entity, "1.12")) {
-            if (onBouncyBlock) {
+            if (onBouncyBlock != null && onBouncyBlock) {
                 if (onSlimeBlock != null && !onSlimeBlock) {
                     // Beds were made bouncy on 1.12
                     onBouncyBlock = false;
@@ -592,7 +597,7 @@ public class RichEntityLocation extends RichBoundsLocation {
      * @return A Vector containing the collision components (collisionXYZ)
      */
     public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] AABB) {
-        if (input.isZero()) {
+        if (input.getX() == 0.0 && input.getY() == 0.0 && input.getZ() == 0.0) { // NOTE: Do not call Vector#isZero, because the method is not available on 1.8
             return new Vector();
         }
         // Clone or create the AABB
@@ -607,8 +612,9 @@ public class RichEntityLocation extends RichBoundsLocation {
         boolean touchGround = onGround || collideY && collisionVector.getY() < 0.0; // Already on ground. Or this downward collision would result in the player touching the ground.
         /* 
           Players can step blocks up to 0.6 or 0.5, depending on the client version (if older than 1.8). Boats cannot step. All other vehicles can step a whole block up.
+           TODO: Make attributes accessible to entities as well.
          */
-        double allowedStepHeight = entity instanceof Player ? cc.sfStepHeight : entity instanceof Boat ? 0.0 : 1.0;
+        double allowedStepHeight = entity instanceof Player ? attributeAccess.getHandle().getMaxStepUp((Player) entity) : entity instanceof Boat ? 0.0 : 1.0;
         // TODO: This needs optimization badly, because we call this function on every move and for every combination of movement.
         // Entity is on ground, collided with a wall and can actually step upwards: try to make it step up.
         // Messy and quite hard on the eyes, but since we need to account for different versions, this will have to do.

@@ -92,11 +92,13 @@ public class PlayerMoveData extends MoveData {
      * during processing of moving checks.
      */
     public double xAllowedDistance;
-
+    
     /**
-     *  The theoretical collision that has been set in this movement by SurvivalFly. This is set only if a theoretical speed is actually found
-     *  (In other words, only if the player isn't cheating)
-     */
+     *  The collision oon the X axis that has been set in this movement by SurvivalFly.
+     *  Prior to version 1.21.2, this was set only if the theoretical speed prediction to set in this movement was found; or in other words, only if the player isn't cheating.
+     *  On 1.21.2 and above, this is always set 
+     *  @see PlayerMoveData#hasImpulse
+     */ 
     public boolean collideX;
 
     /**
@@ -106,8 +108,10 @@ public class PlayerMoveData extends MoveData {
     public double zAllowedDistance;
 
     /**
-     *  The theoretical collision that has been set in this movement by SurvivalFly. This is set only if a theoretical speed is actually found
-     *  (In other words, only if the player isn't cheating)
+     *  The collision oon the Z axis that has been set in this movement by SurvivalFly.
+     *  Prior to version 1.21.2, this was set only if the theoretical speed prediction to set in this movement was found; or in other words, only if the player isn't cheating.
+     *  On 1.21.2 and above, this is always set.
+     *  @see PlayerMoveData#hasImpulse
      */
     public boolean collideZ;
 
@@ -167,46 +171,52 @@ public class PlayerMoveData extends MoveData {
     public SimpleEntry verVelUsed = null;
     
     /**
-     * Indicates whether this movement has a horizontal impulse, meaning the player has actively pressed a WASD key.
-     * This helps differentiate between active movement by the player and passive movement caused by other sources 
-     * (e.g., push or velocity).
+     * Indicates whether this movement has a horizontal impulse, meaning the player actively pressed a WASD key.
+     * This helps differentiate between player-driven movement and passive movement (e.g., from external forces like push or velocity).
+     * <p>
+     * <b>Prior to version 1.21.2, inputs were not sent to the server, so movement impulse was inferred by replicating client-movement calculations.
+     * This means this boolean's value depended on our prediction:</b>
      *
      * <ul>
-     * <li>YES: The horizontal movement was predicted, confirming active player input.</li>
-     * <li>MAYBE: The horizontal movement could not be predicted, so it is unclear if the player actively pressed a WASD key.</li>
-     * <li>NO: The horizontal movement was predicted to have no active input from the player.</li>
+     * <li>YES: Active player input was detected through prediction.</li>
+     * <li>MAYBE: Prediction was inconclusive, so player input is unclear.</li>
+     * <li>NO: No active player input was detected through prediction.</li>
      * </ul>
+     *
+     * <p>For clients supporting impulse event-sending, this will only return YES or NO, as input data is always available.</p>
      */
     public AlmostBoolean hasImpulse;
     
     /**
-     * Indicates the direction of strafing movement (LEFT/RIGHT/NONE).
+     * Indicates the strafing direction (LEFT, RIGHT, or NONE).
      *
-     * <p>This value is set even if the horizontal movement could not be predicted, so the strafe direction might be inaccurate.
-     * Check {@link PlayerMoveData#hasImpulse} to determine the reliability of this value.
+     * <p>This value is set even if horizontal movement could not be accurately predicted, so it may be unreliable, unless the client sends impulse events, in which case it is dependable.
+     * Check {@link PlayerMoveData#hasImpulse} for its reliability prior to version 1.21.2 </p>
      */
     public InputDirection.StrafeDirection strafeImpulse;
     
     /**
-     * Indicates the direction of forward movement (FORWARD/BACKWARD/NONE).
+     * Indicates the forward movement direction (FORWARD, BACKWARD, or NONE).
      *
-     * <p>This value is set even if the horizontal movement could not be predicted, so the forward direction might be inaccurate.
-     * Check {@link PlayerMoveData#hasImpulse} to determine the reliability of this value.
+     * <p>This value is set even if horizontal movement could not be accurately predicted, so it may be unreliable, unless the client sends impulse events, in which case it is dependable.
+     * Check {@link PlayerMoveData#hasImpulse} for its reliability prior to version 1.21.2 </p>
      */
     public InputDirection.ForwardDirection forwardImpulse;
     
     /**
      * Judge if this horizontal collision ({@link PlayerMoveData#collideX} or {@link PlayerMoveData#collideZ}) is to be considered as minor.
      * This is for Minecraft's sprinting reset mechanic.
-     * Only set if the appropriate speed to set was found.
-     * Therefore, this will return false if the predicted speed is uncertain (See {@link PlayerMoveData#hasImpulse}).
+     * Prior to 1.21.2, this was set only if the appropriate speed to set was found, therefore, this would return false if the predicted speed is uncertain.
+     * On 1.21.2 and above, this boolean's value is always set.
+     * @see PlayerMoveData#hasImpulse
      */
     public boolean negligibleHorizontalCollision;
     
     /**
      * Result of either {@link PlayerMoveData#collideX} or {@link PlayerMoveData#collideZ}.
-     * Set only if the appropriate speed to set was found.
-     * Therefore, this will return false if the predicted speed is uncertain (See {@link PlayerMoveData#hasImpulse}).
+     * Prior to 1.21.2, this was set only if the appropriate speed to set was found, therefore, this would return false if the predicted speed is uncertain.
+     * On 1.21.2 and above, this boolean's value is always set.
+     * @see PlayerMoveData#hasImpulse
      */
     public boolean collidesHorizontally;
     
