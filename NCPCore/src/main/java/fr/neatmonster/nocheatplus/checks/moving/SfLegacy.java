@@ -195,7 +195,7 @@ public class SfLegacy {
      * @param pData
      * @param player
      */
-    public static void  loopAccelerationAndModifiers(BlockChangeTracker blockChangeTracker, InputDirection[] inputs, AtomicInteger i, boolean isPredictable, boolean onGround, double movementSpeed,
+    public static void loopAccelerationAndModifiers(BlockChangeTracker blockChangeTracker, InputDirection[] inputs, AtomicInteger i, boolean isPredictable, boolean onGround, double movementSpeed,
                                                     final PlayerMoveData thisMove, final PlayerMoveData lastMove, PlayerLocation from, boolean debug,
                                                     final PlayerLocation to, final MovingData data, final IPlayerData pData, final Player player, Collection<String> tags) {
         // Only comments added are specifically tied to the looping mechanic
@@ -303,7 +303,7 @@ public class SfLegacy {
         boolean strict = cc.survivalFlyStrictHorizontal;
         for (i.set(0); i.intValue() < 9; i.getAndIncrement()) {
             if (strict) {
-                found = MathUtil.isOffsetWithinPredictionEpsilon(thisMove.xDistance, xTheoreticalDistance[i.intValue()]) && MathUtil.isOffsetWithinPredictionEpsilon(thisMove.zAllowedDistance, zTheoreticalDistance[i.intValue()]);
+                found = MathUtil.isOffsetWithinPredictionEpsilon(thisMove.xDistance, xTheoreticalDistance[i.intValue()]) && MathUtil.isOffsetWithinPredictionEpsilon(thisMove.zDistance, zTheoreticalDistance[i.intValue()]);
             }
             else {
                 double theoreticalHDistance = MathUtil.dist(xTheoreticalDistance[i.intValue()], zTheoreticalDistance[i.intValue()]);

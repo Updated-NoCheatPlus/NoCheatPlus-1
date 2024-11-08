@@ -546,7 +546,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     
     /**
      * From Entity.java <br>
-     * Checks if the bounding box of the entity, when moved by the specified offsets, is free of any obstruction (liquid or solid blocks).
+     * Checks if the bounding box of the entity, when moved by preset offsets, is free of any obstruction (liquid or solid blocks).
      * 
      * @return True, if the moved bounding box is free from obstructions, otherwise false.
      */
