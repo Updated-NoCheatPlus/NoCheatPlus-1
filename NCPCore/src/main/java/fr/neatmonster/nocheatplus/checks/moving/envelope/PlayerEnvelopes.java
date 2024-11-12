@@ -199,9 +199,8 @@ public class PlayerEnvelopes {
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         // 0: Early return conditions.
-        if (thisMove.hasLevitation || thisMove.isRiptiding || thisMove.isGliding) {
+        if (thisMove.hasLevitation || thisMove.isRiptiding || thisMove.isGliding || from.isInLiquid()) {
             // Cannot jump for sure under these conditions
-            // TODO: Consider to deterministically define jumping in shallow water as well. (modern clients can do so ~ like, on height 1/2/3 of water)
             return false;
         }
         // 1: Jump phase condition.
@@ -212,7 +211,7 @@ public class PlayerEnvelopes {
         // 2: Motion conditions.
         // Validate motion and update the headObstruction flag, if the player does actually collide with something above.
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) * attributeAccess.getHandle().getJumpGainMultiplier(player);
-        Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, pData.getGenericInstance(MovingConfig.class), from.getAABBCopy());
+        Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, from.getAABBCopy());
         thisMove.headObstructed = jumpGain != collisionVector.getY() && thisMove.yDistance >= 0.0 && !toOnGround; // For setting the flag, we don't care about the correct speed.
         jumpGain = collisionVector.getY();
         if (!MathUtil.almostEqual(thisMove.yDistance, jumpGain, Magic.PREDICTION_EPSILON)) { // NOTE: This must be the current move, never the last one.
@@ -237,7 +236,7 @@ public class PlayerEnvelopes {
                             // 2: The usual case, with ground status actually being detected later.
                             // https://gyazo.com/dfab44980c71dc04e62b48c4ffca778e
                             lastMove.from.onGround && !lastMove.to.onGround && !thisMove.touchedGroundWorkaround // Explicitly demand to not be using a lost ground case here.
-                            // 2: However, sometimes the ground detection is missed, making it this "delayed jump" a true lost-ground case.
+                            // 2: However, sometimes the ground detection is missed, making this "delayed jump" a true lost-ground case.
                             || (thisMove.touchedGroundWorkaround && (!lastMove.touchedGroundWorkaround || !thisMove.to.onGround)) // TODO: Check which position (fromLostGround or toLostGround). This definition was added prior to adding the distinguishing flags.
                 )
             ;

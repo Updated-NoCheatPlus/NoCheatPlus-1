@@ -729,7 +729,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     /** LOWEST level PlayerMoveEvent: this is the level where checks are executed and most moving data is set */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerMove(final PlayerMoveEvent event) {
+    public void onPlayerMove(final PlayerMoveEvent event)  {
         counters.add(idMoveEvent, 1);
         final Player player = event.getPlayer();
         // Store the event for monitor level checks.
@@ -1169,7 +1169,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.set(pFrom, pTo);
         thisMove.multiMoveCount = multiMoveCount;
         thisMove.setBackYDistance = pTo.getY() - data.getSetBackY();
-        thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && !moveInfo.from.isInLiquid();
+        thisMove.hasLevitation = !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player));
         thisMove.hasSlowfall = !Double.isInfinite(Bridge1_13.getSlowfallingAmplifier(player));
         thisMove.hasGravity = BridgeMisc.hasGravity(player);
         thisMove.isGliding = Bridge1_9.isGliding(player);

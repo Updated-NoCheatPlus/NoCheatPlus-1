@@ -30,6 +30,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.model.InputDirection;
 import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
@@ -66,8 +67,8 @@ public class CollisionUtil {
      *
      * @param collisionVector
      * @param to The location where the player has moved to. You must specifically use the "to" location, as it contains the most recent rotation. Using the "from" location would mean using the last rotation of the player.
-     * @param strafeImpulse The player's sideways input force, represented as a double (see {@link fr.neatmonster.nocheatplus.checks.moving.model.InputDirection})
-     * @param forwardImpulse The player's forward input force, represented as a double (see {@link fr.neatmonster.nocheatplus.checks.moving.model.InputDirection})
+     * @param strafeImpulse The player's sideways input force, represented as a double (see {@link InputDirection})
+     * @param forwardImpulse The player's forward input force, represented as a double (see {@link InputDirection})
      * @return True, if the collision's angle is less than 0.13962633907794952.
      */
     public static boolean isHorizontalCollisionNegligible(Vector collisionVector, final PlayerLocation to, double strafeImpulse, double forwardImpulse) {

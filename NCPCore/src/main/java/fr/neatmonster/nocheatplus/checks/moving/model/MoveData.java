@@ -17,7 +17,6 @@ package fr.neatmonster.nocheatplus.checks.moving.model;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
-import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.components.location.IGetLocationWithLook;
 import fr.neatmonster.nocheatplus.utilities.location.RichBoundsLocation;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
@@ -96,7 +95,7 @@ public class MoveData {
      * Head is obstructed for a living entity, or can't/couldn't move (further) up due to
      * being blocked somehow. Should expect descending next move, if in air.
      * <br>
-     * Set in SurvivalFly with the {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, MovingConfig, double[])} method.
+     * Set in SurvivalFly with the {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, double[])} method.
      * <li>NOTE: This is much stricter than {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#seekCollisionAbove(double, boolean)}.<br>
      * This only considers the exact moment of collision, the latter is much more lenient.</li>
      */

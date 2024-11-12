@@ -128,7 +128,7 @@ public class TrigUtil {
             // Legacy
             float f = cos(-yaw * toRadians - (float)Math.PI);
             float f1 = sin(-yaw * toRadians - (float)Math.PI);
-            float f2 = cos(-pitch * toRadians);
+            float f2 = -cos(-pitch * toRadians);
             float f3 = sin(-pitch * toRadians);
             return new Vector(f1 * f2, f3, f * f2);
         }
@@ -141,6 +141,16 @@ public class TrigUtil {
         float f5 = sin(f);
         return new Vector((double)(f3 * f4), (double)-f5, (double)(f2 * f4));
     }
+    // 1.12
+    /*protected final Vec3D f(float f, float f1) {
+        float f2 = MathHelper.cos(-f1 * 0.017453292F - 3.1415927F);
+        float f3 = MathHelper.sin(-f1 * 0.017453292F - 3.1415927F);
+        float f4 = -MathHelper.cos(-f * 0.017453292F);
+        float f5 = MathHelper.sin(-f * 0.017453292F);
+        
+        return new Vec3D((double) (f3 * f4), (double) f5, (double) (f2 * f4));
+        
+     */
     
     /**
      * Returns the looking direction vector of the player.

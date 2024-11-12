@@ -27,7 +27,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
-import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
@@ -591,12 +590,12 @@ public class RichEntityLocation extends RichBoundsLocation {
      *                 (Thus, if you wish to know if the player collided with something: inputXYZ != collidedXYZ)
      * @param onGround The "on ground" status of the entity. <br> Can be NCP's or Minecraft's. <br> Do mind that if using NCP's, lost ground cases and mismatches must be taken into account.
      *                 Used to determine whether the entity will be able to step up with the given input.
-     * @param AABB  The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
+     * @param AABB     The axis-aligned bounding box of the entity at the position they moved from (in other words, the last AABB of the entity).
      *                 Only makes sense if you call this method during PlayerMoveEvents, because the NMS bounding box will already be moved to the event#getTo() Location, by the time this gets called by moving checks.
      *                 If null, a new AABB using NMS' parameters (width/height) will be created.
      * @return A Vector containing the collision components (collisionXYZ)
      */
-    public Vector collide(Vector input, boolean onGround, MovingConfig cc, double[] AABB) {
+    public Vector collide(Vector input, boolean onGround, double[] AABB) {
         if (input.getX() == 0.0 && input.getY() == 0.0 && input.getZ() == 0.0) { // NOTE: Do not call Vector#isZero, because the method is not available on 1.8
             return new Vector();
         }
@@ -940,7 +939,7 @@ public class RichEntityLocation extends RichBoundsLocation {
 
     /**
      * Very coarse test to check if something solid/ground-like collides within the given margin above the eye height of the player. <br>
-     * For a better (and more accurate) method, use {@link RichEntityLocation#collide(Vector input, boolean onGround, MovingConfig cc, double[] AABB)}.
+     * For a better (and more accurate) method, use {@link RichEntityLocation#collide(Vector, boolean, double[])}.
      *
      * @param marginAboveEyeHeight
      *            Must be greater than or equal zero.

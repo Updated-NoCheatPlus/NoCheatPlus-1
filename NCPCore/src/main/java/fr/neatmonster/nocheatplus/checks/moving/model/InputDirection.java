@@ -20,7 +20,7 @@ import org.bukkit.entity.Player;
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 
 /**
- * Meant to carry information regarding the player's key presses (WASD)
+ * Carry information regarding the player's key presses (WASD)
  */
 public class InputDirection {
     
@@ -39,7 +39,7 @@ public class InputDirection {
     public InputDirection() {}
     
     /**
-     * Composes a new InputDirection instance meant to represent the player's key presses.
+     * Composes a new InputDirection instance based on the given strafe and forward values.
      * 
      * @param strafe Represents sideways movement.
      * @param forward Represents forward and backward movement.
@@ -52,10 +52,12 @@ public class InputDirection {
     }
     
     /**
-     * Composes a new InputDirection instance based on the player's current input.
+     * Composes a new InputDirection instance based on {@link Player#getCurrentInput()}.
      *
      * @param player The player whose input is being read.
+     * @throws UnsupportedOperationException if {@link Player#getCurrentInput()} is not available.
      */
+    @SuppressWarnings("UnstableApiUsage")
     public InputDirection(Player player) {
         if (!BridgeMisc.hasInputGetterMethod()) {
             throw new UnsupportedOperationException("getCurrentInput is not available.");

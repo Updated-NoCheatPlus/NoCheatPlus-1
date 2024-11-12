@@ -18,7 +18,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
-import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 
@@ -127,7 +126,7 @@ public class PlayerMoveData extends MoveData {
     public double yAllowedDistance;
     
     /**
-     * The vertical collision as set by {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, MovingConfig, double[])} in SurvivalFly (vdistrel).
+     * The vertical collision as set by {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, double[])} in SurvivalFly (vdistrel).
      * Note that this does not differentiate collision above VS below: it considers both.
      */
     public boolean collideY;

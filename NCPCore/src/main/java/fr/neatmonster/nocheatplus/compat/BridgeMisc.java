@@ -99,12 +99,14 @@ public class BridgeMisc {
     }
     
     /**
-     * Test if <b>both</b> client and server are on a version that support impulse-sending (at or above 1.21.2)
+     * Test if <b>both</b> client and server are on a version that support impulse-sending and reading.
+     * (Server must be 1.21.2 or above, client can be down to 1.9)
      * @param player
      * @return
      */
     public static final boolean isInputKnown(final Player player) {
-        return hasInputGetterMethod() && DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_21_2);
+       // TODO: ViaVersion seems to reliably emulate the player_input packet down to 1.9. Couldn't test 1.8 because Via isn't updated yet.
+        return hasInputGetterMethod() && DataManager.getPlayerData(player).getClientVersion().isAtLeast(ClientVersion.V_1_9);
     }
     
     /**
