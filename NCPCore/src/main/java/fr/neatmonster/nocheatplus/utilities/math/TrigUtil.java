@@ -141,7 +141,7 @@ public class TrigUtil {
         float f5 = sin(f);
         return new Vector((double)(f3 * f4), (double)-f5, (double)(f2 * f4));
     }
-    // 1.12
+    // 1.12-
     /*protected final Vec3D f(float f, float f1) {
         float f2 = MathHelper.cos(-f1 * 0.017453292F - 3.1415927F);
         float f3 = MathHelper.sin(-f1 * 0.017453292F - 3.1415927F);

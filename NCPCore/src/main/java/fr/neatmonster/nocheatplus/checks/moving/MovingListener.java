@@ -1178,7 +1178,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         thisMove.isCrouching = pData.isInCrouchingPose();
         thisMove.isSwimming = Bridge1_13.isSwimming(player);
         thisMove.slowedByUsingAnItem = BridgeMisc.isUsingItem(player);
-        if (BridgeMisc.isInputKnown(player)) thisMove.isJump = player.getCurrentInput().isJump();
+        if (BridgeMisc.isSpaceBarImpulseKnown(player)) thisMove.isJump = player.getCurrentInput().isJump();
 
 
         ////////////////////////////

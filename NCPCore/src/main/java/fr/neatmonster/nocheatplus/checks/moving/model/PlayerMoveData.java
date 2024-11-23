@@ -34,43 +34,43 @@ public class PlayerMoveData extends MoveData {
     //////////////////////////////////////////////////////////
 
     // Properties of the player.
-	/** Whether this move has the levitation effect active */
-	public boolean hasLevitation;
-	
-	/** Whether this move has the slowfall effect active */
-	public boolean hasSlowfall;
-	
-	/** Whether this movement is influenced by gravity, as reported by {@link fr.neatmonster.nocheatplus.compat.BridgeMisc#hasGravity(LivingEntity)} */
-	public boolean hasGravity;
+    /** Whether this move has the levitation effect active */
+    public boolean hasLevitation;
     
-	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
-	public boolean isGliding;
+    /** Whether this move has the slowfall effect active */
+    public boolean hasSlowfall;
+    
+    /** Whether this movement is influenced by gravity, as reported by {@link fr.neatmonster.nocheatplus.compat.BridgeMisc#hasGravity(LivingEntity)} */
+    public boolean hasGravity;
+    
+    /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
+    public boolean isGliding;
     
     /** Represents how far the player is submerged in lava */
     public double submergedLavaHeight;
     
     /** Represents how far the player is submerged in water */
-	public double submergedWaterHeight;
+    public double submergedWaterHeight;
 
     /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. */
     public boolean slowedByUsingAnItem;
-	
-	/** 
-	 * Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. 
-	 * NOTE: this is NOT the propelling moment triggered by {@link org.bukkit.event.player.PlayerRiptideEvent}, 
-	 * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, entityHuman.startAutoSpinAttack(20))
-	 */
-	public boolean isRiptiding;
-	
-	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
-	public boolean isSprinting;
-	
-	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
-	public boolean isCrouching;
-	
-	/** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
-	public boolean isSwimming;
-	
+    
+    /** 
+     * Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. 
+     * NOTE: this is NOT the propelling moment triggered by {@link org.bukkit.event.player.PlayerRiptideEvent}, 
+     * it is the entire riptide phase (for which the game activates its tick counter (See ItemTrident.java, entityHuman.startAutoSpinAttack(20))
+     */
+    public boolean isRiptiding;
+    
+    /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
+    public boolean isSprinting;
+    
+    /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
+    public boolean isCrouching;
+    
+    /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent} */
+    public boolean isSwimming;
+    
     /**
      * The distance covered by a move from the setback point to the to.getY() point.
      * Usually, this corresponds to the jump height, because the set back point is set on ground.<br>
@@ -230,10 +230,10 @@ public class PlayerMoveData extends MoveData {
         submergedLavaHeight = 0.0;
         submergedWaterHeight = 0.0;
         isGliding = false;
-    	isRiptiding = false;
-    	isSprinting = false;
-    	isCrouching = false;
-    	isSwimming = false;
+        isRiptiding = false;
+        isSprinting = false;
+        isCrouching = false;
+        isSwimming = false;
         slowedByUsingAnItem = false;
         forwardImpulse = InputDirection.ForwardDirection.NONE;
         strafeImpulse = InputDirection.StrafeDirection.NONE;

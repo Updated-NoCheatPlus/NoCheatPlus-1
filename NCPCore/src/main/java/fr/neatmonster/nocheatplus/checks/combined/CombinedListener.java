@@ -121,7 +121,8 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                     final PlayerMoveData thisMove = DataManager.getPlayerData(event.getPlayer()).getGenericInstance(MovingData.class).playerMoves.getCurrentMove();
                     // Assumption: we consider players toggle gliding on if they were not gliding before, and they now are.
                     if (shouldDenyGlidingStart(event.getPlayer(), thisMove.isGliding && !lastMove.isGliding, false)) {
-                        // Force-stop.
+                        // Force-stop. 
+                        // IMPORTANT: DO NOT CANCEL THE EVENT HERE!
                         event.getPlayer().setGliding(false);
                     } 
                 }
@@ -193,7 +194,9 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         return false;
     }
     
-    /** Check if this gliding phase should be aborted (We validate both toggle glide and gliding). */
+    /** 
+     * Check if this gliding phase should be aborted (We validate both toggle glide and gliding). 
+     */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onGlidingPhase(final PlayerMoveEvent event) {
         final IPlayerData pData = DataManager.getPlayerData(event.getPlayer());
@@ -204,7 +207,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
         final PlayerMoveInfo info = aux.usePlayerMoveInfo();
         info.set(event.getPlayer(), event.getPlayer().getLocation(info.useLoc), null, 0.0001);
-        if (MovingUtil.canGlide(event.getPlayer(), info.from, data)) {
+        if (MovingUtil.canStillGlide(event.getPlayer(), info.from, data)) {
             // Nothing to do.
             info.cleanup();
             aux.returnPlayerMoveInfo(info);
@@ -224,7 +227,46 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         }
     }
     
-    /** NOTE: this is updated at the end of the tick */
+    /**
+     * Handles the discrepancy between the definitions of "sneaking" in Bukkit and Minecraft.
+     * 
+     * <p>
+     * In Bukkit, sneaking is defined as simply pressing the shift key. Both {@link Player#isSneaking()}
+     * and {@link PlayerToggleSneakEvent} are triggered by action packets ({@code PRESS/RELEASE_SHIFT_KEY}). 
+     * However, in Minecraft, sneaking refers to being in the crouch or crawl <b>pose</b> 
+     * (the latter introduced in 1.14. Check {@code isMovingSlowly()} method in client code).
+     * </p>
+     * <p>
+     * Historically (up to Minecraft 1.9), a player could enter the crouching pose 
+     * only by pressing the shift key. Thus, Bukkit's assumption that 
+     * <b>sneaking</b> equals <b>shifting</b> was acceptable. However, this equivalence is no longer true 
+     * due to Mojang's introduction of additional player actions that can alter poses:
+     * </p>
+     * <ul>
+     *   <li><b>Elytra gliding (1.9+):</b> changes the player's pose to gliding.</li>
+     *   <li><b>Same goes for swimming and riptiding (1.13+).</li>
+     *   <li><b>On 1.14+, the player's bounding box is contracted when sneaking</b>, 
+     *       allowing to enter into 1.5-block-high spaces and stay in the crouching pose, regardless of key presses, until the player exits such an area. 
+     *       This means, a player can spam the shift key without ever leaving the pose in these areas.</li>
+     *   <li><b>Crawl mode (1.14+):</b> automatically activates if the player is constricted in 
+     *       areas with a ceiling lower than 1.5 blocks (e.g., under trapdoors). 
+     *       When crawling, movement is always slowed down regardless of shift key presses. 
+     *       Notably, crawling shares the same pose as swimming, and Minecraft determines 
+     *       crawling status by checking if the player is in the swimming pose and not in water 
+     *       (see: {@code LocalPlayer.java -> aiStep() -> isMovingSlowly() -> isVisuallyCrawling()}).</li>
+     * </ul>
+     * <p>
+     * Therefore, Bukkit's methods/event can no longer be relied upon to determine if a player should have reduced movement speed, as 
+     * they are associated with shift key presses and not player poses; and we need to know this for the horizontal speed prediction
+     * </p>
+     * <p>
+     * On Minecraft 1.14 and higher, sneaking status should be set using 
+     * {@code EntityPoseChangeEvent} instead of {@code PlayerToggleSneakEvent}. 
+     * For legacy clients, poses like crawling do not exist, so sneaking can be determined 
+     * solely by checking for shift key presses.
+     * </p>
+     * <hr><br>NOTE: the pose is updated at the end of the tick</hr>
+     */
     private void handlePoseChangeEvent(final Entity entity, final Pose newPose) {
         if (!(entity instanceof Player)) {
             return;
@@ -235,20 +277,6 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             // Sneaking status is set on PlayerToggleSneakEvents.
             return;
         }
-        // This is needed because of the discrepancy on what "sneaking" means between Bukkit and Minecraft. And we need to know the exact status to determine if we should enforce slower speed on players.
-        // For Bukkit: sneaking= shift key press. Both player#isSneaking() and PlayerToggleSneakEvents are fired with action packets (PRESS/RELEASE_SHIFT_KEY).
-        // For Minecraft: sneaking= being in crouch pose or in "crawl" pose (the latter added in 1.14. Check "isMovingSlowly()" method in client code).
-        // Historically (up until Minecraft 1.9), a player could have entered the crouching pose only by tapping the shift key, thus, Bukkit's coincidence of SNEAKING == SHIFTING was okay.
-        // This coincidence however is no longer true, because of Mojang adding several player actions that can change the pose.
-        //  -> Gliding with an elytra will change the pose of the player.
-        //  -> Same goes for swimming and riptiding (1.13+)
-        //  -> On 1.14+ the bounding box is contracted if sneaking, allowing players to enter 1.5 blocks-high areas and STAY in crouch pose, REGARDLESS of shift key presses (until they get out).
-        //     (Thus, a player can enter such an area and proceed to spam shift key presses without ever leaving the pose)
-        //  -> 1.14 also added "crawl mode", which automatically activates if the player is somehow constricted in areas with a ceiling lower than 1.5 blocks (i.e.: with trapdoors).
-        //     When players are in this mode, inputs are always slowed down, regardless of shift key presses (once again).
-        //     [Since crawling conveniently shares the same pose of swimming, Minecraft simply checks if the player is in SWIMMING pose and not in water (Check client code in: LocalPlayer.java -> aiStep() -> isMovingSlowly() -> isVisuallyCrawling())]
-        // In other words, Bukkit's status check/event can no longer be relied upon to know if the player needs to be slowed down, because they are both associated with shift key presses, not player poses. 
-        // Thus, on 1.14 and higher, sneaking setting is done via EntityPoseChangeEvent, not PlayerToggleSneakEvent. For legacy clients, we can simply ignore all other poses, and set sneaking status if the shift key was pressed, since the mechanics above don't exist.
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         if (newPose.equals(Pose.SWIMMING) && !BlockProperties.isInWater(player, player.getLocation(), cc.yOnGround)) {
             // isVisuallyCrawling()...
@@ -380,12 +408,16 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         if (pData.isInCrouchingPose()) {
             // ...In 1.14 and lower, players cannot sprint and sneak at the same time.
             // On 1.14 and higher, players can sneak while sprinting if they were sprinting beforehand.
+            // NOTE: THE BUG ABOVE WAS FIXED WITH THE "WINTER DROP" (around 1.21.3).
+            // We do not check for this as it is not worth it at all. Latency and desyncing issues make it too hard handle.
             pData.setSprintingState(false);
             return;
         }
         if (BridgeMisc.isUsingItem(event.getPlayer())) {
             // ...In 1.14 and lower, players cannot sprint and use an item at the same time.
             // On 1.14 and higher, players can use an item while sprinting if they were sprinting beforehand.
+            // NOTE: THE BUG ABOVE WAS FIXED WITH THE "WINTER DROP" (around 1.21.3).
+            // We do not check for this as it is not worth it at all. Latency and desyncing issues make it too hard handle.
             pData.setSprintingState(false);
             return;
         }

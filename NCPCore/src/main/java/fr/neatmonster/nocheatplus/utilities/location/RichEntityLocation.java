@@ -767,7 +767,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     }
     
     /**
-     * Abridged version of getLiquidPushingVector for getting liquid submerged height
+     * Abridged version of {@link #getLiquidPushingVector} for getting the submersion height of the entity.
      * 
      * @param liquidTypeFlag The flags F_LAVA or F_WATER to use.
      * @return Height have been sink into liquid.

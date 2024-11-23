@@ -21,7 +21,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
@@ -101,8 +103,9 @@ public class MovingUtil {
 
 
     /**
-     * Consistency / cheat check. 
-     * Prerequisite is Bridge1_9.isGlidingWithElytra(player) having returned true.
+     * Consistency / cheat check.<br>
+     * It assumes {@link Bridge1_9#isGliding(LivingEntity)} )} has already returned {@code true}, and checks whether a player can
+     * continue to glide for this gliding phase (i.e.: the elytra breaking mid-flight would make this return {@code false}).
      * 
      * @param player
      * @param loc
@@ -110,20 +113,22 @@ public class MovingUtil {
      * @param cc
      * @return
      */
-    public static boolean canGlide(final Player player, final PlayerLocation loc, final MovingData data) {
+    public static boolean canStillGlide(final Player player, final PlayerLocation loc, final MovingData data) {
         // Only stuck-speed blocks (webs/berry bushes/powder snow?) can stop a player who isn't propelled by a rocket.
         return data.fireworksBoostDuration > 0 && !loc.isResetCond()
                || !loc.isResetCond() && !player.isDead() && !player.isSleeping() && !InventoryUtil.isItemBroken(player.getInventory().getChestplate());
     }
 
     /**
-     * To be called on EntityToggleGlideEvent(s). If the event is absent, this must be called after checking for lift-off assumption conditions.
-     * (CB: on ground is done wrongly, inWater is probably NOT correct, web is not checked).
+     * Consistency / cheat check.<br>
+     * Unlike {@link #canStillGlide(Player, PlayerLocation, MovingData)}, this method only validates the toggle moment.<br>
+     * To be called on {@link EntityToggleGlideEvent}(s). If the event is absent, this must be called after checking for elytra lift-off assumption conditions on {@link PlayerMoveEvent}(s) (currently, we just assume players to toggle glide on if
+     * lastMove wasn't gliding and thisMove is. See CombinedListener -> onEventlessToggleGlide).
      * 
      * @param player
      * @param loc
      * @param data
-     * @return False, if the player is judged to not be able to start gliding (in which case player.setGliding(false) will be called, or the event cancelled).
+     * @return False, if the player is judged to not be able to start gliding (in which case the {@link EntityToggleGlideEvent} will be canceled. If this is called on {@link PlayerMoveEvent}, {@link LivingEntity#setGliding(boolean)} is set to false, as canceling the event would mean canceling the entire movement.
      */
     public static boolean canLiftOffWithElytra(final Player player, final PlayerLocation loc, final MovingData data) {
         // TODO: this/firstPast- Move not touching or not explicitly on ground would be enough?

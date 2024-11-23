@@ -27,58 +27,11 @@ public class PlayerEnvelopes {
     
     private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
     
-    
    /* public static boolean isExtremeMoveLegit() {
         return BridgeMisc.isRipgliding(player) 
                || Bridge1_13.isRiptiding(player) && (thisMove.collideY || lastMove.collideY) 
                || !Double.isInfinite(Bridge1_9.getLevitationAmplifier(player)) && Bridge1_9.getLevitationAmplifier(player) >= 50
     }*/
-
-    /**
-     * Jump off the top off a block with the ordinary jumping envelope, however
-     * from a slightly higher position with the initial gain being lower than
-     * typical, but the following move having the y distance as if jumped off
-     * with typical gain.
-     * 
-     * @param yDistance
-     * @param maxJumpGain
-     * @param thisMove
-     * @param lastMove
-     * @param data
-     * @return
-     */
-    public static boolean noobJumpsOffTower(final double yDistance, final double maxJumpGain, 
-                                            final PlayerMoveData thisMove, final PlayerMoveData lastMove, final MovingData data) {
-        final PlayerMoveData secondPastMove = data.playerMoves.getSecondPastMove();
-        return (
-                data.sfJumpPhase == 1 && lastMove.touchedGroundWorkaround // TODO: Not observed though.
-                || data.sfJumpPhase == 2 && Magic.inAir(lastMove)
-                && secondPastMove.valid && secondPastMove.touchedGroundWorkaround
-                )
-                && Magic.inAir(thisMove)
-                && lastMove.yDistance < maxJumpGain && lastMove.yDistance > maxJumpGain * 0.67
-                && PlayerEnvelopes.isFrictionFalling(yDistance, maxJumpGain, data.lastFrictionVertical, Magic.GRAVITY_SPAN);
-    }
-
-    /**
-     * Test if this + last 2 moves are within the gliding envelope (elytra), in
-     * this case with horizontal speed gain.
-     * 
-     * @param thisMove
-     * @param lastMove
-     * @param pastMove1
-     *            Is checked for validity in here (needed).
-     * @return
-     */
-    public static boolean glideEnvelopeWithHorizontalGain(final PlayerMoveData thisMove, final PlayerMoveData lastMove, final PlayerMoveData pastMove1) {
-        return pastMove1.toIsValid 
-                && glideVerticalGainEnvelope(thisMove.yDistance, lastMove.yDistance)
-                && glideVerticalGainEnvelope(lastMove.yDistance, pastMove1.yDistance)
-                && lastMove.hDistance > pastMove1.hDistance && thisMove.hDistance > lastMove.hDistance
-                && Math.abs(lastMove.hDistance - pastMove1.hDistance) < Magic.GLIDE_HORIZONTAL_GAIN_MAX
-                && Math.abs(thisMove.hDistance - lastMove.hDistance) < Magic.GLIDE_HORIZONTAL_GAIN_MAX
-                ;
-    }
 
     /**
      * Advanced glide phase vertical gain envelope.
@@ -174,41 +127,58 @@ public class PlayerEnvelopes {
                pData.isSprinting()
                && (
                     // 1:  99.9% of cases...
-                    isJump(from, to, player, fromOnGround, toOnGround)
+                    isJumpMotion(from, to, player, fromOnGround, toOnGround)
                     // 1: The odd one out. We can't know the ground status of the player, so this will have to do.
                     || isVerticallyConstricted(from, to, pData)
                     && (
                          !forceSetOffGround && pData.getClientVersion().isLowerThan(ClientVersion.V_1_21_2) // At least ensure to not apply this when we're brute-forcing speed with off-ground
-                         || BridgeMisc.isInputKnown(player) && player.getCurrentInput().isJump()
+                         || BridgeMisc.isSpaceBarImpulseKnown(player) && player.getCurrentInput().isJump()
                     
                     )
                );
     }
-
+    
     /**
-     * Test, if this movement fits into NoCheatPlus' jumping envelope.<br>
-     * Needed because Minecraft does not offer any direct way of knowing if the player has jumped. Also, because we use our own on-ground judgement.
-     * This considers all primary edge cases, such as lost-ground, delayed jumps and head obstructions.<br>
-     * On invoking this method, the headObstruction flag is also set.
-     *
-     * @return True, if the player is leaving ground with Minecraft's assigned jump speed.
+     * Test if the current motion can qualify as a jump.<br>
+     * Note that: 
+     * 1) This does not concern whether the player actually initiated a jump (e.g., pressing the space bar). 
+     *    For that, see {@link BridgeMisc#isSpaceBarImpulseKnown(Player)}.
+     * 2) It also does not include upward movement through liquids. While Minecraft considers players as "jumping" if they just press the space bar, we intend jumping in its strict sense (jumping through air)<br><p>
+     * For a motion to be considered a legitimate jump, the following conditions must be met:
+     * <ul>
+     * <li>The player must not be gliding, riptiding, levitating, or in a liquid block.</li>
+     * <li>The player's jump phase ({@link fr.neatmonster.nocheatplus.checks.moving.model.LiftOffEnvelope#getMaxJumpPhase(double)}) 
+     *     must be very recent (no more than 1).</li>
+     * <li>The vertical motion must align with Minecraft's {@code jumpFromGround()} formula 
+     *     (defined in {@code EntityLiving.java}). This is the most critical check.</li>
+     * <li>The player must be in a "leaving ground" state, transitioning from ground to air. 
+     *     Edge cases, such as lost ground, are accounted for here.</li>
+     * </ul>
+     * Additionally, invoking this method sets the `headObstruction` flag.
+     * @return True, if the motion qualifies as a jump.
      */
-    public static boolean isJump(final PlayerLocation from, final PlayerLocation to, final Player player, boolean fromOnGround, boolean toOnGround) {
+    public static boolean isJumpMotion(final PlayerLocation from, final PlayerLocation to, final Player player, boolean fromOnGround, boolean toOnGround) {
         final IPlayerData pData = DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
+        ////////////////////////////////
         // 0: Early return conditions.
+        ////////////////////////////////
         if (thisMove.hasLevitation || thisMove.isRiptiding || thisMove.isGliding || from.isInLiquid()) {
             // Cannot jump for sure under these conditions
             return false;
         }
+        ////////////////////////////////
         // 1: Jump phase condition.
-        if (data.sfJumpPhase > 1) {
+        ////////////////////////////////
+        if (data.sfJumpPhase >= 1) {
             // This event cannot be a jump: the player has been in air for far too long.
             return false;
         }
+        ////////////////////////////////////
         // 2: Motion conditions.
+        ////////////////////////////////////
         // Validate motion and update the headObstruction flag, if the player does actually collide with something above.
         double jumpGain = data.liftOffEnvelope.getJumpGain(data.jumpAmplifier) * attributeAccess.getHandle().getJumpGainMultiplier(player);
         Vector collisionVector = from.collide(new Vector(0.0, jumpGain, 0.0), fromOnGround || thisMove.touchedGroundWorkaround, from.getAABBCopy());
@@ -218,7 +188,9 @@ public class PlayerEnvelopes {
             // This is not a jumping motion. Abort early.
             return false;
         }
+        //////////////////////////////////
         // 3: Ground conditions.
+        //////////////////////////////////
         // Finally, if this was a jumping motion and the player has very little air time, validate the ground status.
         // Demand to be in a "leaving ground" state.
         return
@@ -243,23 +215,23 @@ public class PlayerEnvelopes {
     }
 
     /**
-     * NoCheatPlus' definition of "step".<br>
-     *
-     * @return True if this movement is from and to ground with positive yDistance, as determined by the CachedConfig.sfStepHeight parameter.
+     * Test if this movement fits into NoCheatPlus' stepping envelope.<br>
+     * For NoCheatPlus, "step" has a much simpler meaning: moving <b>from</b> ground <b>to</b> ground without having to jump with the correct motion (with some exceptions due to lost ground)<br>
+     * Minecraft has a much more complex way of determining when players should be able to step; 
+     * the logic is encapsulated in {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, double[])}
+     * @return True if this movement is from and to ground with positive yDistance, as determined by the attribute parameter.
      */
     public static boolean isStepUpByNCPDefinition(final IPlayerData pData, boolean fromOnGround, boolean toOnGround, Player player) {
-        final MovingData data = pData.getGenericInstance(MovingData.class);
-        final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
-        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
-        // Step-up is handled by the collide() function in Minecraft, which is called on every move, so one could technically step up even while ripdiing or gliding.
-       if (thisMove.isRiptiding) {
-            return false;
-       }
-       if (thisMove.isGliding) {
-           return false;
-       }
-       return  
-                // 0: NoCheatPlus definition of "stepping" is pretty simple compared to Minecraft's: moving from ground to ground with positive motion (correct motion[=0.6], rather)
+         final MovingData data = pData.getGenericInstance(MovingData.class);
+         final PlayerMoveData thisMove = data.playerMoves.getCurrentMove();
+         // Step-up is handled by the collide() function in Minecraft, which is called on every move, so one could technically step up even while ripdiing or gliding.
+         if (thisMove.isRiptiding) {
+             return false;
+         }
+         if (thisMove.isGliding) {
+             return false;
+         }
+         return  
                 fromOnGround && toOnGround && MathUtil.almostEqual(thisMove.yDistance, attributeAccess.getHandle().getMaxStepUp(player), Magic.PREDICTION_EPSILON)
                 // 0: Wildcard couldstep
                 || thisMove.couldStepUp
