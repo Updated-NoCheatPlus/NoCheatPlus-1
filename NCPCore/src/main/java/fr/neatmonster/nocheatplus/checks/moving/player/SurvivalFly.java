@@ -695,7 +695,8 @@ public class SurvivalFly extends Check {
         else {
             data.nextInertia = onGround ? data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
             // 1.12 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
-            float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (data.nextFrictionHorizontal * data.nextFrictionHorizontal * data.nextFrictionHorizontal)) : Magic.AIR_ACCELERATION;
+            float f6 = pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? data.nextFrictionHorizontal : data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA;
+            float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (f6 * f6 * f6)) : Magic.AIR_ACCELERATION;
             if (pData.isSprinting()) {
                 // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                 acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).

@@ -105,9 +105,7 @@ public class BridgeMisc {
      * @param player The player whose input is being checked.
      * @return <b>Always</b><code>true</code>, if both client and server are on a version that supports impulse sending and reading respectively (1.21.2 and above).<br>
      *         <b>Always</b><code>false</code>, if the server is unable to read inputs at all (legacy, pre 1.21.2). <br>
-     *         <code>true</code>, if the server supports impulse reading, but the client does not natively support impulse-sending, which is instead enabled by ViaVersion
-     *         through emulation of the PLAYER_INPUT packet. Because the packet is emulated, the actual impulse may not always reflect what the player actually pressed; particularly if the 
-     *         player's speed was affected by external velocity sources. In which case, this will return <code>false</code>.<br>
+     *         Don't use when the server does support input but the client doesn't. Although ViaVersion does help us get the input from the legacy client but result is unusable
      * <hr><br>
      * Check {@link BridgeMisc#isSpaceBarImpulseKnown(Player)} for the vertical impulse.
      *
@@ -122,12 +120,13 @@ public class BridgeMisc {
             // Client sends impulses and server can read them. Inputs are always known, regardless of any other condition.
             return true;
         }
-        final IPlayerData pData =  DataManager.getPlayerData(player);
-        final MovingData data = pData.getGenericInstance(MovingData.class);
+        //final IPlayerData pData =  DataManager.getPlayerData(player);
+        //final MovingData data = pData.getGenericInstance(MovingData.class);
         // A legacy client (which doesn't natively send inputs) is connected to a server that supports impulse-reading.
         // Connection is enabled by ViaVersion, which emulates the PLAYER_INPUT packet.
         // TODO: Check how exactly ViaVersion is emulating the packet. It would be useful to have the logic within NCP.
-        return !data.hasActiveHorVel();
+        //return !data.hasActiveHorVel();
+        return false;
     }
     
     /**
@@ -152,6 +151,7 @@ public class BridgeMisc {
         final IPlayerData pData =  DataManager.getPlayerData(player);
         final MovingData data = pData.getGenericInstance(MovingData.class);
         // TODO: getOrUseVerticalVelocity or peekVerticalVelocity?
+        // TODO: How exactly does ViaVersion provide?
         return data.getOrUseVerticalVelocity(data.playerMoves.getCurrentMove().yDistance) != null;
     }
     
