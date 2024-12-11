@@ -35,7 +35,7 @@ import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 public class AxisAlignedBBUtils {
     
     /*
-      TODO: Perhaps, instead of working with doubles (which has the disadvantage of having to remember each index for each coordinate (AABB[0-1-2-3-4-5]), we could make an instance class of some sort (AxisAlignedBB.java / CollisionBox.java / BoundingBox.java (...) (minXYZ,maxXYZ)
+      TODO: Perhaps, instead of working with doubles (which has the disadvantage of having to remember each index for each coordinate (AABB[0-1-2-3-4-5]), we could make a class of some sort (AxisAlignedBB.java / CollisionBox.java / BoundingBox.java (...) (minXYZ,maxXYZ)
       Similar to Bukkit's BoundingBox.java 
      */
     private final static IGenericInstanceHandle<MCAccess> mcAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(MCAccess.class);
@@ -364,7 +364,7 @@ public class AxisAlignedBBUtils {
     
     /**
      * Checks whether two axis-aligned bounding boxes intersect.
-     * An epsilon value is used to ensure precise comparisons between the AABBs' boundaries.
+     * An epsilon value is used here.
      *
      * @param aabb1 The first AABB, represented by a double array [minX, minY, minZ, maxX, maxY, maxZ].
      * @param aabb2 The second AABB, represented by a double array [minX, minY, minZ, maxX, maxY, maxZ].

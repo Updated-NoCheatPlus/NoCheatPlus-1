@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.WorldBorder;
@@ -28,11 +29,15 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.moving.model.InputDirection;
-import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.BridgeMisc;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeTracker.Direction;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.versions.GenericVersion;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.utilities.collision.ray.InteractAxisTracing;
 import fr.neatmonster.nocheatplus.utilities.ds.map.BlockCoord;
@@ -522,50 +527,82 @@ public class CollisionUtil {
     }
     
     /**
-     * Test if the player is colliding with entities. <br>
-     * Does not use any margin.
+     * Test if the given entity is capable of pushing other entities that may collide with its bounding box.
      *
-     * @param shouldFilter Whether the check should filter out entities that cannot push players (boats, armor stands, dead and invalid entities)
-     * @return True, if the player is colliding with entities.
+     * @return True if the entity is collidable, false otherwise (e.g., it's a minecart, armor stand, boat; is dead, invalid, or not living; or is not collidable).
      */
-    public static boolean isCollidingWithEntities(final Player p, final boolean shouldFilter) {
-        return isCollidingWithEntities(p, 0.0, 0.0, 0.0, shouldFilter);
+    public static boolean exertsPushingForce(final Entity e) {
+        if (!GenericVersion.isAtLeast(e, "1.9")) {
+            // Entity push was added in 1.9
+            return false;
+        }
+        if (!e.isValid()) {
+            // No need to proceed further if the entity is not valid.
+            return false;
+        }
+        // Players always push other players, unless there are teams in place that say otherwise.
+        /* We use Teams+Scoreboard API instead of {@link LivingEntity#isCollidable()}, as suggested by its javadoc */
+        if (e instanceof Player) {
+            if (((Player) e).isSleeping()) {
+                // From EntityLiving.java -> push() @Override.
+                return false;
+            }
+            if (((Player) e).getGameMode() == BridgeMisc.GAME_MODE_SPECTATOR) {
+                return false;
+            }
+            // Get the player's assigned scoreboard
+            Scoreboard playerScoreboard = ((Player)e).getScoreboard();
+            Team team = playerScoreboard.getEntryTeam(((Player)e).getName());
+            // If the player has no team on their assigned scoreboard, check the main one.
+            if (team == null) {
+                Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                team = mainScoreboard.getEntryTeam(((Player)e).getName());
+            }
+            // Check the team's collision rule if a team is found
+            if (team != null) {
+                Team.OptionStatus collisionRule = team.getOption(Team.Option.COLLISION_RULE);
+                // Push is enabled for all players. Or the other team can push this player's team.
+                return collisionRule == Team.OptionStatus.ALWAYS || collisionRule == Team.OptionStatus.FOR_OTHER_TEAMS;
+            }
+            // Default to true if no team is found or no rule applies
+            return true;
+        }
+        // Non-player entities: boats, minecart and armor stand are not able to push players or other entities.
+        return
+                (e instanceof LivingEntity)
+                && ((LivingEntity) e).isCollidable() //&& !((LivingEntity) e).getCollidableExemptions().contains(e))
+                && e.getType() != EntityType.MINECART
+                && e.getType() != EntityType.ARMOR_STAND
+                && !MaterialUtil.isBoat(e.getType());
     }
     
     /**
-     * Get a List of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
-     * (Not Minecarts, Boats, dead entities (...)).
-     * Intended use is within moving checks.
+     * Collects all collidable entities within the AABB of the given relEntity that can exert a pushing force to it. 
      *
-     * @param p
-     * @param xMargin
-     * @param yMargin
-     * @param zMargin
-     * @return The List containing entities that can push the player.
+     * @param relEntity The entity around which entities are to be collected.
+     * @return A list of entities' locations that intersects with the relEntity's box.
      */
-    public static List<Entity> getCollidingEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
-        List<Entity> entities = p.getNearbyEntities(xMargin, yMargin, zMargin);
-        // isValid() somehow broken???
-        entities.removeIf(e -> e.isDead() || !(e instanceof LivingEntity) || !((LivingEntity) e).isCollidable() || ((LivingEntity) e).isSleeping());
-        return entities;
+    public static List<Location> getCollidingEntitiesLocations(Entity relEntity) {
+        List<Location> collidingEntities = new ArrayList<>();
+        // NOTE: CraftWorld/CraftEntity.java -> entity.level().getEntities(entity, entity.getBoundingBox().inflate(x, y, z), Predicates.alwaysTrue());
+        // The method actually employs the getEntity() one found in World.java
+        double[] relAABB = AxisAlignedBBUtils.createAABB(relEntity);
+        for (Entity collidingEntity : relEntity.getNearbyEntities(0.5,0.1,0.5)) {
+            if (!exertsPushingForce(collidingEntity)) {
+                // Cannot be pushed by this entity
+                continue;
+            }
+            double[] collidingAABB = AxisAlignedBBUtils.createAABB(collidingEntity);
+            if (!AxisAlignedBBUtils.isIntersected(relAABB, collidingAABB)) {
+                // Doesn't actually collide with the entity.
+                continue;
+            }
+            // Otherwise, do add.
+            collidingEntities.add(collidingEntity.getLocation());
+        }
+        return collidingEntities;
     }
     
-    /**
-     * Get the number of entities colliding with the player's AABB (within margins) that can actually push the player.<br>
-     * (Not Minecarts, Boats, dead entities (...)).
-     * Intended use is within checks.
-     *
-     * @param p
-     * @param xMargin
-     * @param yMargin
-     * @param zMargin
-     * @return The number of entities that can push the player.
-     */
-    public static int getNumberOfEntitiesThatCanPushThePlayer(final Player p, double xMargin, double yMargin, double zMargin) {
-        return getCollidingEntitiesThatCanPushThePlayer(p, xMargin, yMargin, zMargin).size();
-    }
-
-
     /**
      * Ensure that the neighboring block is in the correct direction relative to the block being interacted with and the player’s eye position.<br>
      * Currently, this is rather meant for blocks colliding with a bounding box<br>

@@ -141,7 +141,7 @@ public class PlayerEnvelopes {
     /**
      * Test if the current motion can qualify as a jump.<br>
      * Note that: 
-     * 1) This does not concern whether the player actually initiated a jump (e.g., pressing the space bar). 
+     * 1) This does not concern whether the player actual impulse (e.g., pressing the space bar). 
      *    For that, see {@link BridgeMisc#isSpaceBarImpulseKnown(Player)}.
      * 2) It also does not include upward movement through liquids. While Minecraft considers players as "jumping" if they just press the space bar, we intend jumping in its strict sense (jumping through air)<br><p>
      * For a motion to be considered a legitimate jump, the following conditions must be met:
@@ -172,7 +172,7 @@ public class PlayerEnvelopes {
         ////////////////////////////////
         // 1: Jump phase condition.
         ////////////////////////////////
-        if (data.sfJumpPhase >= 1) {
+        if (data.sfJumpPhase > 1) { // NOTE on the ">" sign and not ">="
             // This event cannot be a jump: the player has been in air for far too long.
             return false;
         }

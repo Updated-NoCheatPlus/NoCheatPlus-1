@@ -67,27 +67,34 @@ public class NetStatic {
         final int winNum = packetFreq.numberOfBuckets();
         final long totalDur = winDur * winNum;
 
-        // "Relax" bursts from i = 1 on, i.e. distribute to following intervals (if zero ~ ?or lower).
+        // Redistribute excess packets in the first bucket to subsequent buckets to smooth out short-term spikes.
         // TODO: Configurability? Cleanup/optimize! Rename to smoothing or what not.
         final long tDiff = time - packetFreq.lastAccess();
         if (tDiff >= winDur && tDiff < totalDur) {
             // There will be some shift, so check if to relax, only if there could be some congestion. 
-            float sc0 = packetFreq.bucketScore(0);
+            float sc0 = packetFreq.bucketScore(0); // score of the most recent bucket (index 0).
             if (sc0 > maxPackets) { // TODO: Ideal vs. max. packets.
                 // TODO: Keep in mind: potential exploits, a la burst to burst !?
+                // Calculate the excess score to redistribute.
                 sc0 -= maxPackets; // Count this down.
+                // Iterate through subsequent buckets.
                 for (int i = 1; i < winNum; i++) {
+                    // Get the score of the current bucket.
                     final float sci = packetFreq.bucketScore(i);
+                    // If the current bucket is not full, determine how much excess can be consumed.
                     if (sci < maxPackets) {
                         // Smoothen, using following empty spots including one occupied spot at most..
                         float consume = Math.min(sc0, maxPackets - sci);
+                        // Reduce the excess score accordingly.
                         sc0 -= consume;
+                        // Update the bucket with redistributed score.
                         packetFreq.setBucket(i, sci + consume);
+                        // Stop redistribution at the first occupied bucket.
                         if (sci > 0f) {
-                            // Only allow relaxing "into" the next occupied spot.
                             break;
                         }
                     } else {
+                        // Stop redistribution if no empty space is found.
                         break;
                     }
                 }
@@ -100,6 +107,7 @@ public class NetStatic {
         packetFreq.add(time, packets);
 
         // Fill up all "used" time windows (minimum we can do without other events).
+        // These represent the "ideal" packet distribution in periods of no activity, to ensure that idle time (i.e.: lag, congestion etc...) is accounted for in calculations.
         final float burnScore = (float) idealPackets * (float) winDur / 1000f;
         // Find index.
         int burnStart;

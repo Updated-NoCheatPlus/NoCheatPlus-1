@@ -18,9 +18,13 @@ import java.util.Collection;
 import java.util.UUID;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.combined.CombinedListener;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.config.value.OverrideType;
@@ -367,8 +371,8 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     public void setClientVersionID(final int ID);
     
     /**
-     * Test if the player has pressed the shift key, as set by the PlayerToggleSneakEvent.
-     * This is mostly intended to better disambiguate Crouching VS Sneaking. Using player#isSneaking() can be misleading (See note in CombinedListener.java)
+     * Test if the player has pressed the shift key, as set by the {@link PlayerToggleSneakEvent}.<br>
+     * This is mostly intended to better disambiguate Crouching VS Sneaking. Using {@link Player#isSneaking()} can be misleading.<br> (See note in {@link CombinedListener#handlePoseChangeEvent(Entity, Pose)})
      * 
      * @return True, if the key is pressed.
      */

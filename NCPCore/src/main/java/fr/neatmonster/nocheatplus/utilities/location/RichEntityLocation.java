@@ -40,6 +40,7 @@ import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 import fr.neatmonster.nocheatplus.utilities.collision.AxisAlignedBBUtils;
 import fr.neatmonster.nocheatplus.utilities.collision.CollisionUtil;
+import fr.neatmonster.nocheatplus.utilities.entity.PassengerUtil;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache;
 import fr.neatmonster.nocheatplus.utilities.map.BlockCache.IBlockCacheNode;
 import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
@@ -66,6 +67,8 @@ public class RichEntityLocation extends RichBoundsLocation {
     private final IHandle<MCAccess> mcAccess;
     
     private static final IGenericInstanceHandle<IAttributeAccess> attributeAccess = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstanceHandle(IAttributeAccess.class);
+    
+    private final PassengerUtil passengerUtil = NCPAPIProvider.getNoCheatPlusAPI().getGenericInstance(PassengerUtil.class);
     
     
     // Simple members //
@@ -825,12 +828,10 @@ public class RichEntityLocation extends RichBoundsLocation {
                 if (modLiquidHeight == 0.0F) {
                     final IBlockCacheNode node = blockCache.getOrCreateBlockCacheNode(modX, y, modZ, false);
                     final Material matAtThisLoc = node.getType();
-                    // if (!var1.getBlockState(var8).getMaterial().blocksMotion()) { 
-                    // NOTE: the game assigns a "blocksMotion" flag to each and every block, as well as a "isSolid" one.
-                    // Thus, a block's ability to obstruct motion isn't determined by its solidity (i.e.: moss block. See in PacketEvents' src, StateTypes.java)
-                    // This also means that we cannot directly use BlockProperties#isSolid() to check for this (and NCP does not have this distinction yet).
-                    // To hack around this, we can use the isGround() check instead, since all ground blocks are able to obstruct motion.
-                    if (!BlockProperties.isGround(matAtThisLoc)) { 
+                    // if (!var1.getBlockState(var8).getMaterial().blocksMotion()) {
+                    // Use Bukkit's definition of solid. The method does actually check for the blocksMotion flag.
+                    // See: CraftBlockType.java -> isSolid(). [checked with 1.21.4 api]
+                    if (!matAtThisLoc.isSolid()) { 
                         if (BlockProperties.affectsFlow(blockCache, x, y, z, modX, y - 1, modZ, liquidTypeFlag)) {
                             modLiquidHeight = (float) BlockProperties.getLiquidHeightAt(blockCache, modX, y - 1, modZ, liquidTypeFlag, true); 
                             if (modLiquidHeight > 0.0F) {
@@ -861,6 +862,82 @@ public class RichEntityLocation extends RichBoundsLocation {
             }
         }
         return MathUtil.normalizedVectorWithoutNaN(flowingVector);
+    }
+    
+    /**
+     * From:<br>
+     *  {@code Entity.java}, {@code push()} method.<br>
+     *  {@code EntityPlayer.java}, {@code pushEntities()} method.<br>
+     *  {@code EntityLiving.java}, {@code getEntities()} method.<br>
+     *  {@code World.java}, {@code getEntities()} method.<br>
+     * Applies a push effect to this entity based on collisions with nearby entities in the given vector.
+     * 
+     * @param movementVec The current movement vector of the entity.
+     * 
+     * @return The modified movementVec.
+     */
+    public Vector doPush(Vector movementVec) {
+        final MovingData data;
+        if (entity instanceof Player) {
+            data = DataManager.getPlayerData((Player) entity).getGenericInstance(MovingData.class);
+        }
+        else data = DataManager.getPlayerData(passengerUtil.getFirstPlayerPassenger(entity)).getGenericInstance(MovingData.class);
+        final PlayerMoveData lastMove = data.playerMoves.getCurrentMove();
+        if (data.lastCollidingEntitiesLocations != null && !data.lastCollidingEntitiesLocations.isEmpty()) {
+            for (Location eLoc : data.lastCollidingEntitiesLocations) {
+                double xDistToEntity = eLoc.getX() - lastMove.from.getX();
+                double zDistToEntity = eLoc.getZ() - lastMove.from.getZ();
+                double absDist = MathUtil.absMax(xDistToEntity, zDistToEntity);
+                if (absDist >= 0.009999999776482582D) {
+                    absDist = Math.sqrt(absDist);
+                    xDistToEntity /= absDist;
+                    zDistToEntity /= absDist;
+                    double var8 = 1.0D / absDist;
+                    if (var8 > 1.0D) {
+                        var8 = 1.0D;
+                    }
+                    xDistToEntity *= var8;
+                    zDistToEntity *= var8;
+                    xDistToEntity *= 0.05000000074505806D;
+                    zDistToEntity *= 0.05000000074505806D;
+                    movementVec.add(new Vector(-xDistToEntity, 0.0, -zDistToEntity));
+                }
+            }
+        }
+    //        public void push(Entity entity) {
+    //            if (!this.isPassengerOfSameVehicle(entity)) {
+    //                if (!entity.noPhysics && !this.noPhysics) {
+    //                    double d0 = entity.getX() - this.getX();
+    //                    double d1 = entity.getZ() - this.getZ();
+    //                    double d2 = MathHelper.absMax(d0, d1);
+    //                    
+    //                    if (d2 >= 0.009999999776482582D) {
+    //                        d2 = Math.sqrt(d2);
+    //                        d0 /= d2;
+    //                        d1 /= d2;
+    //                        double d3 = 1.0D / d2;
+    //                        
+    //                        if (d3 > 1.0D) {
+    //                            d3 = 1.0D;
+    //                        }
+    //                        
+    //                        d0 *= d3;
+    //                        d1 *= d3;
+    //                        d0 *= 0.05000000074505806D;
+    //                        d1 *= 0.05000000074505806D;
+    //                        if (!this.isVehicle() && this.isPushable()) {
+    //                            this.push(-d0, 0.0D, -d1);
+    //                        }
+    //                        
+    //                        if (!entity.isVehicle() && entity.isPushable()) {
+    //                            entity.push(d0, 0.0D, d1);
+    //                        }
+    //                    }
+    //                    
+    //                }
+    //            }
+    //        }
+        return movementVec;
     }
     
     /**

@@ -361,6 +361,7 @@ public class SurvivalFly extends Check {
         data.lastInertia = data.nextInertia;
         data.lastLevitationLevel = thisMove.hasLevitation ? Bridge1_9.getLevitationAmplifier(player) + 1 : 0.0;
         data.lastGravity = data.nextGravity;
+        data.lastCollidingEntitiesLocations = CollisionUtil.getCollidingEntitiesLocations(player);
 
         // Log tags added after violation handling.
         if (debug && tags.size() > tagsLength) {
@@ -473,7 +474,7 @@ public class SurvivalFly extends Check {
         thisMove.yAllowedDistance = lastMove.toIsValid ? lastMove.yDistance : 0.0;
         thisMove.zAllowedDistance = lastMove.toIsValid ? lastMove.zDistance : 0.0;
         // Reset momentum if collided with something on the previous tick.
-        wallCollisionResetHorizontal(lastMove, thisMove);
+        doWallCollision(lastMove, thisMove);
         // Throttle speed if stuck in a block.
         if (TrigUtil.lengthSquared(data.lastStuckInBlockHorizontal, data.lastStuckInBlockVertical, data.lastStuckInBlockHorizontal) > 1.0E-7) {
             if (data.lastStuckInBlockVertical != 1.0) {
@@ -595,7 +596,13 @@ public class SurvivalFly extends Check {
         return new double[]{thisMove.hAllowedDistance, hDistanceAboveLimit, thisMove.yAllowedDistance, yDistanceAboveLimit};
     }
     
-    private void wallCollisionResetHorizontal(PlayerMoveData lastMove, PlayerMoveData thisMove) {
+    /**
+     * Reset the given speed upon wall collision.
+     * 
+     * @param lastMove
+     * @param thisMove
+     */
+    private void doWallCollision(PlayerMoveData lastMove, PlayerMoveData thisMove) {
         if (lastMove.collideX) {
             thisMove.xAllowedDistance = 0.0;
         }
@@ -630,7 +637,14 @@ public class SurvivalFly extends Check {
             }
         }
     }
-
+    
+    /**
+     * Check if the allowed speed set in thisMove should be canceled due to it being lower than the negligible speed threshold. <br>
+     * (Vertical only).
+     * 
+     * @param pData
+     * @param thisMove
+     */
     private void checkNegligibleMomentumVertical(IPlayerData pData, PlayerMoveData thisMove) {
         if (Math.abs(thisMove.yAllowedDistance) < (pData.getClientVersion().isAtLeast(ClientVersion.V_1_9) ? Magic.NEGLIGIBLE_SPEED_THRESHOLD : Magic.NEGLIGIBLE_SPEED_THRESHOLD_LEGACY)) {
             // Negligible speed reset.
@@ -641,8 +655,9 @@ public class SurvivalFly extends Check {
     /**
      * Prepares the estimation for horizontal speed of the player based on various conditions.
      *
-     * @param forceSetOnGround Set to true on specific occasions where we need to re-estimate speed with the ground status, in case the player fails the check.
-     * @param forceSetOffGround Set to true on specific occasions where we want to run the prediction without taking the ground status into consideration.
+     * @param forceSetOnGround Whether to forcibly consider the ground status of the player (despite being off ground).
+     * @param forceSetOffGround Whether to forcibly ignore the ground status of the player (despite being on the ground).
+     * @param isNormalOrPacketSplitMove Whether this movement has been corrected due to a faulty PlayerMoveEvent or is normal (no correction needed)
      *
      * @return hAllowedDistance, hDistanceAboveLimit
      */
@@ -651,6 +666,9 @@ public class SurvivalFly extends Check {
                                             final boolean fromOnGround, final boolean toOnGround, final boolean debug,
                                             final boolean isNormalOrPacketSplitMove, boolean forceSetOnGround, boolean forceSetOffGround) {
         double hDistanceAboveLimit = 0.0;
+        //////////////////////////
+        // Early return(s)      //
+        //////////////////////////
         if (!isNormalOrPacketSplitMove) {
             // Bukkit-based split move: predicting the next speed is not possible due to coordinates not being reported correctly by Bukkit (and without ProtocolLib, it's nearly impossible to achieve precision here)
             thisMove.xAllowedDistance = thisMove.xDistance;
@@ -661,11 +679,13 @@ public class SurvivalFly extends Check {
         }
         
         boolean onGround = !forceSetOffGround && (from.isOnGround() || lastMove.toIsValid && lastMove.yDistance <= 0.0 && lastMove.from.onGround || forceSetOnGround);
+        /* All moves are assumed to be predictable, unless there are technical limitations / bugs / glitches that we cannot solve */
+        boolean isPredictable;
         //////////////////////////////////////////////////////////////
         // Estimate the horizontal speed (per-move distance check)  //                      
         //////////////////////////////////////////////////////////////
         // Determine inertia and acceleration to calculate speed with.
-        // Only check 'from' because it is the current location of the player (NMS-wise)
+        // Only check using the 'from' position because it is the current location of the player (NMS-wise)
         if (from.isInWater()) {
             data.nextInertia = Bridge1_13.isSwimming(player) ? Magic.HORIZONTAL_SWIMMING_INERTIA : Magic.WATER_HORIZONTAL_INERTIA;
             /* Per-tick speed gain. */
@@ -686,32 +706,38 @@ public class SurvivalFly extends Check {
                 data.nextInertia = Magic.DOLPHIN_GRACE_INERTIA;
             }
             // Run through all operations
-            estimateNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
+            isPredictable = estimateNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
         }
         else if (from.isInLava()) {
             data.nextInertia = Magic.LAVA_HORIZONTAL_INERTIA;
-            estimateNextSpeed(player, Magic.LIQUID_ACCELERATION, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
+            isPredictable = estimateNextSpeed(player, Magic.LIQUID_ACCELERATION, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
         }
         else {
             data.nextInertia = onGround ? data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA : Magic.HORIZONTAL_INERTIA;
             // 1.12 (and below) clients will use cubed inertia, not cubed friction here. The difference isn't significant except for blocking speed and bunnyhopping on soul sand, which are both slower on 1.8
-            float f6 = pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? data.nextFrictionHorizontal : data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA;
-            float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (f6 * f6 * f6)) : Magic.AIR_ACCELERATION;
+            float frictionMediumFactor = pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? data.nextFrictionHorizontal : data.nextFrictionHorizontal * Magic.HORIZONTAL_INERTIA;
+            float acceleration = onGround ? data.walkSpeed * ((pData.getClientVersion().isAtLeast(ClientVersion.V_1_13) ? Magic.DEFAULT_FRICTION_CUBED : Magic.CUBED_INERTIA) / (frictionMediumFactor * frictionMediumFactor * frictionMediumFactor)) : Magic.AIR_ACCELERATION;
             if (pData.isSprinting()) {
                 // (We don't use the attribute here due to desync issues, just detect when the player is sprinting and apply the multiplier manually)
                 acceleration += acceleration * 0.3f; // 0.3 is the effective sprinting speed (EntityLiving).
             }
-            estimateNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
+            isPredictable = estimateNextSpeed(player, acceleration, pData, tags, to, from, debug, fromOnGround, toOnGround, onGround, forceSetOffGround);
         }
         
+        /////////////////////////////////////////////////
+        // Set the combined allowed horizontal speed   //
+        /////////////////////////////////////////////////
         thisMove.hAllowedDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-        /* Expected difference from current to allowed */
-        final double offset = thisMove.hDistance - thisMove.hAllowedDistance;
-        if (offset < Magic.PREDICTION_EPSILON) {
-            // Accuracy margin.
+        
+        ////////////////////////
+        // Calculate offsets  //
+        ////////////////////////
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
+        if (!isPredictable) {
+            hDistanceAboveLimit = handleUnpredictableMove(thisMove, cc.survivalFlyStrictHorizontal);
         }
-        else {
-            hDistanceAboveLimit = Math.max(hDistanceAboveLimit, offset);
+        else hDistanceAboveLimit = handlePredictableMove(thisMove, cc.survivalFlyStrictHorizontal);
+        if (hDistanceAboveLimit > 0.0) {
             tags.add("hdistrel");
         }
         if (debug) player.sendMessage("c/e: " + StringUtil.fdec6.format(thisMove.hDistance) + " / " + StringUtil.fdec6.format(thisMove.hAllowedDistance));
@@ -774,10 +800,11 @@ public class SurvivalFly extends Check {
      * </ul>
      *
      * <p>The movement speed estimate is calculated starting from the horizontal collision reset, calculating the client’s actions on the next move and then processing the actions performed prior.</p>
+     * @return {@code true}, if the move has been deemed to be predictable. {@code false} otherwise.
      */
-    private void estimateNextSpeed(final Player player, float movementSpeed, final IPlayerData pData, final Collection<String> tags,
-                                   final PlayerLocation to, final PlayerLocation from, final boolean debug,
-                                   final boolean fromOnGround, final boolean toOnGround, final boolean onGround, boolean forceSetOffGround) {
+    private boolean estimateNextSpeed(final Player player, float movementSpeed, final IPlayerData pData, final Collection<String> tags,
+                                      final PlayerLocation to, final PlayerLocation from, final boolean debug,
+                                      final boolean fromOnGround, final boolean toOnGround, final boolean onGround, boolean forceSetOffGround) {
         /*
          * TODO: This is a mess, clean-up pending / needed. Get rid of code duplication
          */
@@ -794,14 +821,14 @@ public class SurvivalFly extends Check {
             cData.isHackingRI = false;
             Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.noslow", pData);
             data.resetHorizontalData();
-            return;
+            return true;
         }
         if (cData.invalidItemUse) {
             tags.add("invaliditemuse");
             cData.invalidItemUse = false;
             Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.invalid_use", pData);
             data.resetHorizontalData();
-            return;
+            return true;
         }
         // If impulses don't need to be inferred from the prediction, illegal sprinting checks can be performed here.
         if (BridgeMisc.isWASDImpulseKnown(player) && pData.isSprinting()
@@ -810,14 +837,14 @@ public class SurvivalFly extends Check {
                 (player.getCurrentInput().isLeft() || player.getCurrentInput().isRight() || player.getCurrentInput().isBackward())
                 // Sprinting can only work if you're also moving forward.
                 && !player.getCurrentInput().isForward() 
-                || player.getFoodLevel() <= 5
-            )) { // must be checked here as well (besides on toggle sprinting) because players will immediately lose the ability to sprint if food level drops below 5
+                || player.getFoodLevel() <= 5 // must be checked here as well (besides on toggle sprinting) because players will immediately lose the ability to sprint if food level drops below 5
+            )) { 
             // || inputs[i].getForward() < 0.8 // hasEnoughImpulseToStartSprinting, in LocalPlayer,java -> aiStep()
             tags.add("illegalsprint");
             pData.setSprintingState(false);
             Improbable.check(player, (float) thisMove.hDistance, System.currentTimeMillis(), "moving.survivalfly.illegalsprint", pData);
             data.resetHorizontalData();
-            return;
+            return true;
         }
         
         
@@ -882,7 +909,7 @@ public class SurvivalFly extends Check {
         /* All moves are assumed to be predictable, unless we explicitly state otherwise. */
         boolean isPredictable = true;
         // If the player collided with something on the previous tick, start with 0 momentum now.
-        wallCollisionResetHorizontal(lastMove, thisMove);
+        doWallCollision(lastMove, thisMove);
         // (The game calls a checkFallDamage() function, which, as you can imagine, handles fall damage. But also handles liquids' flow force, thus we need to apply this 2 times.)
         if (from.isInWater() && !lastMove.from.inWater) {
             Vector liquidFlowVector = from.getLiquidPushingVector(thisMove.xAllowedDistance, thisMove.zAllowedDistance, BlockFlags.F_WATER);
@@ -893,18 +920,18 @@ public class SurvivalFly extends Check {
         if (from.isOnSlimeBlock() && onGround) {
             /*
              * Specific issue with slime speed: the client tries to fall down with gravity -0.0784, and then bounce back up to 0 >=. Ground status is set to false then.
-             * However, if the bounce-back is smaller than 0.0784, we don't see it on the server-side; we always see the player as being on ground with 0 dist; the multiplier can range from 0.45 to 0.4, depending on the y motion.
+             * However, if the bounce-back is smaller than 0.0784, we don't see it on the server-side; we always see the player as being on ground with 0 dist; the multiplier can range from 0.4 to 0.45, depending on the y motion.
              * In other words, this movement is effectively hidden and cannot be predicted, likewise isVerticallyConstricted()...
              * Our solution: always assume the multiplier to be at maximum and allow speed lower than that (in other words, just set a limit). 
              * 
              * Assume it to be a bug. Mojang is never going to fix this stuff anyway.
              */
             if (Math.abs(lastMove.yDistance) < 0.1 && !pData.isShiftKeyPressed()) {
-                if (toOnGround && thisMove.yDistance == 0.0) {
+                if (thisMove.yDistance == 0.0) {
                     // Mojang... Why did you have to make the multiplier dependent to vertical motion, why...
                     isPredictable = false;
-                    thisMove.xAllowedDistance *= 0.6;
-                    thisMove.zAllowedDistance *= 0.6;
+                    thisMove.xAllowedDistance *= 0.67; // From testing: 0.6 was too little, while 0.7 a bit too much
+                    thisMove.zAllowedDistance *= 0.67;
                 }
                 else {
                     // Otherwise, do attempt to predict. Hopefully this works.
@@ -953,7 +980,11 @@ public class SurvivalFly extends Check {
         // Apply entity-pushing speed
         // From Entity.java.push()
         // The entity's location is in the past.
-        // TODO: Properly implement
+        if (player.getGameMode() != BridgeMisc.GAME_MODE_SPECTATOR) { // noPhysics check in vanilla.
+            Vector push = from.doPush(new Vector(thisMove.xAllowedDistance, 0.0, thisMove.zAllowedDistance));
+            thisMove.xAllowedDistance = push.getX();
+            thisMove.zAllowedDistance = push.getZ();
+        }
 
 
 
@@ -975,8 +1006,7 @@ public class SurvivalFly extends Check {
         // Before calculating the acceleration, check if momentum is below the negligible speed threshold and cancel it.
         checkNegligibleMomentum(pData, thisMove);
         // Sprint-jumping...
-        // NOTE: here you must use to.getYaw not from. To is the most recent rotation. Using from lags behind a few ticks, causing false positives when switching looking direction.
-        // This does not apply for locations (from.(...) correctly reflects the player's current position)
+        // IMPORTANT NOTE: when working **exclusively** with rotations (like in the following cases), you must use the TO location, not the FROM one, as TO contains the most recent rotation. Using FROM lags behind a few ticks, causing false positives when switching looking direction.
         if (PlayerEnvelopes.isBunnyhop(from, to, pData, fromOnGround, toOnGround, player, forceSetOffGround)) {
             thisMove.xAllowedDistance += (double) (-TrigUtil.sin(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST);
             thisMove.zAllowedDistance += (double) (TrigUtil.cos(to.getYaw() * TrigUtil.toRadians) * Magic.BUNNYHOP_BOOST);
@@ -1057,22 +1087,17 @@ public class SurvivalFly extends Check {
                     thisMove.zAllowedDistance = thisMove.zDistance;
                 }
             }
-            /////////////////////////////////////
-            // Set data and calculate offsets  //
-            /////////////////////////////////////
+            //////////////
+            // Set data //
+            //////////////
             thisMove.hasImpulse = AlmostBoolean.match(input.getForwardDir() != ForwardDirection.NONE || input.getStrafeDir() != StrafeDirection.NONE);
             thisMove.strafeImpulse = input.getStrafeDir();
             thisMove.forwardImpulse = input.getForwardDir();
-            if (!isPredictable) {
-                handleUnpredictableMove(thisMove, cc.survivalFlyStrictHorizontal);
-            } 
-            else handlePredictableMove(thisMove, cc.survivalFlyStrictHorizontal);
             if (debug) {
                 player.sendMessage("[SurvivalFly] (postPredict) Direction: " + input.getForwardDir() +" | "+ input.getStrafeDir());
             }
-            
             // If-else instead of an early return... Matter of preference. This makes code slightly easier to look at, as it avoids yet another indentation
-            return;
+            return isPredictable;
         }
         
         
@@ -1251,51 +1276,62 @@ public class SurvivalFly extends Check {
         if (debug) {
             player.sendMessage("[SurvivalFly] (postPredict) " + (!isPredictable ? "Uncertain" : "Predicted") + " direction: " + theorInputs[isPredictable ? indexPair : xIdx].getForwardDir() +" | "+ theorInputs[isPredictable ? indexPair : xIdx].getStrafeDir());
         }
+        return isPredictable;
     }
     
     
     /**
-     * In the case we couldn't predict speed, just ensure that actual speed is below allowed. 
-     * 
+     * In case we couldn't predict speed, just ensure that actual speed is below what we estimated.
+     * This allows for minor deviations below the allowed speed limit, thus players/cheaters may execute movements 
+     * that are technically invalid but do not provide any gameplay advantage.
+     *
      * @param thisMove
      * @param strict If true, only the combined speed (hDistance) is required be below the allowed one.
+     * @return The horizontal distance above limit.
      */
-    private void handleUnpredictableMove(final PlayerMoveData thisMove, boolean strict) {
+    private double handleUnpredictableMove(final PlayerMoveData thisMove, boolean strict) {
+        double hDistanceAboveLimit = 0.0;
+        double offset = thisMove.hDistance - thisMove.hAllowedDistance;
         if (strict) {
             // both axes must be below allowed distance if strict.
-            if (MathUtil.exceedsAllowedDistance(thisMove.xDistance, thisMove.xAllowedDistance) || MathUtil.exceedsAllowedDistance(thisMove.zDistance, thisMove.zAllowedDistance)) {
-                thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0.0;
+            if (MathUtil.exceedsAllowedDistance(thisMove.xDistance, thisMove.xAllowedDistance) 
+                || MathUtil.exceedsAllowedDistance(thisMove.zDistance, thisMove.zAllowedDistance)) {
+                hDistanceAboveLimit = Math.max(hDistanceAboveLimit, offset);
             }
         } 
         else {
-            // Otherwise, only combined distance needs to be below the limit.
-            double allowedHorizontalDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-            if (thisMove.hDistance > allowedHorizontalDistance) {
-                thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0.0;
+            // Otherwise, only the combined distance needs to be below the limit.
+            if (thisMove.hDistance > thisMove.hAllowedDistance) {
+                hDistanceAboveLimit = Math.max(hDistanceAboveLimit, offset);
             }
         }
+        return hDistanceAboveLimit;
     }
     
     
     /**
-     * If the move was predictable, ensure that the difference between actual and allowed speed is below {@link Magic#PREDICTION_EPSILON}.
+     * If the move was predictable, ensure that the difference between actual and allowed speed is below the {@link Magic#PREDICTION_EPSILON}.
      * 
      * @param thisMove
      * @param strict If true, the offset of each axis (x/z) must be below the epsilon, otherwise, only the combined offset (h) will be checked.
      *               Needed against cheats that rely on the specific direction of a move.
+     * @return The horizontal distance above limit.
      */
-    private void handlePredictableMove(final PlayerMoveData thisMove, boolean strict) {
+    private double handlePredictableMove(final PlayerMoveData thisMove, boolean strict) {
+        double hDistanceAboveLimit = 0.0;
+        double offset = thisMove.hDistance - thisMove.hAllowedDistance;
         if (strict) {
-            if (!MathUtil.isOffsetWithinPredictionEpsilon(thisMove.xDistance, thisMove.xAllowedDistance) || !MathUtil.isOffsetWithinPredictionEpsilon(thisMove.zDistance, thisMove.zAllowedDistance)) {
-                thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0.0;
+            if (!MathUtil.isOffsetWithinPredictionEpsilon(thisMove.xDistance, thisMove.xAllowedDistance) 
+                || !MathUtil.isOffsetWithinPredictionEpsilon(thisMove.zDistance, thisMove.zAllowedDistance)) {
+                hDistanceAboveLimit = Math.max(hDistanceAboveLimit, offset);
             }
         } 
         else {
-            double allowedHorizontalDistance = MathUtil.dist(thisMove.xAllowedDistance, thisMove.zAllowedDistance);
-            if (!MathUtil.isOffsetWithinPredictionEpsilon(thisMove.hDistance, allowedHorizontalDistance)) {
-                thisMove.xAllowedDistance = thisMove.zAllowedDistance = 0.0;
+            if (!MathUtil.isOffsetWithinPredictionEpsilon(thisMove.hDistance, thisMove.hAllowedDistance)) {
+                hDistanceAboveLimit = Math.max(hDistanceAboveLimit, offset);
             }
         }
+        return hDistanceAboveLimit;
     }
 
 
@@ -1512,7 +1548,7 @@ public class SurvivalFly extends Check {
                 //*--------Player.java, travel(). Apply swimming speed-------*
                 // 1.13 swimming speed depends on the looking direction vector of the player.
                 // Small note: the game here does NOT explicitly ensure that the player is also in water. Thus, this must be checked outside the from.isInLiquid() condition
-                if (thisMove.isSwimming && !player.isInsideVehicle()) { // inside vehicle checking would always return false, since Sf doesn't run for vehicles, but in the future, we might merge vehicle checks
+                if (thisMove.isSwimming && from.getEntity() instanceof Player) { // inside vehicle checking would always return false, since Sf doesn't run for vehicles, but in the future, we might merge vehicle checks
                     Vector lookVector = TrigUtil.getLookingDirection(to, player);
                     double swimmingScalar = lookVector.getY() < -0.2 ? 0.085 : 0.06;
                     if (lookVector.getY() <= 0.0 || player.getCurrentInput().isJump() 
@@ -1574,7 +1610,7 @@ public class SurvivalFly extends Check {
         // TODO: Needs to be adjusted for on ground pushing
         if (lastMove.slowedByUsingAnItem && !thisMove.slowedByUsingAnItem && thisMove.isRiptiding) {
             // Riptide works by propelling the player in air after releasing the trident (the effect only pushes the player, unless is on ground)
-            final Vector riptideForce = to.getTridentPropellingForce(lastMove.collideY);
+            final Vector riptideForce = to.getTridentPropellingForce(from.isOnGround());
             if (yTheoreticalDistance != null) {
                 for (int i = 0; i < yTheoreticalDistance.length; i++) {
                     yTheoreticalDistance[i] += riptideForce.getY();

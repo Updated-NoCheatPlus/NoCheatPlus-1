@@ -104,7 +104,7 @@ public class MovingUtil {
 
     /**
      * Consistency / cheat check.<br>
-     * It assumes {@link Bridge1_9#isGliding(LivingEntity)} )} has already returned {@code true}, and checks whether a player can
+     * It assumes {@link Bridge1_9#isGliding(LivingEntity)} has already returned {@code true}, and checks whether a player can
      * continue to glide for this gliding phase (i.e.: the elytra breaking mid-flight would make this return {@code false}).
      * 
      * @param player
@@ -128,7 +128,7 @@ public class MovingUtil {
      * @param player
      * @param loc
      * @param data
-     * @return False, if the player is judged to not be able to start gliding (in which case the {@link EntityToggleGlideEvent} will be canceled. If this is called on {@link PlayerMoveEvent}, {@link LivingEntity#setGliding(boolean)} is set to false, as canceling the event would mean canceling the entire movement.
+     * @return False, if the player is judged to not be able to start gliding (in which case the {@link EntityToggleGlideEvent} will be canceled. If this is called on {@link PlayerMoveEvent}, {@link LivingEntity#setGliding(boolean)} is called instead, as canceling the event would mean canceling the entire movement.
      */
     public static boolean canLiftOffWithElytra(final Player player, final PlayerLocation loc, final MovingData data) {
         // TODO: this/firstPast- Move not touching or not explicitly on ground would be enough?

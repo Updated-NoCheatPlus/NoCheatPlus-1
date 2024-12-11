@@ -112,7 +112,7 @@ public class Open extends Check implements IDisableListener {
     }
 
     /**
-     * To be called on PlayerMoveEvents; pre-requisite is InventoryUtil.hasAnyInventoryOpen having returned true. <br>
+     * To be called on {@link org.bukkit.event.player.PlayerMoveEvent}; pre-requisite is {@link InventoryUtil#hasInventoryOpen(Player)} having returned true. <br>
      * (Against InventoryMove cheats and similar)<br>
      * 
      * @param player

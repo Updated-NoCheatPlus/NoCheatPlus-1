@@ -72,8 +72,8 @@ public class PassengerUtil {
 
     /**
      * Check getPassenger recursively until a player is found, return that one
-     * or null. This is intended to be the player in charge of steering the
-     * vehicle.
+     * or null. <b>This is intended to be the player in charge of steering the
+     * vehicle.</b>
      *
      * @param entity
      *            The vehicle.

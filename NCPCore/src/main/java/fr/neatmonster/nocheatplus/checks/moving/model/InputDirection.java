@@ -18,6 +18,7 @@ import org.bukkit.Input;
 import org.bukkit.entity.Player;
 
 import fr.neatmonster.nocheatplus.compat.BridgeMisc;
+import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 
 /**
  * Carry information regarding the player's key presses (WASD)
@@ -81,6 +82,13 @@ public class InputDirection {
      */
     public float getForward() {
         return forward;
+    }
+    
+    /**
+     * @return The input squared.
+     */
+    public double getInputSquared() {
+        return MathUtil.square(strafe) + MathUtil.square(forward); // Cast to a double because the client does it
     }
     
     /**

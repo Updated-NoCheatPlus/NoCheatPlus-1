@@ -360,4 +360,21 @@ public class MathUtil {
     public static boolean isOffsetWithinPredictionEpsilon(double actual, double allowed) {
         return almostEqual(actual, allowed, Magic.PREDICTION_EPSILON);
     }
+    
+    /**
+     * Returns the absolute maximum value between two given doubles.
+     *
+     * @param value1 the first double value
+     * @param value2 the second double value
+     * @return the greater absolute value of the two inputs
+     */
+    public static double absMax(double value1, double value2) {
+        if (value1 < 0.0D) {
+            value1 = -value1;
+        }
+        if (value2 < 0.0D) {
+            value2 = -value2;
+        }
+        return Math.max(value1, value2);
+    }
 }

@@ -14,12 +14,14 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
+import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
+import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 /**
  * Include player-specific data for a move.
@@ -46,10 +48,10 @@ public class PlayerMoveData extends MoveData {
     /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. NOTE: this is NOT the toggle glide moment, but the entire gliding phase. */
     public boolean isGliding;
     
-    /** Represents how far the player is submerged in lava */
+    /** Represents how far the player is submerged in lava. Set with {@link BlockProperties#getVerticalFrictionFactor(LivingEntity, Location, double, PlayerMoveData)} */
     public double submergedLavaHeight;
     
-    /** Represents how far the player is submerged in water */
+    /** Represents how far the player is submerged in water. Set with {@link BlockProperties#getVerticalFrictionFactor(LivingEntity, Location, double, PlayerMoveData)} */
     public double submergedWaterHeight;
 
     /** Player action set on {@link org.bukkit.event.player.PlayerMoveEvent}. */

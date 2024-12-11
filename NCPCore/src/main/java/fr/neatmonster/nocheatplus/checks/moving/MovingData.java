@@ -15,6 +15,7 @@
 package fr.neatmonster.nocheatplus.checks.moving;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Location;
@@ -89,6 +90,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     //////////////////////////////////////////////
     // Data shared between the moving checks    //
     //////////////////////////////////////////////
+    public List<Location> lastCollidingEntitiesLocations = null;
     /** Has leather boot on*/
     public boolean hasLeatherBoots = false;
     public double lastY = -64.0;

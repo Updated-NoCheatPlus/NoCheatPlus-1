@@ -36,8 +36,7 @@ public class LocationData implements IGetLocationWithLook {
     /** Must be checked before using any of the flags. */
     public boolean extraPropertiesValid = false;
     /** Basic environmental properties. */
-    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand,
-            onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream;
+    public boolean aboveStairs, onClimbable, inWeb, inPowderSnow, inSoulSand, inLava, inWater, inLiquid, onGround, onIce, onBlueIce, onSoulSand, onSlimeBlock, inBerryBush, onHoneyBlock, onBouncyBlock, inBubbleStream;
     /** Aggregate properties (reset means potentially resetting fall damage or other data). */
     public boolean resetCond, onGroundOrResetCond;
 
