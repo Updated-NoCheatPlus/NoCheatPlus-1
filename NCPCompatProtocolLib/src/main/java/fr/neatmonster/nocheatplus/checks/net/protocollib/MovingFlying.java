@@ -334,7 +334,8 @@ public class MovingFlying extends BaseAdapter {
 
         final PacketContainer packet = event.getPacket();
         final List<Boolean> booleans = packet.getBooleans().getValues();
-        if (booleans.size() != 3) {
+        if (booleans.size() != 3 && booleans.size() != 4) {
+            // 4: 1.21.3 onwards
             packetMismatch(event);
             return null;
         }
