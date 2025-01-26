@@ -108,7 +108,7 @@ public class Critical extends Check {
                        // 0: A full jump from ground requires more than 6 phases/events.
                        || mData.sfJumpPhase > 0 && mData.sfJumpPhase <= mData.liftOffEnvelope.getMaxJumpPhase(mData.jumpAmplifier) 
                        && !moveInfo.from.seekCollisionAbove(0.2) 
-                       && (lastMove.verVelUsed == null || !lastMove.verVelUsed.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE))
+                       && (lastMove.verVelUsed == null || !lastMove.verVelUsed.get(0).hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE))
                        // 0: Always invalidate critical hits if we judge the player to be on ground (given enough fall distance)
                        || Math.abs(ncpFallDistance - mcFallDistance) > 1e-5 && (moveInfo.from.isOnGround() || lastMove.touchedGroundWorkaround)
                        // (Let SurvivalFly catch low-jumps).

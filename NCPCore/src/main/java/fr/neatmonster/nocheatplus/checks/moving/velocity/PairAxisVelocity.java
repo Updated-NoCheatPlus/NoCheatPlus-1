@@ -21,28 +21,16 @@ import java.util.List;
 import fr.neatmonster.nocheatplus.utilities.TickTask;
 
 /**
- * Simple per-axis velocity (positive + negative), only accounting for queuing
- * and invalidation. Since entries just wrap values for one time use, no extra
- * ticking is done, invalidation mechanics and activation count decreasing takes
- * place in removeInvalid.
+ * Velocity accounting for Oxz plane (positive + negative direction).
  * 
- * @author asofold
  *
  */
-public class SimpleAxisVelocity {
-
-    private static final long FILTER_SPLIT = VelocityFlags.SPLIT_ABOVE_THIRD | VelocityFlags.SPLIT_ABOVE_0_42;
-
-    /** Flags for fast exclusion check in the end of the use(double, double) method. */
-    private static final long FILTER_POST_USE = FILTER_SPLIT;
-
-    /** Margin for accepting a demanded 0.0 amount, regardless sign. */
-    private static final double marginAcceptZero = 0.005;
+public class PairAxisVelocity {
 
     /** Size of queued for which to force cleanup on add. */
     private static final double thresholdCleanup = 40;
 
-    private final LinkedList<SimpleEntry> queued = new LinkedList<SimpleEntry>();
+    private final LinkedList<PairEntry> queued = new LinkedList<PairEntry>();
 
     /** Activation flag for tracking unused velocity. */
     private boolean unusedActive = true;
@@ -52,16 +40,12 @@ public class SimpleAxisVelocity {
      */
     // TODO: Ignoring 0-dist velocity allows 'moving on', though.
     private double unusedSensitivity = 0.1;
-    // TODO: Visibility of trackers, concept, etc.
-    public final UnusedTracker unusedTrackerPos = new UnusedTracker();
-    // TODO: Might do without tracking negative velocity.
-    public final UnusedTracker unusedTrackerNeg = new UnusedTracker();
 
     /**
      * Add to the front of the queue.
      * @param entry
      */
-    public void addToFront(SimpleEntry entry) {
+    public void addToFront(PairEntry entry) {
         queued.addFirst(entry);
     }
 
@@ -69,7 +53,7 @@ public class SimpleAxisVelocity {
      * Add to the end of the queue.
      * @param entry
      */
-    public void add(SimpleEntry entry) { 
+    public void add(PairEntry entry) { 
         queued.add(entry);
         if (queued.size() > thresholdCleanup) {
             removeInvalid(TickTask.getTick());
@@ -79,7 +63,6 @@ public class SimpleAxisVelocity {
     public boolean hasQueued() {
         return !queued.isEmpty();
     }
-
     /**
      * Use the next matching entry.
      * 
@@ -91,37 +74,40 @@ public class SimpleAxisVelocity {
      *         This will directly invalidate leading entries with the wrong
      *         sign.
      */
-    public List<SimpleEntry> use(final double amount, final double tolerance) {
-        final Iterator<SimpleEntry> it = queued.iterator();
-        SimpleEntry entry = null;
-        final List<SimpleEntry> result = new LinkedList<>();
-        double totalAmount = 0;
+    public List<PairEntry> use(final double x, final double z, final double tolerance) {
+        final Iterator<PairEntry> it = queued.iterator();
+        PairEntry entry = null;
+        final List<PairEntry> result = new LinkedList<>();
+        double totalAmountX = 0;
+        double totalAmountZ = 0;
         int lastTick = 0;
         boolean hasVel = false;
         while (it.hasNext()) {
             entry = it.next();
             it.remove();
             if ((entry.flags & VelocityFlags.ADDITIVE) != 0 && lastTick == entry.tick) {
-                totalAmount += entry.value;
+                totalAmountX += entry.x;
+                totalAmountZ += entry.z;
                 result.add(entry);
                 hasVel = true;
             } else {
-                if (hasVel && Math.abs(totalAmount - amount) < tolerance) {
+                if (hasVel && Math.abs(totalAmountX - x) < tolerance && Math.abs(totalAmountZ - z) < tolerance) {
                     // Success
                     break;
                 }
                 if (unusedActive) {
-                    for (SimpleEntry unused : result) {
-                        addUnused(unused);
-                    }
+                    //for (PairEntry unused : result) {
+                    //    addUnused(unused);
+                    //}
                 }
                 result.clear();
-                totalAmount = entry.value;
+                totalAmountX = entry.x;
+                totalAmountZ = entry.z;
                 lastTick = entry.tick;
                 result.add(entry);
                 hasVel = true;
             }
-            if (!hasVel && Math.abs(totalAmount - amount) >= tolerance) result.clear();
+            if (!hasVel && Math.abs(totalAmountX - x) >= tolerance && Math.abs(totalAmountZ - z) >= tolerance) result.clear();
         }
         return result;
 //        if (entry == null) {
@@ -146,10 +132,10 @@ public class SimpleAxisVelocity {
      *         This will directly invalidate leading entries with the wrong
      *         sign.
      */
-    public List<SimpleEntry> use(final int tick) {
-        final Iterator<SimpleEntry> it = queued.iterator();
-        SimpleEntry entry = null;
-        final List<SimpleEntry> result = new LinkedList<>();
+    public List<PairEntry> use(final int tick) {
+        final Iterator<PairEntry> it = queued.iterator();
+        PairEntry entry = null;
+        final List<PairEntry> result = new LinkedList<>();
         int lastTick = 0;
         boolean hasVel = false;
         while (it.hasNext()) {
@@ -164,9 +150,9 @@ public class SimpleAxisVelocity {
                     break;
                 }
                 if (unusedActive) {
-                    for (SimpleEntry unused : result) {
-                        addUnused(unused);
-                    }
+                    //for (PairEntry unused : result) {
+                    //    addUnused(unused);
+                    //}
                 }
                 result.clear();
                 lastTick = entry.tick;
@@ -177,27 +163,6 @@ public class SimpleAxisVelocity {
         return result;
     }
 
-    private SimpleEntry processFlagsPostUse(SimpleEntry entry, double amount) {
-        // Check flags for splitting entries.
-        if (allowsSplit(entry, amount)) {
-            addToFront(new SimpleEntry(entry.tick, entry.value - amount, entry.flags, 
-                    (entry.flags & VelocityFlags.SPLIT_RETAIN_ACTCOUNT) == 0 
-                    ? entry.actCount : Math.max(entry.actCount, 2))
-                    );
-            // TODO: For performance reasons we don't return the used amount.
-        }
-        return entry;
-    }
-
-    private final boolean allowsSplit(final SimpleEntry entry, final double amount) {
-        if ((entry.flags & FILTER_SPLIT) == 0L) {
-            return false;
-        }
-        final double remain = entry.value - amount;
-        return (entry.flags & VelocityFlags.SPLIT_ABOVE_THIRD) != 0L && remain > entry.value / 3.0
-                || (entry.flags & VelocityFlags.SPLIT_ABOVE_0_42) != 0L && remain > 0.42;
-    }
-
     /**
      * Without checking for invalidation, test if there is a matching entry with
      * same or less the activation count.
@@ -207,51 +172,54 @@ public class SimpleAxisVelocity {
      * @param tolerance
      * @return
      */
-    public List<SimpleEntry> peek(final double amount, final int minActCount, final int maxActCount, 
+    public List<PairEntry> peek(final double x, final double z, final int minActCount, final int maxActCount, 
             final double tolerance) {
-        final List<SimpleEntry> result = new LinkedList<>();
-        double totalAmount = 0;
+        final List<PairEntry> result = new LinkedList<>();
+        double totalAmountX = 0;
+        double totalAmountZ = 0;
         int lastTick = 0;
         boolean hasVel = false;
-        final Iterator<SimpleEntry> it = queued.iterator();
+        final Iterator<PairEntry> it = queued.iterator();
         while (it.hasNext()) {
-            final SimpleEntry entry = it.next();
+            final PairEntry entry = it.next();
             if (entry.actCount >= minActCount && entry.actCount <= maxActCount) {
                 if ((entry.flags & VelocityFlags.ADDITIVE) != 0 && lastTick == entry.tick) {
-                    totalAmount += entry.value;
+                    totalAmountX += entry.x;
+                    totalAmountZ += entry.z;
                     result.add(entry);
                     hasVel = true;
                 } else {
-                    if (hasVel && Math.abs(totalAmount - amount) < tolerance) return result;
+                    if (hasVel && Math.abs(totalAmountX - x) < tolerance && Math.abs(totalAmountZ - z) < tolerance) return result;
                     result.clear();
-                    totalAmount = entry.value;
+                    totalAmountX = entry.x;
+                    totalAmountZ = entry.z;
                     lastTick = entry.tick;
                     result.add(entry);
                     hasVel = true;
                 }
             }
         }
-        if (Math.abs(totalAmount - amount) >= tolerance) result.clear();
+        if (Math.abs(totalAmountX - x) >= tolerance || Math.abs(totalAmountZ - z) >= tolerance) result.clear();
         return result;
     }
     
     /**
      * Without checking for invalidation, test if there is a matching entry with
-     * same or less the activation count.
+     * same or less the activation count and tick.
      * 
      * @param amount
      * @param maxActCount
      * @param tolerance
      * @return
      */
-    public List<SimpleEntry> peek(final int tick, final int minActCount, final int maxActCount, 
+    public List<PairEntry> peek(final int tick, final int minActCount, final int maxActCount, 
             final double tolerance) {
-        final List<SimpleEntry> result = new LinkedList<>();
+        final List<PairEntry> result = new LinkedList<>();
         int lastTick = 0;
         boolean hasVel = false;
-        final Iterator<SimpleEntry> it = queued.iterator();
+        final Iterator<PairEntry> it = queued.iterator();
         while (it.hasNext()) {
-            final SimpleEntry entry = it.next();
+            final PairEntry entry = it.next();
             if (entry.actCount >= minActCount && entry.actCount <= maxActCount) {
                 if ((entry.flags & VelocityFlags.ADDITIVE) != 0 && lastTick == entry.tick) {
                     result.add(entry);
@@ -280,11 +248,8 @@ public class SimpleAxisVelocity {
      *            Must be equal or greater than 0.0.
      * @return
      */
-    public boolean matchesEntry(final SimpleEntry entry, final double amount, double tolerance) {
-        return Math.abs(amount) <= Math.abs(entry.value) + tolerance && 
-                (amount > 0.0 && entry.value > 0.0 && amount <= entry.value + tolerance 
-                || amount < 0.0 && entry.value < 0.0 && entry.value - tolerance <= amount 
-                || amount == 0.0 && Math.abs(entry.value) <= marginAcceptZero);
+    public boolean matchesEntry(final PairEntry entry, final double x, final double z, double tolerance) {
+        return Math.abs(z) <= Math.abs(entry.z) + tolerance && Math.abs(x) <= Math.abs(entry.x) + tolerance;
     }
 
     /**
@@ -296,16 +261,16 @@ public class SimpleAxisVelocity {
      */
     public void removeInvalid(final int invalidateBeforeTick) {
         // Note: clear invalidated here, append unused to invalidated.
-        final Iterator<SimpleEntry> it = queued.iterator();
+        final Iterator<PairEntry> it = queued.iterator();
         while (it.hasNext()) {
-            final SimpleEntry entry = it.next();
+            final PairEntry entry = it.next();
             entry.actCount --; // Let others optimize this.
             if (entry.actCount <= 0 || entry.tick < invalidateBeforeTick) {
                 it.remove();
                 // Track unused velocity.
-                if (unusedActive) {
-                    addUnused(entry);
-                }
+                //if (unusedActive) {
+                //    addUnused(entry);
+                //}
             }
         }
     }
@@ -323,42 +288,11 @@ public class SimpleAxisVelocity {
      * @param builder
      */
     public void addQueued(final StringBuilder builder) {
-        for (final SimpleEntry vel: queued) {
+        for (final PairEntry vel: queued) {
             builder.append(" ");
             builder.append(vel);
         }
     }
-
-    // TODO: Might add the yDistance for a move here (and if to use it for external calls), but that needs a more complex modeling anyway!?
-    public void updateBlockedState(final int tick, final boolean posBlocked, final boolean negBlocked) {
-        // Store state, ignoring the activation flag.
-        unusedTrackerPos.updateState(tick, posBlocked);
-        unusedTrackerNeg.updateState(tick, negBlocked);
-    }
-
-    /**
-     * Having checked the activation flag, call this with velocity entries, that
-     * have just been invalidated.
-     * 
-     * @param entry
-     */
-    private void addUnused(final SimpleEntry entry) {
-        // Global pre-conditions (sensitivity, skip entries that are supposed to be even more fake than default).
-        if (Math.abs(entry.value) < unusedSensitivity || entry.initialActCount < 5) {
-            return;
-        }
-        // Add to the tracker for the given direction.
-        // TODO: Consider evaluating activation count + have a flag to ignore an entry.
-        if (entry.value < 0.0) {
-            // Negative value.
-            unusedTrackerNeg.addValue(entry.tick, -entry.value); // Add absolute amount.
-        }
-        else {
-            // Positive value.
-            unusedTrackerPos.addValue(entry.tick, entry.value);
-        }
-    }
-
     public boolean isUnusedActive() {
         return unusedActive;
     }
@@ -375,9 +309,9 @@ public class SimpleAxisVelocity {
         if (queued.isEmpty()) {
             return;
         }
-        final Iterator<SimpleEntry> it = queued.iterator();
+        final Iterator<PairEntry> it = queued.iterator();
         while (it.hasNext()) {
-            final SimpleEntry entry = it.next();
+            final PairEntry entry = it.next();
             if (entry.hasFlag(flag)) {
                 it.remove();
             }

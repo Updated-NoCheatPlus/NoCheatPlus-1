@@ -35,6 +35,8 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketAdapter;
 
+//import com.viaversion.viaversion.api.Via;
+
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.CheckType;
 import fr.neatmonster.nocheatplus.checks.net.NetData;
@@ -143,7 +145,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
         	// if (!BridgeMisc.hasIsUsingItemMethod()) {
         	    register("fr.neatmonster.nocheatplus.checks.net.protocollib.UseItemAdapter", plugin);
         	// }
-            register("fr.neatmonster.nocheatplus.checks.net.protocollib.Fight", plugin);
+            register("fr.neatmonster.nocheatplus.checks.net.protocollib.Velocity", plugin);
         }
         else {
             // Fuck 1.7.
@@ -257,6 +259,7 @@ public class ProtocolLibComponent implements IDisableListener, INotifyReload, Jo
                 // Assume clients to match the server protocol version - We do not support protocol-hack plugins other than PS/Via
                 // - If not even ProtocolLib is installed, do return UNKNOWN (that's on the server's owner). Time to make NCP full-on depend on ProtocolLib?
                 // - If the server has protocol plugins active but doesn't have CompatNoCheatPlus, that's on them as well :)
+                //DataManager.getPlayerData(player).setClientVersionID(Via.getAPI().getPlayerVersion(player.getUniqueId()));
                 DataManager.getPlayerData(player).setClientVersionID(ProtocolLibrary.getProtocolManager().getProtocolVersion(player));
             }
         }, 5);

@@ -46,8 +46,6 @@ import fr.neatmonster.nocheatplus.checks.moving.model.MoveConsistency;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveInfo;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.compat.SchedulerHelper;
 import fr.neatmonster.nocheatplus.compat.versions.ServerVersion;
 import fr.neatmonster.nocheatplus.components.location.IGetLocationWithLook;

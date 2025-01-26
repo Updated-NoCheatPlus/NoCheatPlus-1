@@ -36,8 +36,8 @@ import fr.neatmonster.nocheatplus.checks.moving.model.MoveConsistency;
 import fr.neatmonster.nocheatplus.checks.moving.model.MoveTrace;
 import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.checks.moving.model.VehicleMoveData;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.FrictionAxisVelocity;
+import fr.neatmonster.nocheatplus.checks.moving.velocity.PairAxisVelocity;
+import fr.neatmonster.nocheatplus.checks.moving.velocity.PairEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleAxisVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
@@ -63,6 +63,7 @@ import fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
+import fr.neatmonster.nocheatplus.utilities.moving.Magic;
 import fr.neatmonster.nocheatplus.workaround.IWorkaroundRegistry.WorkaroundSet;
 
 /**
@@ -175,7 +176,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /** Vertical velocity modeled as an axis (positive and negative possible) */
     private final SimpleAxisVelocity verVel = new SimpleAxisVelocity();
     /** Horizontal velocity modeled as an axis (always positive) */
-    private final FrictionAxisVelocity horVel = new FrictionAxisVelocity();
+    private final PairAxisVelocity horVel = new PairAxisVelocity();
     /** Whether the calculated explosion velocity should be applied. */
     @Deprecated
     public boolean shouldApplyExplosionVelocity = false;
@@ -866,8 +867,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
 
         // TODO: Should also switch to adding always.
         if (vx != 0.0 || vz != 0.0) {
-            final double newVal = Math.sqrt(vx * vx + vz * vz);
-            horVel.add(new AccountEntry(tick, newVal, cc.velocityActivationCounter, getHorVelValCount(newVal)));
+            horVel.add(new PairEntry(tick, vx, vz, cc.velocityActivationCounter));
         }
 
         // Set dirty flag here.
@@ -918,13 +918,13 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
         // Remove invalid velocity.
         removeInvalidVelocity(invalidateBeforeTick);
 
-        // Horizontal velocity (intermediate concept).
-        horVel.tick();
+        // (Horizontal velocity does not tick.)
+        //horVel.tick();
 
         // (Vertical velocity does not tick.)
 
         // Renew the dirty phase.
-        if (!sfDirty && (horVel.hasActive() || horVel.hasQueued())) {
+        if (!sfDirty && horVel.hasQueued()) {
             sfDirty = true;
         }
     }
@@ -954,7 +954,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param vel
      *            Assumes positive values always.
      */
-    public void addHorizontalVelocity(final AccountEntry vel) {
+    public void addHorizontalVelocity(final PairEntry vel) {
         horVel.add(vel);
     }
 
@@ -962,9 +962,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     /**
      * Clear only active horizontal velocity.
      */
-    public void clearActiveHorVel() {
-        horVel.clearActive();
-    }
+    //public void clearActiveHorVel() {
+    //    horVel.clearActive();
+    //}
 
 
     /**
@@ -978,35 +978,35 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
    /**
     * Test if the player has active horizontal velocity
     */
-    public boolean hasActiveHorVel() {
-        return horVel.hasActive();
-    }
+    //public boolean hasActiveHorVel() {
+    //    return horVel.hasActive();
+    //}
 
 
     /**
      * Test if the player has horizontal velocity entries in queue.
      * @return
      */
-    public boolean hasQueuedHorVel() {
-        return horVel.hasQueued();
-    }
+    //public boolean hasQueuedHorVel() {
+    //    return horVel.hasQueued();
+    //}
 
 
     /**
      * Test if the player has any horizontal velocity entry at all (active and queued)
      */
-    public boolean hasAnyHorVel() {
-        return horVel.hasAny();
-    }
+    //public boolean hasAnyHorVel() {
+    //    return horVel.hasAny();
+    //}
 
 
     /**
      * Get effective amount of all used velocity. Non-destructive.
      * @return
      */
-    public double getHorizontalFreedom() {
-        return horVel.getFreedom();
-    }
+    //public double getHorizontalFreedom() {
+    //    return horVel.getFreedom();
+    //}
 
 
     /**
@@ -1017,9 +1017,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param amount The amount demanded, must be positive.
      * @return
      */
-    public double useHorizontalVelocity(final double amount) {
-        final double available = horVel.use(amount);
-        if (available >= amount) {
+    public List<PairEntry> useHorizontalVelocity(final double x, final double z) {
+        final List<PairEntry> available = horVel.use(x, z, 0.001);
+        if (!available.isEmpty()) {
             sfDirty = true;
         }
         return available;
@@ -1031,7 +1031,7 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * 
      * @return
      */
-    public FrictionAxisVelocity getHorizontalVelocityTracker() {
+    public PairAxisVelocity getHorizontalVelocityTracker() {
         return horVel;
     }
 
@@ -1041,10 +1041,10 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param builder
      */
     public void addHorizontalVelocity(final StringBuilder builder) {
-        if (horVel.hasActive()) {
-            builder.append("\n" + " Horizontal velocity (active):");
-            horVel.addActive(builder);
-        }
+        //if (horVel.hasActive()) {
+        //    builder.append("\n" + " Horizontal velocity (active):");
+        //    horVel.addActive(builder);
+        //}
         if (horVel.hasQueued()) {
             builder.append("\n" + " Horizontal velocity (queued):");
             horVel.addQueued(builder);
@@ -1076,8 +1076,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param maxActCount
      * @return
      */
-    public SimpleEntry peekVerticalVelocity(final double amount, final int minActCount, final int maxActCount) {
-        return verVel.peek(amount, minActCount, maxActCount, TOL_VVEL);
+    public List<SimpleEntry> peekVerticalVelocity(final double amount, final int minActCount, final int maxActCount) {
+        return verVel.peek(amount, minActCount, maxActCount, Magic.PREDICTION_EPSILON);
     }
 
 
@@ -1107,8 +1107,8 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param amount
      * @return
      */
-    public SimpleEntry useVerticalVelocity(final double amount) {
-        final SimpleEntry available = verVel.use(amount, TOL_VVEL);
+    public List<SimpleEntry> useVerticalVelocity(final double amount) {
+        final List<SimpleEntry> available = verVel.use(amount, Magic.PREDICTION_EPSILON);
         if (available != null) {
             playerMoves.getCurrentMove().verVelUsed = available;
             sfDirty = true;
@@ -1124,12 +1124,14 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      * @param amount
      * @return
      */
-    public SimpleEntry getOrUseVerticalVelocity(final double amount) {
-        final SimpleEntry verVelUsed = playerMoves.getCurrentMove().verVelUsed;
+    public List<SimpleEntry> getOrUseVerticalVelocity(final double amount) {
+        final List<SimpleEntry> verVelUsed = playerMoves.getCurrentMove().verVelUsed;
         if (verVelUsed != null) {
-            if (verVel.matchesEntry(verVelUsed, amount, TOL_VVEL)) {
-                return verVelUsed;
+            double sum = 0;
+            for (SimpleEntry entry : verVelUsed) {
+                sum += entry.value;
             }
+            if (Math.abs(sum - amount) < Magic.PREDICTION_EPSILON) return verVelUsed;
         }
         return useVerticalVelocity(amount);
     }
@@ -1344,8 +1346,9 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
      */
     @Deprecated
     public boolean resetVelocityJumpPhase(final Collection<String> tags) {
-        if (horVel.hasActive() || horVel.hasQueued() 
-            || sfDirty && shouldRetainSFDirty(tags)) {
+        if (horVel.hasQueued() 
+            || sfDirty && shouldRetainSFDirty(tags)
+            ) {
             // TODO: What with vertical ?
             return sfDirty = true;
         }
@@ -1356,22 +1359,21 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     
     // TODO: To be phased out by the new prediction modeling
     private final boolean shouldRetainSFDirty(final Collection<String> tags) {
-        final PlayerMoveData thisMove = playerMoves.getLatestValidMove();
-
-        if (thisMove == null || !thisMove.toIsValid || thisMove.yDistance >= 0.0) {
-
-            final SimpleEntry entry = verVel.peek(thisMove == null ? 0.05 : thisMove.yDistance, 0, 4, 0.0);
-            if (entry != null && entry.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE)
-                || thisMove != null && thisMove.verVelUsed != null 
-                && thisMove.verVelUsed.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE)) {
-
-                // TODO: Strictly, pastground_from/to should rather be skipped instead of this.
-                if (tags != null) {
-                    tags.add("retain_dirty_bounce"); // +- block/push
-                }
-                return true;
-            }
-        }
+        /*
+         * final PlayerMoveData thisMove = playerMoves.getLatestValidMove();
+         * 
+         * if (thisMove == null || !thisMove.toIsValid || thisMove.yDistance >= 0.0) {
+         * 
+         * final SimpleEntry entry = verVel.peek(thisMove == null ? 0.05 :
+         * thisMove.yDistance, 0, 4, 0.0); if (entry != null &&
+         * entry.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE) || thisMove != null &&
+         * thisMove.verVelUsed != null &&
+         * thisMove.verVelUsed.hasFlag(VelocityFlags.ORIGIN_BLOCK_BOUNCE)) {
+         * 
+         * // TODO: Strictly, pastground_from/to should rather be skipped instead of
+         * this. if (tags != null) { tags.add("retain_dirty_bounce"); // +- block/push }
+         * return true; } }
+         */
         return false;
     }
 

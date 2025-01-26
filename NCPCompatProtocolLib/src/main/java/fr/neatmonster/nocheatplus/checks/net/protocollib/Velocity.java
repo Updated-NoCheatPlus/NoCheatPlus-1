@@ -28,28 +28,24 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.reflect.StructureModifier;
 
 import fr.neatmonster.nocheatplus.checks.CheckType;
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
+import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.players.DataManager;
 import fr.neatmonster.nocheatplus.players.IPlayerData;
 
-// TODO: Name is misleading; doesn't contain any packet related to combat. Rename to something more appropriate (i.e.: MiscAdapter)
-public class Fight extends BaseAdapter {
+public class Velocity extends BaseAdapter {
     private static PacketType[] initPacketTypes() {
         final List<PacketType> types = new LinkedList<PacketType>(Arrays.asList(
-                //PacketType.Play.Client.ARM_ANIMATION,
                 PacketType.Play.Server.EXPLOSION
+                //PacketType.Play.Server.ENTITY_VELOCITY
         ));
         return types.toArray(new PacketType[types.size()]);
     }
 
-    public Fight(Plugin plugin) {
+    public Velocity(Plugin plugin) {
         super(plugin, ListenerPriority.MONITOR, initPacketTypes());
     }
-
-    //@Override
-    //public void onPacketReceiving(final PacketEvent event) {
-    //    handleAnmationPacket(event);
-    //}
 
     @Override
     public void onPacketSending(final PacketEvent event) {
@@ -88,29 +84,8 @@ public class Fight extends BaseAdapter {
         final IPlayerData pData = DataManager.getPlayerData(player);
         if (!pData.isCheckActive(CheckType.MOVING, player)) return;
         final MovingData data = pData.getGenericInstance(MovingData.class);
+        final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         // Process velocity.
-        data.shouldApplyExplosionVelocity = true;
-        data.explosionVelAxisX += velX;
-        data.explosionVelAxisY += velY;
-        data.explosionVelAxisZ+= velZ;
+        data.addVelocity(player, cc, velX, velY, velZ, VelocityFlags.EXPLOSION | VelocityFlags.ADDITIVE);
     }
-
-    //public void handleAnmationPacket(final PacketEvent event) {
-        
-     //   final Player player = event.getPlayer();
-     //   final FightData data = DataManager.getGenericInstance(player, FightData.class);
-        // TODO: Count temporary player as well?
-     //   if (event.isPlayerTemporary()) return;
-     //   if (event.getPacketType() != PacketType.Play.Client.ARM_ANIMATION) {
-            //data.noSwingPacket = false;
-            //data.noSwingArmSwung = false;
-     //       return;
-     //   }
-     //   if (player == null) {
-     //       counters.add(ProtocolLibComponent.idNullPlayer, 1);
-     //       return;
-     //   }
-     //   data.noSwingPacket = true;
-     //   data.noSwingArmSwung = true;
-    //}
 }

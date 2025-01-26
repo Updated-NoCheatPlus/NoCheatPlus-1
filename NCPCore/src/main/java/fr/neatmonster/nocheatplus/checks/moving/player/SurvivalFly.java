@@ -187,7 +187,7 @@ public class SurvivalFly extends Check {
         }
         else {
             // Clear active velocity if the distance is within limit (clearly not needed. :))
-            data.clearActiveHorVel();
+            //data.clearActiveHorVel();
             hFreedom = 0.0;
         }
 
@@ -1040,7 +1040,7 @@ public class SurvivalFly extends Check {
             }
             // Minecraft caps horizontal speed if on climbable, for whatever reason.
             if (from.isOnClimbable() && !from.isInLiquid()) {
-                data.clearActiveHorVel(); // Might want to clear ALL horizontal vel.
+                //data.clearActiveHorVel(); // Might want to clear ALL horizontal vel.
                 thisMove.xAllowedDistance = MathUtil.clamp(thisMove.xAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
                 thisMove.zAllowedDistance = MathUtil.clamp(thisMove.zAllowedDistance, -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
             }
@@ -1142,7 +1142,7 @@ public class SurvivalFly extends Check {
         }
         // All subsequent modifiers get applied to each theoretical speed...
         if (from.isOnClimbable() && !from.isInLiquid()) {
-            data.clearActiveHorVel();
+            //data.clearActiveHorVel();
             for (i = 0; i < 9; i++) {
                 xTheoreticalDistance[i] = MathUtil.clamp(xTheoreticalDistance[i], -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
                 zTheoreticalDistance[i] = MathUtil.clamp(zTheoreticalDistance[i], -Magic.CLIMBABLE_MAX_SPEED, Magic.CLIMBABLE_MAX_SPEED);
@@ -1874,19 +1874,19 @@ public class SurvivalFly extends Check {
          */
         // TODO: Implement Asofold's fix to prevent too easy abuse:
         // See: https://github.com/NoCheatPlus/Issues/issues/374#issuecomment-296172316
-        double hFreedom = 0.0; // Horizontal velocity used.
-        if (hDistanceAboveLimit > 0.0) {
-            hFreedom = data.getHorizontalFreedom();
-            if (hFreedom < hDistanceAboveLimit) {
-                // Distance above limit is still greater. Try using queued velocity if possible.
-                hFreedom += data.useHorizontalVelocity(hDistanceAboveLimit - hFreedom);
-            }
-            if (hFreedom > 0.0) {
-                tags.add("hvel");
-                hDistanceAboveLimit = Math.max(0.0, hDistanceAboveLimit - hFreedom);
-            }
-        }
-        return new double[]{hAllowedDistance, hDistanceAboveLimit, hFreedom};
+        //double hFreedom = 0.0; // Horizontal velocity used.
+        //if (hDistanceAboveLimit > 0.0) {
+        //    hFreedom = data.getHorizontalFreedom();
+        //    if (hFreedom < hDistanceAboveLimit) {
+        //        // Distance above limit is still greater. Try using queued velocity if possible.
+        //        hFreedom += data.useHorizontalVelocity(hDistanceAboveLimit - hFreedom);
+        //    }
+        //    if (hFreedom > 0.0) {
+        //        tags.add("hvel");
+        //        hDistanceAboveLimit = Math.max(0.0, hDistanceAboveLimit - hFreedom);
+        //    }
+        //}
+        return new double[]{hAllowedDistance, hDistanceAboveLimit, 0.0};
     }
     
     /**

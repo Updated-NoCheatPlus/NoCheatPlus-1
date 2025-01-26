@@ -73,7 +73,6 @@ import fr.neatmonster.nocheatplus.checks.moving.player.Passable;
 import fr.neatmonster.nocheatplus.checks.moving.player.PlayerSetBackMethod;
 import fr.neatmonster.nocheatplus.checks.moving.player.SurvivalFly;
 import fr.neatmonster.nocheatplus.checks.moving.vehicle.VehicleChecks;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.AccountEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.checks.net.FlyingQueueHandle;
@@ -729,7 +728,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
 
     /** LOWEST level PlayerMoveEvent: this is the level where checks are executed and most moving data is set */
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerMove(final PlayerMoveEvent event)  {
+    public void onPlayerMove(final PlayerMoveEvent event) {
         counters.add(idMoveEvent, 1);
         final Player player = event.getPlayer();
         // Store the event for monitor level checks.
@@ -934,6 +933,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                 /* Index of Bukkit's "to" location in the flying queue. -1 if already purged out of the queue or cannot be found for any other reason.*/
                 int toIndex = -1;
                 // 1: Locate Bukkit's 'from' and 'to' locations on packet-level in the flying queue.
+                if (pData.getClientVersion().isAtLeast(ClientVersion.V_1_13))
                 for (int queueIndex = 0; queueIndex < queue.length; queueIndex++) {
                     final DataPacketFlying packetData = queue[queueIndex];
                     if (packetData == null || !packetData.hasPos) {
@@ -994,7 +994,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
                             moveInfo.set(player, packet, packetTo, cc.yOnGround);
                             if (debug) {
                                 final String s1 = count == 1 ? "from" : "loc";
-                                final String s2 = i == j - 2 || count >= maxSplit ? "to" : "loc";
+                                final String s2 = i == j - 1 || count >= maxSplit ? "to" : "loc";
                                 debug(player, "Split move (packet): " + count + " (" + s1 + " -> " + s2 + ")");
                             }
                             if (!checkPlayerMove(player, packet, packetTo, count++, moveInfo, debug, data, cc, pData, event, true) 
@@ -1259,7 +1259,8 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         // 4: Workaround for 1.14+ exiting vehicles.
         if (data.lastVehicleType != null && thisMove.distanceSquared < 5) {
             data.setSetBack(from);
-            data.addHorizontalVelocity(new AccountEntry(thisMove.hDistance, 1, 1));
+            //TODO: Fake velocity
+            //data.addHorizontalVelocity(new AccountEntry(thisMove.hDistance, 1, 1));
             data.addVerticalVelocity(new SimpleEntry(thisMove.yDistance, 1));
             //data.addVerticalVelocity(new SimpleEntry(-0.16, 2));
             data.lastVehicleType = null;
@@ -1366,54 +1367,6 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             if (newTo != null) {
                 mightSkipNoFall = true;
             }
-        }
-        
-        // 6: Recalculate explosion velocity as PlayerVelocityEvent can't handle well on 1.13+
-        // TODO: Merge with velocity entries that were added at the same time with this one!
-        // TODO: Evaluate if this can be removed with the new hspeed rework (Should be, since it doesn't rely on a hard-limit anymore)
-        if (data.shouldApplyExplosionVelocity) {
-            data.shouldApplyExplosionVelocity = false;
-            double xLastDistance = 0.0; double zLastDistance = 0.0; double yLastDistance = 0.0;
-
-            if (lastMove.toIsValid) {
-                xLastDistance = lastMove.to.getX() - lastMove.from.getX();
-                zLastDistance = lastMove.to.getZ() - lastMove.from.getZ();
-                yLastDistance = lastMove.to.onGround ? 0 : lastMove.yDistance; 
-            }
-            boolean addHorizontalVelocity = true;
-            
-            // Process the distances after the explosion
-            final double xDistance2 = data.explosionVelAxisX + xLastDistance;
-            final double zDistance2 = data.explosionVelAxisZ + zLastDistance;
-            final double hDistance = MathUtil.dist(xDistance2, zDistance2);
-
-            // Prevent duplicate entry come from PlayerVelocityEvent
-            if (data.hasActiveHorVel() && data.getHorizontalFreedom() < hDistance 
-                || data.hasQueuedHorVel() && data.useHorizontalVelocity(hDistance) < hDistance
-                || !data.hasAnyHorVel()) {
-                data.getHorizontalVelocityTracker().clear();
-                if (debug) {
-                    debug(player, "Prevent velocity duplication by removing entries that are smaller than the re-calculated hDistance (explosion).");
-                }
-            } 
-            else addHorizontalVelocity = false;
-
-            if (addHorizontalVelocity) {
-                data.addVelocity(player, cc, xDistance2, data.explosionVelAxisY + yLastDistance - Magic.GRAVITY_ODD, zDistance2);
-                if (debug) {
-                    debug(player, "Fake use of explosion velocity (h/v).");
-                }
-            }
-            else {
-                data.addVerticalVelocity(new SimpleEntry(data.explosionVelAxisY + yLastDistance - Magic.GRAVITY_ODD, cc.velocityActivationCounter));
-                if (debug) {
-                    debug(player, "Fake use of vertical explosion velocity only. Horizontal velocity entries bigger than the re-calculated hDistance are present.");
-                }
-            }
-            // Always reset once used
-            data.explosionVelAxisX = 0.0;
-            data.explosionVelAxisY = 0.0;
-            data.explosionVelAxisZ = 0.0;
         }
         
 
@@ -1703,8 +1656,9 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         final BlockChangeEntry entry = BlockChangeSearch(from, tick, dir, debug, data, cc, worldId, false);
         if (entry != null) {
             final int count = MovingData.getHorVelValCount(0.6);
-            data.clearActiveHorVel();
-            data.addHorizontalVelocity(new AccountEntry(tick, 0.6, count, count));
+            // TODO: Add horizontal vel
+            //data.clearActiveHorVel();
+            //data.addHorizontalVelocity(new AccountEntry(tick, 0.6, count, count));
             // Stuck in block, Hack
             data.addVerticalVelocity(new SimpleEntry(-0.35, 6));
             data.blockChangeRef.updateSpan(entry);
@@ -1767,13 +1721,14 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
             // Exclude valid moves first.
             // TODO: Attributes might allow unhealthy moves as well.
             // Observed maximum use so far: 5.515
-            // TODO: Velocity flag too (if combined with configurable distances)?
-            final double amount = thisMove.hDistance - data.getHorizontalFreedom(); // Will change with model change.
-            if (amount < 0.0 || lastMove.toIsValid && thisMove.hDistance - lastMove.hDistance <= 0.0 
-                || data.useHorizontalVelocity(amount) >= amount) {
+            // TODO: Velocity
+            //final double amount = thisMove.hDistance - data.getHorizontalFreedom(); // Will change with model change.
+            //if (amount < 0.0 || lastMove.toIsValid && thisMove.hDistance - lastMove.hDistance <= 0.0 
+            //    || data.useHorizontalVelocity(amount) >= amount) {
                 // Speed decreased or velocity is present.
-            }
-            else violation += thisMove.hDistance; // Could subtract lastMove.hDistance.
+            //}
+            //else 
+                violation += thisMove.hDistance; // Could subtract lastMove.hDistance.
         }
 
         if (violation > 0.0) {

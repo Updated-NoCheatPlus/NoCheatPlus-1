@@ -14,14 +14,16 @@
  */
 package fr.neatmonster.nocheatplus.checks.moving.model;
 
-import org.bukkit.Location;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.util.Vector;
 
+import fr.neatmonster.nocheatplus.checks.moving.MovingConfig;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
-import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 
 /**
  * Include player-specific data for a move.
@@ -128,7 +130,7 @@ public class PlayerMoveData extends MoveData {
     public double yAllowedDistance;
     
     /**
-     * The vertical collision as set by {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, double[])} in SurvivalFly (vdistrel).
+     * The vertical collision as set by {@link fr.neatmonster.nocheatplus.utilities.location.RichEntityLocation#collide(Vector, boolean, MovingConfig, double[])} in SurvivalFly (vdistrel).
      * Note that this does not differentiate collision above VS below: it considers both.
      */
     public boolean collideY;
@@ -169,7 +171,7 @@ public class PlayerMoveData extends MoveData {
      * Just the used vertical velocity. Could be overridden multiple times
      * during processing of moving checks.
      */
-    public SimpleEntry verVelUsed = null;
+    public List<SimpleEntry> verVelUsed = new LinkedList<>();
     
     /**
      * Indicates whether this movement has a horizontal impulse, meaning the player actively pressed a WASD key.
@@ -254,7 +256,7 @@ public class PlayerMoveData extends MoveData {
         collideZ = false;
         // Meta stuff.
         multiMoveCount = 0;
-        verVelUsed = null;
+        verVelUsed = new LinkedList<>();
         hasNoMovementDueToDuplicatePacket = false;
         negligibleHorizontalCollision = false;
         collidesHorizontally = false;
