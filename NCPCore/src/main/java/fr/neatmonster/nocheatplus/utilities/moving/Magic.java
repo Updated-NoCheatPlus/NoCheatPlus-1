@@ -29,7 +29,7 @@ public class Magic {
 	//////////////////////////
 	public static final double DEFAULT_FLYSPEED = 0.1;
     /** EntityLiving, travel */
-    public static final float HORIZONTAL_INERTIA = 0.91f;
+    public static final float AIR_HORIZONTAL_INERTIA = 0.91f;
     /** EntityLiving, jumpFromGround */
     public static final float BUNNYHOP_BOOST = 0.2f;
     /** EntityLiving, noJumpDelay field */
@@ -60,8 +60,8 @@ public class Magic {
     public static final float LAVA_HORIZONTAL_INERTIA = 0.5f;
     /** Result of 0.6^3, where 0.6 is the default block friction (except for ice, blue ice and slime blocks) */
     public static final float DEFAULT_FRICTION_CUBED = 0.6f * 0.6f * 0.6f; // 0.21600002f;
-    /** Result of (0.6 * {@link #HORIZONTAL_INERTIA})^3, where 0.6 is the default block friction factor (except for ice, blue ice and slime blocks). Used by legacy clients. Newer clients use {@link #DEFAULT_FRICTION_CUBED} (not multiplied by 0.91), not inertia. */
-    public static final float CUBED_INERTIA = 0.16277136f;
+    /** Result of (0.6 * {@link #AIR_HORIZONTAL_INERTIA})^3, where 0.6 is the default block friction factor (except for ice, blue ice and slime blocks). Used by legacy clients. Newer clients use {@link #DEFAULT_FRICTION_CUBED} (not multiplied by 0.91). */
+    public static final float DEFAULT_FRICTION_MULTIPLIED_BY_091_CUBED = 0.16277136f;
     /** HoneyBlock */
     public static final double SLIDE_START_AT_VERTICAL_MOTION_THRESHOLD = 0.13;
     /** HoneyBlock */

@@ -50,8 +50,8 @@ public class MaterialUtil {
     ///////////////////////
 
     private static final List<String> woodTypes = Arrays.asList(
-            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson", "mangrove", "bamboo", "cherry",
-            "wood" // Legacy
+            "acacia", "birch", "dark_oak", "jungle", "oak", "spruce", "warped", "crimson", "mangrove", "bamboo", "cherry", "pale",
+            "wood"// Legacy
             );
 
     private static List<EntityType> collectTypesBySuffix(String prefix) {
@@ -154,11 +154,9 @@ public class MaterialUtil {
     // Material collections with common properties
     // (May not always have all aspects in common.)
     /////////////////////////////////////////////////
-	public static final Set<Material> ALL_CAULDRONS = Collections.unmodifiableSet(
-            BridgeMaterial.getBySuffix("cauldron", AlmostBoolean.YES, "legacy"));
+	public static final Set<Material> ALL_CAULDRONS = Collections.unmodifiableSet(BridgeMaterial.getBySuffix("cauldron", AlmostBoolean.YES, "legacy"));
 
-    public static final Set<Material> ALL_BUTTONS = Collections.unmodifiableSet(
-            BridgeMaterial.getBySuffix("_button", AlmostBoolean.YES, "legacy"));
+    public static final Set<Material> ALL_BUTTONS = Collections.unmodifiableSet(BridgeMaterial.getBySuffix("_button", AlmostBoolean.YES, "legacy"));
 
     public static final Set<Material> ALL_DOORS = Collections.unmodifiableSet(
             BridgeMaterial.getByPrefixAndSuffix(
@@ -417,7 +415,7 @@ public class MaterialUtil {
             "cobblestone", "mossy_cobblestone",
             "sea_lantern", "redstone_lamp", "glowstone", "sponge", "wet_sponge",
             "budding_amethyst", "amethyst_block",
-            "calcite", "tuff", "moss_block", "rooted_dirt", "dripstone_block"
+            "calcite", "tuff", "moss_block", "rooted_dirt", "dripstone_block", "pale_moss_block"
             ));
 
     public static final Set<Material> WALL_BANNERS = Collections.unmodifiableSet(addBlocks(
@@ -556,7 +554,7 @@ public class MaterialUtil {
                     "weeping_vines", "weeping_vines_plant",
                     "twisting_vines", "twisting_vines_plant",
                     "mangrove_propagule", "pink_petals", "torchflower", "torchflower_crop",
-                    "pitcher_plant"
+                    "pitcher_plant", "open_eyeblossom", "closed_eyeblossom", "pale_hanging_moss"
                     ),
             new HashSet<Material>(Arrays.asList(BridgeMaterial.TALL_GRASS, 
                     BridgeMaterial.WHEAT_CROPS, BridgeMaterial.CARROTS, 

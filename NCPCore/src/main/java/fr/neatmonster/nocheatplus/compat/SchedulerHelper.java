@@ -46,13 +46,13 @@ public class SchedulerHelper {
     public static boolean isFoliaServer() {
         return isFoliaServer;
     }
-
+    
     /**
-     * Run an asynchronous task, either with Bukkit's scheduler or Java's if the server is using Folia.
-     * 
-     * @param plugin Plugin that owns the task.
-     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
-     * @return An int representing a task ID when running on Paper/Spigot; or Thread when on Folia (or null if unable to schedule)
+     * Executes an asynchronous task, either using Bukkit's scheduler or Java's thread execution if the server is running Folia.
+     *
+     * @param plugin The plugin that owns the task.
+     * @param run    The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @return An integer task ID for Paper/Spigot, or a {@code Thread} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runTaskAsync(Plugin plugin, Consumer<Object> run) {
         if (!isFoliaServer) {
@@ -78,11 +78,11 @@ public class SchedulerHelper {
     }
     
     /**
-     * Schedule a once off task to occur as soon as possible, either with Bukkit's scheduler or Folia's.
-     * 
-     * @param plugin Plugin that owns the task.
-     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
-     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * Schedules a synchronous task to run as soon as possible, using either Bukkit's scheduler or Folia's global region scheduler.
+     *
+     * @param plugin The plugin that owns the task.
+     * @param run    The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @return An integer task ID for Paper/Spigot, or a {@code ScheduledTask} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runSyncTask(Plugin plugin, Consumer<Object> run) {
         if (!isFoliaServer) {
@@ -102,15 +102,15 @@ public class SchedulerHelper {
         }
         return null;
     }
-
+    
     /**
-     * Schedule a repeating task, either with Bukkit's scheduler or Folia's.
-     * 
-     * @param plugin Plugin that owns the task.
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively.
-     * @param delay Delay in server ticks before executing the first repeat.
-     * @param period Period in server ticks, for which the task will be repeated.
-     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * Schedules a repeating task, either using Bukkit's scheduler or Folia's global region scheduler.
+     *
+     * @param plugin The plugin that owns the task.
+     * @param run    The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @param delay  The delay (in server ticks) before the first execution.
+     * @param period The period (in server ticks) between consecutive executions.
+     * @return An integer task ID for Paper/Spigot, or a {@code ScheduledTask} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runSyncRepeatingTask(Plugin plugin, Consumer<Object> run, long delay, long period) {
         if (!isFoliaServer) {
@@ -133,14 +133,14 @@ public class SchedulerHelper {
         }
         return null;
     }
-
+    
     /**
-     * Run a delayed task, either with Bukkit's scheduler or Folia's.
-     * 
-     * @param plugin Plugin that owns the task.
-     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively.
-     * @param delay Delay in ticks.
-     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * Schedules a synchronous delayed task, either using Bukkit's scheduler or Folia's global region scheduler.
+     *
+     * @param plugin The plugin that owns the task.
+     * @param run    The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @param delay  The delay (in server ticks) before the task is executed.
+     * @return An integer task ID for Paper/Spigot, or a {@code ScheduledTask} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runSyncDelayedTask(Plugin plugin, Consumer<Object> run, long delay) {
         if (!isFoliaServer) {
@@ -160,29 +160,29 @@ public class SchedulerHelper {
         }
         return null;
     }
-
+    
     /**
-     * Run a delayed task for an entity on the next tick, either with Bukkit's scheduler or Folia's.
-     * 
-     * @param entity Entity that owns the task
-     * @param plugin Plugin that owns the task
-     * @param run Consumer that accepts an object, or null. For Folia or Paper/Spigot respectively
-     * @param retired The task to run if entity is retired before the task is run
-     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * Schedules a synchronous task for an entity to run on the next tick, either using Bukkit's scheduler or Folia's entity scheduler.
+     *
+     * @param entity  The entity associated with the task.
+     * @param plugin  The plugin that owns the task.
+     * @param run     The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @param retired A fallback task to execute if the entity is retired before the scheduled task runs.
+     * @return An integer task ID for Paper/Spigot, or a {@code ScheduledTask} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runSyncTaskForEntity(Entity entity, Plugin plugin, Consumer<Object> run, Runnable retired) {
         return runSyncDelayedTaskForEntity(entity, plugin, run, retired, 1L);
     }
     
     /**
-     * Run a synchronous delayed task for an entity, either with Bukkit's scheduler or Folia's.
-     * 
-     * @param entity Entity that owns the task.
-     * @param plugin Plugin that owns the task.
-     * @param run Consumer that accepts an object or null, for Folia or Paper/Spigot respectively.
-     * @param retired The task to run if entity is retired before the task is run.
-     * @param delay Delay in ticks.
-     * @return An int representing a task ID when running on Paper/Spigot, or ScheduledTask when on Folia (or null if unable to schedule)
+     * Schedules a synchronous delayed task for an entity, using either Bukkit's scheduler or Folia's entity scheduler.
+     *
+     * @param entity  The entity associated with the task.
+     * @param plugin  The plugin that owns the task.
+     * @param run     The task to execute, represented as a consumer that accepts an object (or {@code null} for Paper/Spigot).
+     * @param retired A fallback task to execute if the entity is retired before the scheduled task runs.
+     * @param delay   The delay (in server ticks) before the task is executed.
+     * @return An integer task ID for Paper/Spigot, or a {@code ScheduledTask} object for Folia (returns {@code null} if scheduling fails).
      */
     public static Object runSyncDelayedTaskForEntity(Entity entity, Plugin plugin, Consumer<Object> run, Runnable retired, long delay) {
         if (!isFoliaServer) {
@@ -202,12 +202,12 @@ public class SchedulerHelper {
         }
         return null;
     }
-
+    
     /**
-     * Cancel the given task
-     * 
-     * @param task The task to cancel. On Paper/Spigot this is an int, representing the task ID; on Folia, a ScheduledTask obj. 
-     *             Won't do anything if the given object is null, or Thread.
+     * Cancels a scheduled task.
+     *
+     * @param task The task to cancel. This can be an integer task ID (for Paper/Spigot), a {@code ScheduledTask} object (for Folia), or a {@code Thread} object.
+     *             Does nothing if the task is {@code null} or a {@code Thread}.
      */
     public static void cancelTask(Object task) {
         if (task == null) {
@@ -225,11 +225,11 @@ public class SchedulerHelper {
             ReflectionUtil.invokeMethodNoArgs(cancelMethod, task);
         }
     }
-
+    
     /**
-     * Cancel all scheduled tasks for the given plugin
-     * 
-     * @param plugin Plugin to assign for
+     * Cancels all scheduled tasks for the given plugin.
+     *
+     * @param plugin The plugin whose tasks should be canceled.
      */
     public static void cancelTasks(Plugin plugin) {
         if (!isFoliaServer) {
@@ -256,12 +256,14 @@ public class SchedulerHelper {
         }
     }
     
+    
     /**
-     * Asynchronously teleport the given entity if the server is using Folia.
-     * 
-     * @param entity The entity to teleport
-     * @param loc Target location
-     * @param cause the TeleportCause enum.
+     * Teleports an entity asynchronously if the server is running Folia.
+     *
+     * @param entity The entity to teleport.
+     * @param loc    The target location.
+     * @param cause  The cause of the teleport (from the {@code TeleportCause} enum).
+     * @return {@code true} if the teleportation was successful, {@code false} otherwise.
      */
     @SuppressWarnings("unchecked")
     public static boolean teleportEntity(Entity entity, Location loc, TeleportCause cause) {
@@ -278,11 +280,12 @@ public class SchedulerHelper {
         }
         return false;
     }
-
+    
     /**
-     * @param task The task ID (Paper/Spigot/Bukkit), ScheduledTask or Thread object (Folia)
-     *             May be null (would yield false)
-     * @return Whether the given task is scheduled.
+     * Checks if a given task is scheduled.
+     *
+     * @param task The task to check. This can be an integer task ID (for Paper/Spigot), a {@code ScheduledTask} object (for Folia), or a {@code Thread} object.
+     * @return {@code true} if the task is scheduled, {@code false} otherwise.
      */
     public static boolean isTaskScheduled(Object task) {
         if (task == null) {

@@ -57,7 +57,8 @@ public class BlocksMC1_9 implements BlockPropertiesSetup {
         BlockInit.setAs("PURPUR_PILLAR", BridgeMaterial.STONE_BRICKS); // Rough.
 
         BlockInit.setAs("PURPUR_STAIRS", BridgeMaterial.STONE_BRICK_STAIRS); // Rough.
-
+        
+        // Uhm, why the double if?
         if (BridgeMaterial.has("PURPUR_DOUBLE_SLAB")) {
             if (BridgeMaterial.has("PURPUR_DOUBLE_SLAB")) {
                 BlockInit.setAs("PURPUR_DOUBLE_SLAB", "DOUBLE_STEP");

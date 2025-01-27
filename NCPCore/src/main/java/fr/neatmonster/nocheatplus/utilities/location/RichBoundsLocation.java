@@ -890,14 +890,10 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         if (inPowderSnow == null) {
             if (blockFlags == null || (blockFlags & BlockFlags.F_POWDER_SNOW) != 0L) {
                 // TODO/ISSUE: Players are considered in powder snow, only if feet collide with the block. (jumping)
-                // TODO: This check needs to be re-done.
                 // If you stand on the very edge of the block:
                 // Vertically, you jump with standard motion (as if you were outside the block)
                 // Horizontally, you DO get slowed down (as if you were inside the block)
-                inPowderSnow = isInsideBlock(BlockFlags.F_POWDER_SNOW)
-                               // To be considered "in" powder snow, the player needs to be supported by more powder snow (remember that pwdsnw has the ground flag) below (or other solid-ground blocks)
-                               // This fixes an edge case with player jumping with powder snow above (in which case, they are not considered "inside", the game applies the ordinary gravity motion)
-                               && BlockProperties.isGround(getTypeId(getBlockX(), Location.locToBlock(getY() - 0.01), getBlockZ()));
+                inPowderSnow = isInsideBlock(BlockFlags.F_POWDER_SNOW);
             }
             else inPowderSnow = false;
         }

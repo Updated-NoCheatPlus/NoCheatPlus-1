@@ -855,6 +855,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         
         // (newTo should be null here)
+        // TODO: Abstract away this mechanic.
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Split the event into separate moves, or correct the looking data, if suitable          //
         ////////////////////////////////////////////////////////////////////////////////////////////

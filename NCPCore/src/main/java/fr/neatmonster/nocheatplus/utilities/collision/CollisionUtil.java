@@ -904,8 +904,7 @@ public class CollisionUtil {
     
     /**
      * Resolves collisions between a bounding box and a list of other bounding boxes by adjusting its movement in 
-     * the X, Y, and Z dimensions. The method computes how much the bounding box should move in each dimension, 
-     * to avoid overlaps with the other bounding boxes.
+     * the X, Y, and Z dimensions, to avoid overlaps with the other bounding boxes.
      *
      * <p>The collision resolution is performed in a specific order:
      * 1. Adjustments are first made in the Y dimension if there is movement in that direction.
@@ -1001,6 +1000,7 @@ public class CollisionUtil {
                     if (BlockProperties.isAir(mat) || BlockProperties.isPassable(mat)) {
                         continue;
                     }
+                    // how many of the current block’s coordinates (x, y, z) lie on the edges of the search region defined by the entity’s AABB
                     int edgeCount = ((x == minBlockX || x == maxBlockX) ? 1 : 0) +
                                     ((y == minBlockY || y == maxBlockY) ? 1 : 0) +
                                     ((z == minBlockZ || z == maxBlockZ) ? 1 : 0);

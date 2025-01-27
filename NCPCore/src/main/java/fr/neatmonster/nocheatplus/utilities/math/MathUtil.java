@@ -207,11 +207,9 @@ public class MathUtil {
     }
 
     /**
-     * Calculates the total length of space covered("filled") by two line segments on a number line,
-     * accounting for any overlap between them.
-     * <p>This method computes the length of two segments and then subtracts the length
+     * Computes the length of two segments and then subtracts the length
      * of their overlapping region to avoid counting it twice. The result is the total
-     * length of the space that is covered by at least one of the segments.</p>
+     * length of the space that is covered by at least one of the segments.
      *
      * @param sA The start of the first segment.
      * @param eA The end of the first segment.
@@ -314,12 +312,12 @@ public class MathUtil {
     
     /**
      * From {@code VoxelShape.java}.<br>
-     * Determines the bit precision needed to accurately subdivide the given range (min to max).
+     * Determines the bit precision needed to subdivide the given range (min to max).
      * It scales the range to a power of two, and checks how many bits can be used to represent it.
      *
      * @param min The minimum value in the range
      * @param max The maximum value in the range
-     * @return The bit precision as an integer (0 to 3), or -1 if the range cannot be subdivided
+     * @return The bit precision as an integer (0 to 3), or -1 if the range cannot be subdivided.
      */
     public static int findBits(double min, double max) {
         if (!(min < -CollisionUtil.COLLISION_EPSILON) && !(max > 1.0000001)) {

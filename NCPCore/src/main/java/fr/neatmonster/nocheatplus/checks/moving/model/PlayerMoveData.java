@@ -111,7 +111,7 @@ public class PlayerMoveData extends MoveData {
     public double zAllowedDistance;
 
     /**
-     *  The collision oon the Z axis that has been set in this movement by SurvivalFly.
+     *  The collision on the Z axis that has been set in this movement by SurvivalFly.
      *  Prior to version 1.21.2, this was set only if the theoretical speed prediction to set in this movement was found; or in other words, only if the player isn't cheating.
      *  On 1.21.2 and above, this is always set.
      *  @see PlayerMoveData#hasImpulse
@@ -163,7 +163,8 @@ public class PlayerMoveData extends MoveData {
      * On Bukkit's side, this translates in a {@link org.bukkit.event.player.PlayerMoveEvent} which doesn't actually have any movement change ({@link PlayerMoveEvent#getFrom()} and {@link PlayerMoveEvent#getTo()} contain the same location)
      * This moving event is skipped from being processed.
      * Do note that players cannot send duplicate packets in a row: after we receive an "empty" PlayerMoveEvent, the next one incoming must have the actual movement change.
-     * (Sequence is: normal PME -> duplicate PME -> normal PME(...))
+     * (Sequence is: normal PME -> duplicate PME -> normal PME(...))<br>
+     * Fixed in 1.21.1.
      */
     public boolean hasNoMovementDueToDuplicatePacket;
 
@@ -174,15 +175,14 @@ public class PlayerMoveData extends MoveData {
     public List<SimpleEntry> verVelUsed = new LinkedList<>();
     
     /**
-     * Indicates whether this movement has a horizontal impulse, meaning the player actively pressed a WASD key.
-     * This helps differentiate between player-driven movement and passive movement (e.g., from external forces like push or velocity).
+     * Indicates whether this movement has a horizontal impulse, meaning the player actively pressed a WASD key, to differentiate between player-driven movement and passive movement (e.g., from external forces like push or velocity).
      * <p>
      * <b>Prior to version 1.21.2, inputs were not sent to the server, so movement impulse was inferred by replicating client-movement calculations.
      * This means this boolean's value depended on our prediction:</b>
      *
      * <ul>
      * <li>YES: Active player input was detected through prediction.</li>
-     * <li>MAYBE: Prediction was inconclusive, so player input is unclear.</li>
+     * <li>MAYBE: We couldn't predict speed, so player input is unclear.</li>
      * <li>NO: No active player input was detected through prediction.</li>
      * </ul>
      *

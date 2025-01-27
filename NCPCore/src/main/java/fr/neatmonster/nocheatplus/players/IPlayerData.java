@@ -329,7 +329,7 @@ public interface IPlayerData extends IData, IBaseDataAccess, IGetGenericInstance
     /**
      * Hacky way to circumvent item usage de-synchronization issues between the server and the client.
      * This also calls requestUpdateInventory().
-     * See InventoryUtil#itemResyncTask for more details.
+     * See {@link fr.neatmonster.nocheatplus.utilities.InventoryUtil#itemResyncTask(Player, IPlayerData)} for more details.
      */
     public void requestItemUseResync();
 

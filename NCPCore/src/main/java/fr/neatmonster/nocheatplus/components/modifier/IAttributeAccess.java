@@ -165,8 +165,7 @@ public interface IAttributeAccess {
     public double getMaxStepUp(Player player);
     
     /**
-     * Determines how efficiently a player moves through blocks that slow down or impede movement in some other way, such as soul sand or honey blocks.
-     * This efficiency is used to adjust the player's movement speed through such blocks. <br>
+     * Determines how efficiently a player moves through blocks that slow down or impede movement in some other way, such as soul sand or honey blocks.<br>
      * Specifically, the attribute value is used in the `getBlockSpeedFactor()` method (in EntityLiving.java) to interpolate between the default speed factor
      * and a full-speed factor (1.0F). The interpolation is performed using the formula:
      * <pre>

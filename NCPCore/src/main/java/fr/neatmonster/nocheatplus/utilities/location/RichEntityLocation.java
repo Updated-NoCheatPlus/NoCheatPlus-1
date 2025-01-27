@@ -548,7 +548,7 @@ public class RichEntityLocation extends RichBoundsLocation {
     
     /**
      * From Entity.java <br>
-     * Checks if the bounding box of the entity, when moved by preset offsets, is free of any obstruction (liquid or solid blocks).
+     * Checks if the bounding box of the entity, when moved by preset offsets, is free of any obstruction (liquid or solid blocks).<br>
      * 
      * @return True, if the moved bounding box is free from obstructions, otherwise false.
      */
@@ -651,7 +651,7 @@ public class RichEntityLocation extends RichBoundsLocation {
                 }
             }
             else {
-                // First ste-up fix iteration introduced in 1.8 (then changed in 1.21)
+                // First step-up fix iteration introduced in 1.8 (then changed in 1.21)
                 // https://www.youtube.com/watch?v=Awa9mZQwVi8
                 Vector stepUpVector = CollisionUtil.collideBoundingBox(new Vector(input.getX(), allowedStepHeight, input.getZ()), tAABB, collisionBoxes);
                 if (EntityIsAtLeast1_8) {

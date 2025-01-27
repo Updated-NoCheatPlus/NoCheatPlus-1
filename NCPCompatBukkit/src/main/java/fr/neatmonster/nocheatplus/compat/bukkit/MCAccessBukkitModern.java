@@ -232,7 +232,6 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
             Material.CHORUS_FLOWER}) {
             processedBlocks.add(mat);
         }
-
         for (final Material mat : BridgeMaterial.getAllBlocks(
             "light", "glow_lichen", "big_dripleaf_stem",
             // TODO: Not fully tested
@@ -254,7 +253,8 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         for (Material mat : BridgeMaterial.getAllBlocks(
             "azalea", "flowering_azalea",
             "sculk_sensor", "frogspawn",
-            "sniffer_egg", "decorated_pot", "pitcher_crop", "calibrated_sculk_sensor", "bubble_column")) {
+            "sniffer_egg", "decorated_pot", "pitcher_crop", "calibrated_sculk_sensor", "bubble_column",
+            "closed_eyeblossom", "open_eyeblossom", "pale_hanging_moss", "resin_clump")) {
             addModel(mat, MODEL_AUTO_FETCH);
         }
         
@@ -312,29 +312,30 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         // BrewingStand
         addModel(Material.BREWING_STAND, MODEL_BREWING_STAND);
 
-        // 1/16 inset at full height.
+        // 1/16 inset at full height blocks.
         addModel(Material.DRAGON_EGG, MODEL_INSET16_1_HEIGHT100);
         addModel(Material.CACTUS, MODEL_HONEY_BLOCK);
 
-        // 1/8 height.
+        // 1/8 height blocks.
         for (Material mat : new Material[] {
             BridgeMaterial.REPEATER,
             Material.COMPARATOR }) {
             addModel(mat, MODEL_XZ100_HEIGHT8_1);
         }
 
-        // 3/8 height.
+        // 3/8 height blocks.
         for (Material mat : new Material[] {
             Material.DAYLIGHT_DETECTOR}) {
             addModel(mat, MODEL_XZ100_HEIGHT8_3);
         }
 
-        // 3/4 height.
+        // 3/4 height blocks.
         for (Material mat : new Material[] {
             BridgeMaterial.ENCHANTING_TABLE}) {
             addModel(mat, MODEL_XZ100_HEIGHT4_3);
         }
-
+        
+        // All candle cakes
         for (Material mat : MaterialUtil.ALL_CANDLE_CAKE) {
             addModel(mat, MODEL_CANDLE_CAKE);
         }
@@ -466,7 +467,8 @@ public class MCAccessBukkitModern extends MCAccessBukkit {
         for (Material mat : MaterialUtil.LAVA) {
             addModel(mat, MODEL_LEVELLED);
         }
-
+        
+        // All water plants
         for (Material mat : MaterialUtil.WATER_PLANTS) {
             addModel(mat, MODEL_WATER_PLANTS);
         }

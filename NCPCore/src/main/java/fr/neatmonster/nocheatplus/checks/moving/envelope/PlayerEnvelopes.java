@@ -141,8 +141,7 @@ public class PlayerEnvelopes {
     /**
      * Test if the current motion can qualify as a jump.<br>
      * Note that: 
-     * 1) This does not concern whether the player actual impulse (e.g., pressing the space bar). 
-     *    For that, see {@link BridgeMisc#isSpaceBarImpulseKnown(Player)}.
+     * 1) This does not concern whether the player actual impulse. For that, see {@link BridgeMisc#isSpaceBarImpulseKnown(Player)}.
      * 2) It also does not include upward movement through liquids. While Minecraft considers players as "jumping" if they just press the space bar, we intend jumping in its strict sense (jumping through air)<br><p>
      * For a motion to be considered a legitimate jump, the following conditions must be met:
      * <ul>

@@ -251,7 +251,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
      *   <li><b>Crawl mode (1.14+):</b> automatically activates if the player is constricted in 
      *       areas with a ceiling lower than 1.5 blocks (e.g., under trapdoors). 
      *       When crawling, movement is always slowed down regardless of shift key presses. 
-     *       Notably, crawling shares the same pose as swimming, and Minecraft determines 
+     *       Moreover, crawling shares the same pose as swimming, and Minecraft determines 
      *       crawling status by checking if the player is in the swimming pose and not in water 
      *       (see: {@code LocalPlayer.java -> aiStep() -> isMovingSlowly() -> isVisuallyCrawling()}).</li>
      * </ul>

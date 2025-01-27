@@ -20,6 +20,7 @@ import java.util.Collection;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
@@ -100,13 +101,13 @@ public class BridgeMisc {
     }
     
     /**
-     * Test if the player's horizontal impulse (WASD presses) are either known or emulated by ViaVersion.
+     * Test if the player's horizontal impulse (WASD presses) is either known or emulated by ViaVersion.
      * 
      * @param player The player whose input is being checked.
      * @return <b>Always</b><code>true</code>, if both client and server are on a version that supports impulse sending and reading respectively (1.21.2 and above).<br>
      *         <b>Always</b><code>false</code>, if the server is unable to read inputs at all (legacy, pre 1.21.2). <br>
      *         Don't use when the server does support input but the client doesn't. Although ViaVersion does help us get the input from the legacy client but result is unusable
-     * <hr><br>
+     * <hr>
      * Check {@link BridgeMisc#isSpaceBarImpulseKnown(Player)} for the vertical impulse.
      *
      */
@@ -137,9 +138,9 @@ public class BridgeMisc {
      *         <b>Always</b> <code>false</code>, if the server is unable to read inputs at all (legacy, pre 1.21.2). <br>
      *         <code>true</code>, if the server supports impulse reading, but the client does not natively support impulse-sending, which is instead enabled by ViaVersion
      *         through emulation of the PLAYER_INPUT packet. Because the packet is emulated, the actual impulse may not always reflect what the player actually pressed; particularly if the 
-     *         player's speed was affected by external velocity sources. In which case, this will return <code>false</code>.<br>
-     * <hr><br>
-     * Check {@link BridgeMisc#isWASDImpulseKnown(Player)}} for the horizontal impulse.  
+     *         player's speed was affected by external velocity sources. In which case, this will return <code>false</code>.
+     * <hr>
+     * Check {@link BridgeMisc#isWASDImpulseKnown(Player)} for the horizontal impulse.  
      */
     public static boolean isSpaceBarImpulseKnown(final Player player) {
         if (!hasInputGetterMethod) {
@@ -166,8 +167,12 @@ public class BridgeMisc {
     }
     
     /**
-     * Check if the player is in crawl mode according to Minecraft's definition
+     * Check if the player is in crawl mode according to Minecraft's definition:
      * (In swimming pose while not in water).
+     * 
+     * <li>{@link IPlayerData#getClientVersion()} must be at least {@link ClientVersion#V_1_14}.<br>
+     * <li>{@link Player#getPose()} must equal to {@link Pose#SWIMMING}.<br>
+     * <li>{@link BlockProperties#isInWater(Player, Location, double)} must return false. <br>
      * 
      * @param player
      * @return True if so.
@@ -291,6 +296,9 @@ public class BridgeMisc {
             return false;
         }
         if (DataManager.getPlayerData(player).getClientVersion().isLowerThan(ClientVersion.V_1_17)) {
+            return false;
+        }
+        if (!player.isValid()) {
             return false;
         }
         final ItemStack boots = player.getInventory().getBoots();
