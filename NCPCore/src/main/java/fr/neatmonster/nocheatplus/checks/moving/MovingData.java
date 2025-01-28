@@ -40,7 +40,6 @@ import fr.neatmonster.nocheatplus.checks.moving.velocity.PairAxisVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.PairEntry;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleAxisVelocity;
 import fr.neatmonster.nocheatplus.checks.moving.velocity.SimpleEntry;
-import fr.neatmonster.nocheatplus.checks.moving.velocity.VelocityFlags;
 import fr.neatmonster.nocheatplus.checks.workaround.WRPT;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.blocks.changetracker.BlockChangeReference;
@@ -177,18 +176,6 @@ public class MovingData extends ACheckData implements IDataOnRemoveSubCheckData,
     private final SimpleAxisVelocity verVel = new SimpleAxisVelocity();
     /** Horizontal velocity modeled as an axis (always positive) */
     private final PairAxisVelocity horVel = new PairAxisVelocity();
-    /** Whether the calculated explosion velocity should be applied. */
-    @Deprecated
-    public boolean shouldApplyExplosionVelocity = false;
-    /** Velocity explosion counter (X). */
-    @Deprecated
-    public double explosionVelAxisX = 0.0;
-    /** Velocity explosion counter (Y). */
-    @Deprecated
-    public double explosionVelAxisY = 0.0;
-    /** Velocity explosion counter (Z). */
-    @Deprecated
-    public double explosionVelAxisZ = 0.0;
     /** Compatibility entry for bouncing off of slime blocks and the like. */
     public SimpleEntry verticalBounce = null;
 

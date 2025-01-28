@@ -42,6 +42,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffectType;
 
 import fr.neatmonster.nocheatplus.NCPAPIProvider;
 import fr.neatmonster.nocheatplus.checks.moving.MovingData;
@@ -49,13 +50,13 @@ import fr.neatmonster.nocheatplus.checks.moving.model.PlayerMoveData;
 import fr.neatmonster.nocheatplus.compat.AlmostBoolean;
 import fr.neatmonster.nocheatplus.compat.Bridge1_13;
 import fr.neatmonster.nocheatplus.compat.Bridge1_9;
-import fr.neatmonster.nocheatplus.compat.bukkit.BridgeEnchant;
-import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
-import fr.neatmonster.nocheatplus.compat.bukkit.BridgePotionEffect;
 import fr.neatmonster.nocheatplus.compat.MCAccess;
 import fr.neatmonster.nocheatplus.compat.blocks.BlockPropertiesSetup;
 import fr.neatmonster.nocheatplus.compat.blocks.init.BlockInit;
 import fr.neatmonster.nocheatplus.compat.blocks.init.vanilla.VanillaBlocksFactory;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeEnchant;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgeMaterial;
+import fr.neatmonster.nocheatplus.compat.bukkit.BridgePotionEffect;
 import fr.neatmonster.nocheatplus.compat.versions.ClientVersion;
 import fr.neatmonster.nocheatplus.components.registry.event.IHandle;
 import fr.neatmonster.nocheatplus.config.ConfPaths;
@@ -565,7 +566,11 @@ public class BlockProperties {
             stuckInFactor = 1.5;
         }
         else if (eLoc.isInWeb()) {
-            stuckInFactor = 0.05;
+            // Introduced roughly in 1.20.5
+            if (BridgePotionEffect.WEAVING != null && entity.hasPotionEffect(PotionEffectType.WEAVING)) {
+                stuckInFactor = 0.25;
+            }
+            else stuckInFactor = 0.05;
         }
         blockCache.cleanup();
         eLoc.cleanup();
@@ -702,7 +707,11 @@ public class BlockProperties {
         eLoc.set(loc, entity, yOnGround);
         double stuckInFactor = 1.0D;
         if (eLoc.isInWeb()) {
-            stuckInFactor = 0.25D;
+            if (BridgePotionEffect.WEAVING != null && entity.hasPotionEffect(PotionEffectType.WEAVING)) {
+                // Introduced roughly in 1.20.5
+                stuckInFactor = 0.5D;
+            }
+            else stuckInFactor = 0.25D;
         }
         else if (eLoc.isInBerryBush()) {
             stuckInFactor = 0.8D;

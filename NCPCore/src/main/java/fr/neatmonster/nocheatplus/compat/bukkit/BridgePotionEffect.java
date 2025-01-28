@@ -52,4 +52,5 @@ public class BridgePotionEffect {
     public final static PotionEffectType HASTE = getFirstNotNull("HASTE", "FAST_DIGGING");
     public final static PotionEffectType MINING_FATIGUE = getFirstNotNull("MINING_FATIGUE", "SLOW_DIGGING");
     public final static PotionEffectType JUMP_BOOST = getFirstNotNull("JUMP_BOOST", "JUMP");
+    public final static PotionEffectType WEAVING = getFirst("WEAVING");
 }
