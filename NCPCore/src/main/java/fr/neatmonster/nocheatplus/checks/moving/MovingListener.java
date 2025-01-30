@@ -124,7 +124,6 @@ import fr.neatmonster.nocheatplus.utilities.map.BlockFlags;
 import fr.neatmonster.nocheatplus.utilities.map.BlockProperties;
 import fr.neatmonster.nocheatplus.utilities.map.MapUtil;
 import fr.neatmonster.nocheatplus.utilities.map.MaterialUtil;
-import fr.neatmonster.nocheatplus.utilities.math.MathUtil;
 import fr.neatmonster.nocheatplus.utilities.math.TrigUtil;
 import fr.neatmonster.nocheatplus.utilities.moving.AuxMoving;
 import fr.neatmonster.nocheatplus.utilities.moving.Magic;
@@ -368,7 +367,7 @@ public class MovingListener extends CheckListener implements TickListener, IRemo
         }
         aux.returnPlayerMoveInfo(moveInfo);
         useToggleFlightLoc.setWorld(null);
-        data.addVelocity(player, cc, 0.0, 0.3, 0.0, VelocityFlags.ORIGIN_INTERNAL);
+        data.addVelocity(player, cc, 0.0, 0.3, 0.0, VelocityFlags.FAKED);
     }
 
 

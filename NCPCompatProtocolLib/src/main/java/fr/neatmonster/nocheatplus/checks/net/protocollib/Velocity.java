@@ -86,6 +86,6 @@ public class Velocity extends BaseAdapter {
         final MovingData data = pData.getGenericInstance(MovingData.class);
         final MovingConfig cc = pData.getGenericInstance(MovingConfig.class);
         // Process velocity.
-        data.addVelocity(player, cc, velX, velY, velZ, VelocityFlags.EXPLOSION | VelocityFlags.ADDITIVE);
+        data.addVelocity(player, cc, velX, velY, velZ, VelocityFlags.ORIGIN_EXPLOSION | VelocityFlags.ADDITIVE);
     }
 }

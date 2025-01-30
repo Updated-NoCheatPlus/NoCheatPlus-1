@@ -69,11 +69,17 @@ public class VelocityFlags {
     public static final long ORIGIN_PVP = f_flag();
     
     /**
-     * Generic flag: entries with this flag are for internal purposes (always faked) and should be ignored by velocity checks.
+     * Meta flag: entries with this flag are for internal purposes (always faked) and should therefore be ignored by velocity checks.
      */
-    public static final long ORIGIN_INTERNAL = f_flag();
+    public static final long FAKED = f_flag();
     
-    public static final long EXPLOSION = f_flag();
+    /**
+     * Entries with this flag are assumed to have originated from an explosion. 
+     */
+    public static final long ORIGIN_EXPLOSION = f_flag();
     
+    /**
+     * Meta flag: this velocity is applied as an addition to the player's current motion, rather than replacing it like other types.
+     */
     public static final long ADDITIVE = f_flag();
 }

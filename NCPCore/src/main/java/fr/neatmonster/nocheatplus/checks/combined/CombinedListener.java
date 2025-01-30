@@ -104,7 +104,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
                     final MovingData data = pData.getGenericInstance(MovingData.class);
                     final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
                     // Always fake use velocity here to smoothen the transition between glide->no glide or no glide->glide transitions.
-                    data.addVelocity((Player)event.getEntity(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+                    data.addVelocity((Player)event.getEntity(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.FAKED);
                     if (shouldDenyGlidingStart((Player)event.getEntity(), event.isGliding(), true)) {
                         event.setCancelled(true);
                     }
@@ -183,7 +183,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             aux.returnPlayerMoveInfo(info);
             // Smoothen the transition by fake using velocity.
             if (!isToggleGlideEvent && res) {
-                data.addVelocity(player, pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+                data.addVelocity(player, pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.FAKED);
             }
             if (res && pData.isDebugActive(CheckType.MOVING)) {
                 debug(player, "Prevent toggle glide on (cheat prevention, " + (isToggleGlideEvent ? "ToggleGlideEvent)" : "PlayerMoveEvent)"));
@@ -220,7 +220,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
         final PlayerMoveData lastMove = data.playerMoves.getFirstPastMove();
         // Smoothen the transition by fake using velocity.
         if (!Bridge1_9.hasEntityToggleGlideEvent()) {
-            data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.ORIGIN_INTERNAL);
+            data.addVelocity(event.getPlayer(), pData.getGenericInstance(MovingConfig.class), lastMove.xAllowedDistance, lastMove.yAllowedDistance, lastMove.zAllowedDistance, VelocityFlags.FAKED);
         }
         if (pData.isDebugActive(CheckType.MOVING)) {
             debug(event.getPlayer(), "Abort gliding phase.");
@@ -410,6 +410,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             // On 1.14 and higher, players can sneak while sprinting if they were sprinting beforehand.
             // NOTE: THE BUG ABOVE WAS FIXED WITH THE "WINTER DROP" (around 1.21.3).
             // We do not check for this as it is not worth it at all. Latency and desyncing issues make it too hard handle.
+            // NOTE2: Mojang reverted the bug fix above!!
             pData.setSprintingState(false);
             return;
         }
@@ -418,6 +419,7 @@ public class CombinedListener extends CheckListener implements JoinLeaveListener
             // On 1.14 and higher, players can use an item while sprinting if they were sprinting beforehand.
             // NOTE: THE BUG ABOVE WAS FIXED WITH THE "WINTER DROP" (around 1.21.3).
             // We do not check for this as it is not worth it at all. Latency and desyncing issues make it too hard handle.
+            // NOTE2: Mojang reverted the bug fix above!!
             pData.setSprintingState(false);
             return;
         }

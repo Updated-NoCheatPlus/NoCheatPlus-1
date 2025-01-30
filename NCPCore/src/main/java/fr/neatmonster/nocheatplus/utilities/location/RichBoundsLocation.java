@@ -717,7 +717,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
         boolean isDrag = false;
         final int iMinX = Location.locToBlock(minX + 0.001);
         final int iMaxX = Location.locToBlock(maxX + 0.001);
-        final int iMinY = Location.locToBlock(minY + 0.001); // Fuck fences.
+        final int iMinY = Location.locToBlock(minY + 0.001); 
         final int iMaxY = Math.min(Location.locToBlock(maxY - 0.001), blockCache.getMaxBlockY());
         final int iMinZ = Location.locToBlock(minZ - 0.001);
         final int iMaxZ = Location.locToBlock(maxZ - 0.001);
@@ -889,15 +889,34 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isInPowderSnow() {
         if (inPowderSnow == null) {
             if (blockFlags == null || (blockFlags & BlockFlags.F_POWDER_SNOW) != 0L) {
-                // TODO/ISSUE: Players are considered in powder snow, only if feet collide with the block. (jumping)
-                // If you stand on the very edge of the block:
-                // Vertically, you jump with standard motion (as if you were outside the block)
-                // Horizontally, you DO get slowed down (as if you were inside the block)
-                inPowderSnow = isInsideBlock(BlockFlags.F_POWDER_SNOW);
+                inPowderSnow = checkPowderSnowCollision();
             }
             else inPowderSnow = false;
         }
         return inPowderSnow;
+    }
+    
+    /**
+     * Like {@link #isInsideBlock(long)}, but specifically for powder snow.
+     */
+    private boolean checkPowderSnowCollision() {
+        final int iMinX = Location.locToBlock(minX + 0.001);
+        final int iMaxX = Location.locToBlock(maxX - 0.001);
+        final int iMinY = Location.locToBlock(minY + 0.001);
+        final int iMaxY = Math.min(Location.locToBlock(maxY - 0.001), blockCache.getMaxBlockY());
+        final int iMinZ = Location.locToBlock(minZ + 0.001);
+        final int iMaxZ = Location.locToBlock(maxZ - 0.001);
+        for (int x = iMinX; x <= iMaxX; x++) {
+            for (int z = iMinZ; z <= iMaxZ; z++) {
+                for (int y = iMaxY; y >= iMinY; y--) {
+                    if (x == Math.floor(getX()) && y == Math.floor(getY()) && z == Math.floor(getZ())  //  Ensure that we only check the exact block the player is currently inside.
+                        && BlockProperties.collides(blockCache, minX, minY, minZ, maxX, maxY, maxZ, BlockFlags.F_POWDER_SNOW)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -1034,6 +1053,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     public boolean isOnRails() {
         return BlockProperties.isRails(getTypeId()) || y - blockY < 0.3625 && BlockProperties.isAscendingRails(getTypeIdBelow(), getData(blockX, blockY - 1, blockZ));
     }
+    
 
     /**
      * Checks if the thing is on ground, including entities (RichEntityLocation) such as Boat.
@@ -1647,7 +1667,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
 
         // Reset cached values.
         node = nodeBelow = null;
-        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand  = onHoneyBlock 
+        aboveStairs = inLava = inWater = inWaterLogged = inWeb = onIce = onBlueIce = inSoulSand = onHoneyBlock 
         = onSlimeBlock = inBerryBush = inPowderSnow = onGround = onClimbable = onBouncyBlock = passable 
         = passableBox = inBubbleStream = null;
         onGroundMinY = Double.MAX_VALUE;

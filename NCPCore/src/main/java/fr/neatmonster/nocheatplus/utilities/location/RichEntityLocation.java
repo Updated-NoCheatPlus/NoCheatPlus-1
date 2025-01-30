@@ -298,6 +298,21 @@ public class RichEntityLocation extends RichBoundsLocation {
         }
         return super.isInBubbleStream();
     }
+    
+    /**
+     * @return Always false for 1.16 and below.
+     */
+    public boolean isInPowderSnow() {
+        if (inPowderSnow != null) {
+            return inPowderSnow;
+        }
+        if (GenericVersion.isLowerThan(entity, "1.17")) {
+            // Does not exist.
+            inPowderSnow = false;
+            return inPowderSnow;
+        }
+        return super.isInPowderSnow();
+    }
 
     /**
      * Legacy collision method(s)

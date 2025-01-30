@@ -28,7 +28,7 @@ public class BukkitPowderSnow implements BukkitShapeModel {
         if (pData != null) {
             MovingData data = pData.getGenericInstance(MovingData.class);
             // TODO: Make NoFall no dealing damage on this block
-            if (data.lastY > (y + 1 - 1e-5) && data.hasLeatherBoots) {// && !pData.isSneaking()
+            if (data.lastY > (y + 1 - 1e-5) && data.hasLeatherBoots && !pData.isShiftKeyPressed()) {
                 return new double[] {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
             }
             // Give up, too hard to properly implement, workaround instead
