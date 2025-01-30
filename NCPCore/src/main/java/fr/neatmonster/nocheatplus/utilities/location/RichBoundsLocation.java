@@ -847,7 +847,7 @@ public class RichBoundsLocation implements IGetBukkitLocation, IGetBlockPosition
     }
 
     /**
-     * Check if the player is in blocks that have "data-reset potential". <br>
+     * Check if the player is in/on blocks that have "data-reset potential". <br>
      * Namely fall distance, but not exclusively (i.e.: jumping phase is reset if in/on these blocks). <br>
      * Mostly concerns stuck-speed blocks, but can/does include blocks that aren't strictly related from one another, such as liquids and climbables.
      * Does not check for ground (!)

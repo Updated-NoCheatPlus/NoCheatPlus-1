@@ -4054,6 +4054,7 @@ public class BlockProperties {
      *            the access <- we all love the access!
      * @param minX
      *            the min x
+     *            Player's AABB coordinates...
      * @param minY
      *            the min y
      * @param minZ
